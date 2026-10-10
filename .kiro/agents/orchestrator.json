@@ -1,0 +1,182 @@
+{
+  "name": "orchestrator",
+  "description": "Orchestrator agent that analyzes tasks and delegates to specialized subagents. Entry point for all user requests.",
+  "prompt": "file://../prompts/orchestrator.md",
+  "welcomeMessage": "Orchestrator ready. Describe your task and I'll route it to the right agent(s).",
+  "keyboardShortcut": "ctrl+o",
+  "tools": ["read", "write", "shell", "web", "subagent", "knowledge"],
+  "includeMcpJson": false,
+  "includePowers": false,
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "**/.env*",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "**/id_ed25519",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "*.env",
+          "**/*.env",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "./id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "./id_ed25519",
+          "**/id_ed25519"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "~/.ssh/**",
+          "~/.aws/**",
+          "~/.gnupg/**",
+          "~/.bashrc",
+          "~/.bash_profile",
+          "~/.profile",
+          "~/.zshrc",
+          "~/.gitconfig",
+          "~/.netrc",
+          "~/.kiro/agents/**",
+          "~/.kiro/hooks/**",
+          "~/.kiro/skills/**"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "shell",
+        "match": [
+          "make drift-check",
+          "make fmt-check",
+          "make hook-test",
+          "cp memory/state.yaml*",
+          "git status*",
+          "git diff*",
+          "git log*"
+        ],
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": [
+          "rm -rf *",
+          "rm -fr *",
+          "sudo *",
+          "su *",
+          "chmod 777 *",
+          "chmod -R *",
+          "dd *",
+          "mkfs*",
+          "shutdown*",
+          "reboot*",
+          "eval *",
+          "history -c*",
+          "npm publish*",
+          "pip install *"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "web_fetch",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "web_search",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "subagent",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "skill",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "diagnostics",
+        "match": ["*"],
+        "effect": "allow"
+      }
+    ]
+  },
+  "toolsSettings": {
+    "subagent": {
+      "availableAgents": [
+        "software-architect",
+        "ai-engineer",
+        "data-engineer",
+        "senior-developer",
+        "security-engineer",
+        "code-reviewer",
+        "qa-engineer",
+        "platform-engineer",
+        "technical-writer",
+        "telecom-engineer",
+        "kpi-analyst",
+        "engagement-manager"
+      ],
+      "trustedAgents": ["*"]
+    }
+  },
+  "resources": [
+    "file://.kiro/orchestration/routing.md",
+    "file://.kiro/orchestration/delegation-lifecycle.md",
+    "skill://.kiro/skills/*/SKILL.md",
+    "file://tools/TOOLS_OVERVIEW.md",
+    {
+      "type": "knowledgeBase",
+      "source": "file://.kiro/skills/kiro-cli-reference/references",
+      "name": "KiroCLIDocs",
+      "description": "Kiro CLI official documentation, vendored and synced by `make sync-docs`. Search for CLI commands, configuration, custom agents, skills, steering, specs, MCP, hooks, permissions, models, tools, reference, enterprise, billing, privacy and security, experimental features.",
+      "indexType": "best",
+      "autoUpdate": false
+    }
+  ],
+  "model": "claude-opus-5"
+}

@@ -1,0 +1,141 @@
+{
+  "name": "kpi-analyst",
+  "description": "Network KPI selection, counter engineering, distribution analysis, PM-to-formula mapping, validation frameworks",
+  "prompt": "file://../prompts/kpi-analyst.md",
+  "tools": ["read", "write", "shell", "web"],
+  "includeMcpJson": false,
+  "includePowers": false,
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "**/.env*",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "**/id_ed25519",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "*.env",
+          "**/*.env",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "./id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "./id_ed25519",
+          "**/id_ed25519"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "~/.ssh/**",
+          "~/.aws/**",
+          "~/.gnupg/**",
+          "~/.bashrc",
+          "~/.bash_profile",
+          "~/.profile",
+          "~/.zshrc",
+          "~/.gitconfig",
+          "~/.netrc",
+          "~/.kiro/agents/**",
+          "~/.kiro/hooks/**",
+          "~/.kiro/skills/**"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "shell",
+        "match": ["uv *", "make *"],
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": [
+          "rm -rf *",
+          "rm -fr *",
+          "sudo *",
+          "su *",
+          "chmod 777 *",
+          "chmod -R *",
+          "dd *",
+          "mkfs*",
+          "shutdown*",
+          "reboot*",
+          "eval *",
+          "history -c*",
+          "npm publish*",
+          "pip install *"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "web_fetch",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "web_search",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "skill",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "diagnostics",
+        "match": ["*"],
+        "effect": "allow"
+      }
+    ]
+  },
+  "resources": [
+    "skill://.kiro/skills/code-standards/SKILL.md",
+    "skill://.kiro/skills/kpi-assessment/SKILL.md",
+    "skill://.kiro/skills/statistical-analysis/SKILL.md",
+    "skill://.kiro/skills/engagement-plan/SKILL.md"
+  ],
+  "welcomeMessage": "Ready for KPI work. What metrics need defining?",
+  "model": "claude-sonnet-5"
+}

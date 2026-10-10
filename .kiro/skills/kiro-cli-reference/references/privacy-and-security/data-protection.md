@@ -1,0 +1,145 @@
+> ## Documentation Index
+> Fetch the complete documentation index at: https://kiro.dev/llms.txt
+> Use this file to discover all available pages before exploring further.
+
+# Data protection
+
+> Understand how your code, personal data, and project information is protected when using Kiro.
+
+The AWS [shared responsibility model](https://aws.amazon.com/compliance/shared-responsibility-model/) applies to data protection in Kiro. As described in this model, AWS is responsible for protecting the global infrastructure that runs all of the AWS Cloud. You are responsible for maintaining control over your content that is hosted on this infrastructure. You are also responsible for the security configuration and management tasks for the AWS services that you use. For more information about data privacy, see the [Data Privacy FAQ](https://aws.amazon.com/compliance/data-privacy-faq/).
+
+## Data storage
+
+Kiro may store your questions, responses, and additional context such as code and metadata about your requests to generate new responses to your requests and in some circumstances for abuse detection purposes (for more information, see [Abuse detection](#kiro-abuse-detection)). What Kiro stores depends on the features you use and whether you're a Free Tier user, an individual subscriber, or an enterprise user.
+
+### Storage by user type
+
+- **Kiro Free Tier user:** Subject to your [opt out](#opt-out-of-data-sharing), content may be used for service improvement. For information about how AWS may use content for service improvement, see [Kiro service improvement](#service-improvement). Separately, Kiro may also store inputs for up to 60 days for additional abuse detection, and model-specific retention requirements may apply (for more information, see [Abuse detection](#kiro-abuse-detection)).
+- **Kiro individual subscriber** (paid, social login, or AWS Builder ID): Subject to your [opt out](#opt-out-of-data-sharing), content may be used for service improvement. For information about how AWS may use content for service improvement, see [Kiro service improvement](#service-improvement). Model-specific retention requirements for abuse detection purposes may apply (for more information, see [Abuse detection](#kiro-abuse-detection)).
+- **[Kiro enterprise user](https://kiro.dev/docs/enterprise/concepts.md#kiro-enterprise-user):** Content is not used for service improvement, but when you or your administrator enables [prompt logging](https://kiro.dev/docs/enterprise/monitor-and-track/prompt-logging.md) or [daily usage reporting](https://kiro.dev/docs/enterprise/monitor-and-track/user-activity.md) for IDE and CLI users, that data is stored in a customer-selected Amazon S3 bucket in customer's AWS account. For information about how data is encrypted, see [Data encryption](#data-encryption). Model-specific retention requirements for abuse detection may apply (for more information, see [Abuse detection](#kiro-abuse-detection)).
+
+### AWS regions where content is stored and processed
+
+If you are a Kiro Free Tier user or a Kiro individual subscriber, your content, such as prompts and responses, will be stored in the US East (N. Virginia) Region.
+
+If you are a [Kiro enterprise user](https://kiro.dev/docs/enterprise/concepts.md#kiro-enterprise-user), your content, such as prompts and responses, may be stored in the region where your profile is configured in order to provide and maintain the service (for example: prompt logging, daily activity report), but it will not be used for service improvement.
+
+With cross-region inferencing, your content may be processed in a different Region within the geography where your content is stored. For more information, see [Cross-region processing](#cross-region-processing).
+
+## Operational signals
+
+We may collect operational signals regarding your use of Kiro, such as error logs and metrics based on natural language instructions, feedback, and responses to provide and maintain the service and to assess service performance.
+
+## Cross-region processing
+
+The following sections describe how cross-region inference and cross-region calls are used to provide the Kiro service.
+
+### Cross-region inference
+
+Kiro is powered by Amazon Bedrock, and uses cross-region inference to distribute traffic across different AWS Regions to enhance large language model (LLM) inference performance and reliability. With cross-region inference, you get increased throughput and resilience during high demand periods, as well as improved performance.
+
+Cross region inference doesn't affect where your data is stored. For information on where data is stored when you use Kiro, see [AWS Regions where content is stored and processed](#aws-regions-where-content-is-stored-and-processed).
+
+### Supported regions for Kiro cross-region inference
+
+For models or capabilities under the experimental tag, see "[Global cross-region inference for experimental features](#global-cross-region-inference-for-experimental-features)".
+
+| Supported Kiro geography| Inference regions |
+|-------------------------|-------------------|
+| United States	| <ul><li>US East (N. Virginia) (`us-east-1`)</li><li>US West (Oregon) (`us-west-2`)</li><li>US East (Ohio) (`us-east-2`)</li><li>AWS GovCloud (US-East)</li><li>AWS GovCloud (US-West)</li></ul> | 
+| Europe | <ul><li>Europe (Frankfurt) (`eu-central-1`)</li><li>Europe (Ireland) (`eu-west-1`)</li><li>Europe (Paris) (`eu-west-3`)</li><li>Europe (Stockholm) (`eu-north-1`)</li><li>Europe (Milan) (`eu-south-1`)</li><li>Europe (Spain) (`eu-south-2`)</li></ul> |
+
+### Global cross-region inference for experimental features
+
+Kiro may introduce new models and capabilities under an experimental tag, which process data differently than in the table above. When a model is launched as experimental, Kiro may use global cross-region inference to improve performance, increase throughput, and take advantage of available capacity across supported commercial AWS Regions worldwide. Global cross-region inference applies only to models explicitly designated as experimental.
+
+For models and capabilities marked as experimental:
+
+- Inference requests may be processed in multiple AWS Regions globally, including Regions outside the one associated with your Kiro profile.
+- The Region where your data is stored is not affected by global cross-region inference. 
+- This global routing is used to optimize resource availability and allow consistent performance for experimental model launches.
+
+## Data encryption
+
+This topic provides information specific to Kiro about encryption in transit and encryption at rest.
+
+### Encryption in transit
+
+All communication between customers and Kiro and between Kiro and its downstream dependencies is protected using TLS 1.2 or higher connections.
+
+### Encryption at rest
+
+Kiro encrypts your data using AWS owned encryption keys from AWS Key Management Service (AWS KMS). You don't have to take any action to protect the AWS managed keys that encrypt your data. For more information, see [AWS owned keys](https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#aws-owned-cmk) in the *AWS Key Management Service Developer Guide*.
+
+When you subscribe with Kiro enterprise, administrators have the option to create customer managed keys to encrypt your data. Customer managed keys are KMS keys in your AWS account that you create, own, and manage to directly control access to your data by controlling access to the KMS key. Only symmetric keys are supported. For information on creating your own KMS key, see [Creating keys](https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html) in the *AWS Key Management Service Developer Guide*.
+
+To set up a customer managed key to encrypt data as a Kiro enterprise administrator, you need permissions to use AWS KMS. The required KMS permissions are included in the [example IAM policy](https://kiro.dev/docs/enterprise/iam.md#policy-allow-administrators-to-configure-kiro-and-subscribe-users). After creating a customer managed KMS key, you must provide the key in the Kiro console to use it to encrypt data.
+
+## Service improvement
+
+To help Kiro provide the most relevant information, we may use certain content from Kiro, such as questions that you ask Kiro, other inputs you provide, and the responses and code that Kiro generates, for service improvement. This page explains what content we use and how to opt out. 
+
+### Kiro content used for service improvement
+
+We may use certain content from Kiro Free Tier and Kiro individual subscribers for service improvement. Users that have a paid Kiro subscription and access it through a social login provider (like GitHub or Google) or through AWS Builder ID are considered *individual subscribers*. Content that Kiro may use for service improvement includes, for example, your questions to Kiro, other inputs you provide, and the responses and code that Kiro generates. Kiro may use this content, for example, to provide better responses to common questions, fix Kiro operational issues, for de-bugging, or for model training. 
+
+We do not use content from [Kiro enterprise users](https://kiro.dev/docs/enterprise/concepts.md#kiro-enterprise-user) for service improvement. 
+
+**ℹ️ Info:** If you have an Amazon Q Developer Pro subscription and access Kiro through your AWS account with the Amazon Q Developer Pro subscription, then Kiro will not use your content for service improvement.
+
+## Opt out of data sharing 
+
+By default, Kiro collects usage data, errors, crash reports, and other metrics as well as content for service improvement from Kiro Free Tier users and Kiro individual subscribers. This section explains how to opt out of sharing your data in Kiro for Kiro Free Tier and Kiro individual subscribers. For information on how Kiro uses this data, see [Kiro service improvement](#service-improvement).
+
+[Kiro enterprise users](https://kiro.dev/docs/enterprise/concepts.md#kiro-enterprise-user) are automatically opted out of telemetry and content collection by AWS. Telemetry collection settings for [user activity reports](https://kiro.dev/docs/enterprise/monitor-and-track/user-activity.md) are controlled by the administrator in the Kiro console and cannot be configured by Kiro enterprise users. For more information, see [Kiro enterprise settings](https://kiro.dev/docs/enterprise/settings.md).
+
+**ℹ️ Info:** If you are a Kiro Free Tier user, opting out of sharing your data for service improvement does not affect our ability to store your inputs for abuse detection purposes as described in more detail [here](#kiro-abuse-detection).
+
+### Opting out of sharing data
+
+    IDE
+    CLI
+    Web
+
+    To opt out of sharing your client-side telemetry and content in the Kiro IDE:
+
+    1. Open **Settings** in Kiro.
+    2. Switch to the **User** sub-tab. 
+    3. Choose **Application**, and then choose **Telemetry and Content**.
+    4. To opt out of telemetry collection, uncheck the box for **Data Sharing and Prompt Logging: Usage Analytics And Performance Metrics**. To opt out of content collection, uncheck the box for **Data Sharing and Prompt Logging: Content Collection for Service Improvement**.
+
+    To opt out of sharing your client-side telemetry and content in the Kiro CLI:
+
+    1. Open **Preferences** in the Kiro CLI application.
+    2. To opt out of telemetry collection, toggle off the **Telemetry** setting. To opt out of content collection, toggle off the **Share Kiro content with AWS** setting.
+
+    To opt out of sharing in Kiro Web:
+
+    1. Sign in and go to [Settings](https://app.kiro.dev/settings/agent).
+    2. Select "Agent" settings.
+    3. To opt out of content collection, toggle off the **Allow AWS to use your Kiro Web content for service improvement**.
+
+## Types of telemetry collected
+
+- **Usage data** — Information such as the Kiro version, operating system (Windows, Linux, or macOS), and the anonymous machine ID.
+- **Performance metrics** — The request count, errors, and latency for various features:
+    - Login
+    - Tab completion
+    - Code generation
+    - Steering
+    - Hooks
+    - Spec generation
+    - Tools
+    - MCP
+
+## Kiro Abuse Detection
+
+The abuse detection mechanisms implemented through Amazon Bedrock apply to all Kiro users across all models. As described on the [Amazon Bedrock abuse detection page](https://docs.aws.amazon.com/bedrock/latest/userguide/abuse-detection.html), this includes:
+
+- For all Kiro users across all models, we may use automated abuse detection mechanisms to detect activity that violates our, or third-party model providers', terms of service or use policies.
+- For OpenAI GPT models, classifier-flagged traffic will be retained for up to 30 days (unless otherwise required by law) for automated offline abuse detection.
+- For Anthropic Claude Fable 5.1 (Preview), all traffic will be retained for up to 30 days (unless otherwise required by law) for automated offline abuse detection. Classifier-flagged traffic will be subject to potential human review performed by AWS, and we may review flagged traffic for abuse.
+
+In addition to the abuse detection mechanisms implemented through Amazon Bedrock, only with respect to Kiro Free Tier users, we may use additional abuse detection mechanisms designed to detect activity that violates our terms of service or use policies. Accordingly, for Free Tier users we may store your inputs for up to 60 days (unless otherwise required by law) for the purposes of detecting activity that violates the Agreement and improving our ability to detect this activity. We will not use such inputs to improve Kiro's underlying generative AI models, but we may use your inputs to develop and improve classifier tools designed to detect abuse.
+
+Abuse, or failure to address abuse, of Kiro or models available via Kiro may result in suspension or termination of your access to Kiro. If you believe that your use has been inaccurately identified as in violation of our terms and policies, contact [support](https://app.kiro.dev/account/usage?support_form) for assistance.

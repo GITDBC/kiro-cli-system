@@ -1,0 +1,122 @@
+{
+  "name": "code-reviewer",
+  "description": "Code review, quality gates, anti-patterns, mentoring through review, and applying local mechanical review fixes (no new features or architectural refactors)",
+  "prompt": "file://../prompts/code-reviewer.md",
+  "tools": ["read", "write", "shell"],
+  "includeMcpJson": false,
+  "includePowers": false,
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "**/.env*",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "**/id_ed25519",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "*.env",
+          "**/*.env",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "./id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "./id_ed25519",
+          "**/id_ed25519"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "~/.ssh/**",
+          "~/.aws/**",
+          "~/.gnupg/**",
+          "~/.bashrc",
+          "~/.bash_profile",
+          "~/.profile",
+          "~/.zshrc",
+          "~/.gitconfig",
+          "~/.netrc",
+          "~/.kiro/agents/**",
+          "~/.kiro/hooks/**",
+          "~/.kiro/skills/**"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "shell",
+        "match": ["git *", "make *", "uv *"],
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": ["*"],
+        "exclude": ["git *", "make *", "uv *"],
+        "effect": "deny"
+      },
+      {
+        "capability": "skill",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "diagnostics",
+        "match": ["*"],
+        "effect": "allow"
+      }
+    ]
+  },
+  "resources": [
+    "skill://.kiro/skills/code-standards/SKILL.md",
+    "skill://.kiro/skills/reviewing-code/SKILL.md",
+    "skill://.kiro/skills/agent-creation/SKILL.md",
+    "skill://.kiro/skills/security-audit/SKILL.md",
+    "skill://.kiro/skills/self-improvement/SKILL.md",
+    "skill://.kiro/skills/software-design-review/SKILL.md",
+    "skill://.kiro/skills/spec-to-dev/SKILL.md",
+    "skill://.kiro/skills/tech-debt-tracking/SKILL.md",
+    "skill://.kiro/skills/wireless-optimization/SKILL.md"
+  ],
+  "welcomeMessage": "Ready to review. Point me at the code.",
+  "model": "claude-sonnet-5"
+}

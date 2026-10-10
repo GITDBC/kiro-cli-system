@@ -1,0 +1,33 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "dev"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    target-branch: "dev"
+    labels:
+      - "dependencies"
+      - "npm"
+
+  # `directories` (plural) supports globbing — confirmed against GitHub's
+  # current Dependabot options reference. Each tools/<name>/pyproject.toml is
+  # matched without listing tool names here, so this entry cannot drift from
+  # the Makefile's TOOLS list the way the three CI-side lists did.
+  - package-ecosystem: "uv"
+    directories:
+      - "/tools/*"
+    schedule:
+      interval: "monthly"
+    target-branch: "dev"
+    labels:
+      - "dependencies"
+      - "uv"

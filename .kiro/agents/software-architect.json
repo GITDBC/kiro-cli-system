@@ -1,0 +1,135 @@
+{
+  "name": "software-architect",
+  "description": "System design, DDD, architectural patterns, trade-off analysis",
+  "prompt": "file://../prompts/software-architect.md",
+  "tools": ["read", "write"],
+  "includeMcpJson": false,
+  "includePowers": false,
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "**/.env*",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "**/id_ed25519",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": ["notes/**", "tech-debt/**", "suggestions/**", "tmp/**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          ".kiro/**",
+          "tools/**",
+          ".github/**",
+          "Makefile",
+          "README.md",
+          "docs/**",
+          "*.py",
+          "**/*.py",
+          "*.toml",
+          "**/*.toml",
+          "package.json"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "*.env",
+          "**/*.env",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "./id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "./id_ed25519",
+          "**/id_ed25519"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "~/.ssh/**",
+          "~/.aws/**",
+          "~/.gnupg/**",
+          "~/.bashrc",
+          "~/.bash_profile",
+          "~/.profile",
+          "~/.zshrc",
+          "~/.gitconfig",
+          "~/.netrc",
+          "~/.kiro/agents/**",
+          "~/.kiro/hooks/**",
+          "~/.kiro/skills/**"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "shell",
+        "match": ["*"],
+        "effect": "deny"
+      },
+      {
+        "capability": "skill",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "diagnostics",
+        "match": ["*"],
+        "effect": "allow"
+      }
+    ]
+  },
+  "resources": [
+    "skill://.kiro/skills/code-standards/SKILL.md",
+    "skill://.kiro/skills/mermaid-diagrams/SKILL.md",
+    "skill://.kiro/skills/concise-communication/SKILL.md",
+    "skill://.kiro/skills/agent-creation/SKILL.md",
+    "skill://.kiro/skills/data-pipeline/SKILL.md",
+    "skill://.kiro/skills/domain-research/SKILL.md",
+    "skill://.kiro/skills/self-improvement/SKILL.md",
+    "skill://.kiro/skills/software-design-review/SKILL.md",
+    "skill://.kiro/skills/spec-to-dev/SKILL.md",
+    "skill://.kiro/skills/tech-debt-tracking/SKILL.md",
+    "skill://.kiro/skills/tech-evaluation/SKILL.md"
+  ],
+  "welcomeMessage": "Ready to design. What's the problem space?",
+  "model": "claude-opus-5"
+}

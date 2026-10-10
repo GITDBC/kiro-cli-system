@@ -1,0 +1,28 @@
+# Global tool configuration for work-agents
+#
+# Each section below corresponds to one of the user-facing tools in tools/
+# that reads configuration (jirafetcher, depschecker, doc2md). Tools read
+# their section automatically when the WORK_AGENTS_CONFIG environment
+# variable points to this file. CLI arguments always take priority over
+# values defined here.
+#
+# The repository-maintenance tools (driftcheck, docsync) read no
+# configuration and have no section here.
+#
+# Copy this file as config.toml and fill in your values.
+# This file MUST be in .gitignore — it may contain secrets.
+
+[jirafetcher]
+token = ""                                    # Jira PAT or API token (required)
+statuses = ["In Review", "On Hold"]           # Status filters
+title_filter = ""                             # Filter by title substring (empty = no filter)
+
+[depschecker]
+timeout = 15                                  # HTTP timeout per PyPI request (seconds)
+
+[doc2md]
+# whisper_model = "Systran/faster-whisper-small"
+# whisper_language = "es"                     # Auto-detect if omitted
+# whisper_beam_size = 1
+# whisper_device = "auto"                     # auto | cpu | cuda
+# whisper_cpu_threads = 4

@@ -1,0 +1,83 @@
+[build-system]
+requires = ["uv_build>=0.10.7,<0.12.0"]
+build-backend = "uv_build"
+
+[project]
+name = "work-docsync"
+version = "0.1.0"
+description = "Sync the vendored documentation mirrors of this repository."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    {name = "Daniel Bazo Correa", email = "<email>"},
+]
+dependencies = []
+
+[tool.uv.build-backend]
+module-name = "docsync"
+module-root = ""
+
+[tool.uv]
+default-groups = "all"
+cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true } }]
+
+[dependency-groups]
+pipeline = [
+    "complexipy==7.0.1",
+    "isort==8.0.1",
+    "mypy==2.3.1",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "ruff==0.16.4",
+]
+
+[project.scripts]
+docsync = "docsync.cli:main"
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+extend-exclude = [".venv", ".uv-cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "PL", "UP", "N", "B", "G", "D100", "D104"]
+ignore = [
+    "E203", "E402", "E721",
+    "B007", "B904", "B905",
+    "N802",
+    "PLC0415",
+    "PLR0913",
+    "PLR2004",
+    "PLW0603",
+]
+
+[tool.ruff.format]
+docstring-code-format = true
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.isort]
+profile = "black"
+known_first_party = ["docsync"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+import_heading_stdlib = "Standard libraries"
+import_heading_thirdparty = "3pps"
+import_heading_firstparty = "Own modules"
+import_heading_localfolder = "Own modules"
+line_length = 88
+include_trailing_comma = true
+combine_as_imports = true
+skip_glob = [".venv/*", ".uv-cache/*"]
+
+[tool.mypy]
+strict = true
+check_untyped_defs = true
+exclude = [
+    "^(build|dist|venv)",
+    ".venv/",
+    ".uv-cache/",
+]
+cache_dir = "/dev/null"
+mypy_path = "."

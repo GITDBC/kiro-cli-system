@@ -1,0 +1,57 @@
+{
+  "info": {
+    "name": "urllib3",
+    "project_urls": {
+      "Changelog": "https://github.com/urllib3/urllib3/blob/main/CHANGES.rst",
+      "Code": "https://github.com/urllib3/urllib3",
+      "Documentation": "https://urllib3.readthedocs.io",
+      "Issue tracker": "https://github.com/urllib3/urllib3/issues"
+    },
+    "summary": "HTTP library with thread-safe connection pooling, file post, and more.",
+    "version": "2.6.3"
+  },
+  "last_serial": 41105803,
+  "urls": [],
+  "vulnerabilities": [
+    {
+      "aliases": ["CVE-2026-44431", "PYSEC-2026-141"],
+      "details": "### Impact\n\nWhen following cross-origin redirects for requests made using urllib3\u2019s high-level APIs, such as `urllib3.request()`, `PoolManager.request()`, and `ProxyManager.request()`, sensitive headers \u2014 `Authorization`, `Cookie`, and `Proxy-Authorization` (defined in `Retry.DEFAULT_REMOVE_HEADERS_ON_REDIRECT`) \u2014 are stripped by default, as expected.\n\nHowever, cross-origin redirects followed from the low-level API via `ProxyManager.connection_from_url().urlopen(..., assert_same_host=False)` still forward these sensitive headers.\n\n### Affected usage\n\nApplications and libraries using urllib3 versions earlier than 2.7.0 may be affected if they allow cross-origin redirects while making requests through `HTTPConnection.urlopen()` instances created via `ProxyManager.connection_from_url()`.\n\n### Remediation\n\nUpgrade to urllib3 version 2.7.0 or later, in which sensitive headers are stripped from redirects followed by `HTTPConnection`.\n\nIf upgrading is not immediately possible, avoid using this low-level redirect flow for cross-origin redirects. If appropriate for your use case, switch to `ProxyManager.request()`.",
+      "fixed_in": ["2.7.0"],
+      "id": "GHSA-qccp-gfcp-xxvc",
+      "link": "https://osv.dev/vulnerability/GHSA-qccp-gfcp-xxvc",
+      "source": "osv",
+      "summary": null,
+      "withdrawn": null
+    },
+    {
+      "aliases": ["CVE-2026-44432", "PYSEC-2026-142"],
+      "details": "### Impact\n\nurllib3's [streaming API](https://urllib3.readthedocs.io/en/2.7.0/advanced-usage.html#streaming-and-i-o) is designed for the efficient handling of large HTTP responses by reading the content in chunks, rather than loading the entire response body into memory at once.\n\nurllib3 can perform decompression based on the HTTP `Content-Encoding` header (e.g., `gzip`, `deflate`, `br`, or `zstd`). When using the streaming API since version 2.6.0, the library decompresses only the necessary bytes, enabling partial content consumption.\n\nHowever, urllib3 before version 2.7.0 could still decompress the whole response instead of the requested portion in two cases:\n1. During the second `HTTPResponse.read(amt=N)` call when the response was decompressed using the official [Brotli](https://pypi.org/project/brotli/) library.\n2. When `HTTPResponse.drain_conn()` was called after the response had been read and decompressed partially (compression algorithm did not matter here).\n\nThese issues could cause urllib3 to fully decode a small amount of highly compressed data in a single operation. This could result in excessive resource consumption (high CPU usage and massive memory allocation for the decompressed data; CWE-409) on the client side.\n\n\n### Affected usages\n\nApplications and libraries using urllib3 versions earlier than 2.7.0 may be affected when streaming compressed responses from untrusted sources in either of these cases, unless decompression is explicitly disabled:\n\n1. A response encoded with `br` is read incrementally with at least two `HTTPResponse.read(amt=N)` or `HTTPResponse.stream(amt=N)` calls while using the official [Brotli](https://pypi.org/project/brotli/) library.\n2. `HTTPResponse.drain_conn()` is called after response decompression has already started.\n\n\n### Remediation\n\nUpgrade to at least urllib3 version 2.7.0 in which the library:\n1. Is more efficient for reads with Brotli.\n2. Always skips decompression for `HTTPResponse.drain_conn()`.\n\nIf upgrading is not immediately possible, the following workarounds may reduce exposure in specific cases:\n1. For the Brotli-specific issue only, switch from [brotli](https://pypi.org/project/brotli/) to [brotlicffi](https://pypi.org/project/brotlicffi/) until you can upgrade urllib3; the official Brotli package is affected because of https://github.com/google/brotli/issues/1396.\n2. If your code explicitly calls `HTTPResponse.drain_conn()`, call `HTTPResponse.close()` instead when connection reuse is not important.\n\n\n### Credits\n\nThe Brotli-specific issue was reported by @kimkou2024.\n`HTTPResponse.drain_conn()` inefficiency was reported by @Cycloctane.",
+      "fixed_in": ["2.7.0"],
+      "id": "GHSA-mf9v-mfxr-j63j",
+      "link": "https://osv.dev/vulnerability/GHSA-mf9v-mfxr-j63j",
+      "source": "osv",
+      "summary": null,
+      "withdrawn": null
+    },
+    {
+      "aliases": ["CVE-2026-44432", "GHSA-mf9v-mfxr-j63j"],
+      "details": "urllib3 is an HTTP client library for Python. From 2.6.0 to before 2.7.0, urllib3 could decompress the whole response instead of the requested portion (1) during the second HTTPResponse.read(amt=N) call when the response was decompressed using the official Brotli library or (2) when HTTPResponse.drain_conn() was called after the response had been read and decompressed partially (compression algorithm did not matter here). These issues could cause urllib3 to fully decode a small amount of highly compressed data in a single operation. This could result in excessive resource consumption (high CPU usage and massive memory allocation for the decompressed data) on the client side. This vulnerability is fixed in 2.7.0.",
+      "fixed_in": ["2.7.0"],
+      "id": "PYSEC-2026-142",
+      "link": "https://osv.dev/vulnerability/PYSEC-2026-142",
+      "source": "osv",
+      "summary": null,
+      "withdrawn": null
+    },
+    {
+      "aliases": ["CVE-2026-44431", "GHSA-qccp-gfcp-xxvc"],
+      "details": "urllib3 is an HTTP client library for Python. From 1.23 to before 2.7.0, cross-origin redirects followed from the low-level API via ProxyManager.connection_from_url().urlopen(..., assert_same_host=False) still forward these sensitive headers. This vulnerability is fixed in 2.7.0.",
+      "fixed_in": ["2.7.0"],
+      "id": "PYSEC-2026-141",
+      "link": "https://osv.dev/vulnerability/PYSEC-2026-141",
+      "source": "osv",
+      "summary": null,
+      "withdrawn": null
+    }
+  ]
+}

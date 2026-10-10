@@ -1,0 +1,70 @@
+# memory/state.yaml — Project state registry
+#
+# What belongs here: a decision that constrains future work AND is not already
+# captured anywhere else. The orchestrator filters this file by `scope` and
+# passes only the intersecting entries to an agent, so every entry is paid for
+# in context on the invocations it matches.
+#
+# What does NOT belong here, because the artefact is the source of truth and a
+# copy here would drift out of sync with it:
+#
+#   - Coding rules            -> .kiro/skills/code-standards/
+#   - Review process rules    -> .kiro/skills/reviewing-code/
+#   - Delegation conventions  -> .kiro/orchestration/delegation-lifecycle.md
+#   - Routing and agent roles -> .kiro/orchestration/routing.md
+#   - Repository layout       -> README.md, tools/TOOLS_OVERVIEW.md
+#   - Anything a check can enforce -> a rule in tools/driftcheck/
+#
+# Reset on 2026-08-26: the previous 16 entries had all been written into one of
+# the artefacts above, so the registry held nothing that was not recoverable
+# from them. A changelog of past edits is what git history is for.
+#
+# What `agent_feedback` is for: a recurring delegation failure pattern that
+# constrains how the orchestrator routes future work and has no other home —
+# it is not a coding rule, not a routing rule, and no check can derive it.
+# Example shape: "code-reviewer fails silently on large contexts, retry with
+# half the files". Referenced twice by .kiro/orchestration/delegation-lifecycle.md,
+# which names
+# this section as the destination for repeated-failure and delegation-quality
+# signals. Each entry requires `id`, `date`, `scope`, plus `agent` (the agent
+# the signal is about), `pattern` (the observed failure) and `mitigation` (the
+# routing adjustment to apply).
+#
+# Structural limits, enforced by tools/driftcheck at the `make drift-check` gate,
+# and applying to `decisions` and `agent_feedback` alike: maximum 20 entries
+# per section; `id`, `date` and `scope` required on every entry; ids unique
+# within their section; dates ISO format. The equivalent `driftcheck-hook-state-yaml`
+# hook is deliberately not wired in .kiro/hooks/hooks.json — the gate already
+# runs the same validation.
+#
+# Addendum, 2026-09-04: this repository is a framework, installed into other
+# projects. The registry it defines is per-consuming-project state, so this
+# file ships empty here and is filled by whichever project uses the framework;
+# `decisions` and `agent_feedback` are empty by design, not by neglect.
+# Independently of that, a full day of architectural work confirmed the two
+# real homes above are sufficient: decisions with durable force belong in
+# steering files and skills, where agents actually load them on every turn or
+# on activation; rejected ideas belong in an out-of-scope register — one file
+# per concept, greppable and citable independent of any single plan document —
+# kept in the consuming project's own tree. A third store that the orchestrator
+# must manually read and feed into agent context is the same drift risk the
+# steering layer already warns about elsewhere in this system — a registry
+# copy of a reviewed rule drifts from the reviewed original the moment one is
+# edited and the other is not. Leave both sections empty unless a future entry
+# is a delegation-quality signal with no other home, per the `agent_feedback`
+# guidance above. In a framework tree, `memory/` holding anything but this
+# template is a drift-check error. That check is framework-scoped: it applies
+# only while the root `.gitignore` still ignores `memory/` contents, which is
+# how this repository declares the directory framework-empty. A consuming
+# project that tracks its own `memory/` drops that rule, and doing so disables
+# the check there — correctly, since a consuming project's registry is meant to
+# be populated.
+
+decisions: []
+
+agent_feedback: []
+
+project_state:
+  last_session: 2026-09-22
+  active_skill: null
+  pending_tasks: []

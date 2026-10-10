@@ -1,0 +1,17 @@
+# Vendored kiro.dev documentation mirror — synced verbatim by the
+# docsync tool (tools/docsync, kiro source). Reformatting it would make
+# every sync report all pages changed, so prettier must leave it
+# untouched.
+.kiro/skills/kiro-cli-reference/references/
+
+# Vendored Agent Skills documentation mirror — synced verbatim by the
+# docsync tool (tools/docsync, agentskills source). Same reasoning:
+# prettier reflows prose (proseWrap: always) and realigns tables, which
+# would make every sync report all pages changed.
+.kiro/skills/agent-creation/references/agentskills/
+
+# Vendored Anthropic prompting documentation mirror — synced verbatim by
+# the docsync tool (tools/docsync, anthropic source). Same reasoning: the
+# pages are compared by content hash, so any reformatting would make
+# every sync report all pages changed.
+.kiro/skills/claude-prompting-reference/references/

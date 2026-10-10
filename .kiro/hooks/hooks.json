@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "git-safety",
+      "trigger": "PreToolUse",
+      "matcher": "execute_bash|control_bash_process",
+      "action": { "type": "command", "command": ".kiro/hooks/git-safety.sh" },
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "refs-freshness",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "command",
+        "command": "uv run --project tools/driftcheck driftcheck-hook-refs-freshness"
+      },
+      "timeout": 15,
+      "enabled": true
+    }
+  ]
+}

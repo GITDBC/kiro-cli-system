@@ -1,0 +1,131 @@
+{
+  "name": "ai-engineer",
+  "description": "ML models, deployment, AI integration, data pipelines for AI",
+  "prompt": "file://../prompts/ai-engineer.md",
+  "tools": ["read", "write", "shell"],
+  "includeMcpJson": false,
+  "includePowers": false,
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_read",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "**/.env*",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "**/id_ed25519",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": ["./**"],
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "config.toml",
+          "./config.toml",
+          "**/config.toml",
+          ".env",
+          "./.env",
+          "**/.env",
+          "*.env",
+          "**/*.env",
+          "*.pem",
+          "**/*.pem",
+          "*.key",
+          "**/*.key",
+          "id_rsa",
+          "./id_rsa",
+          "**/id_rsa",
+          "id_ed25519",
+          "./id_ed25519",
+          "**/id_ed25519"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "fs_write",
+        "match": [
+          "~/.ssh/**",
+          "~/.aws/**",
+          "~/.gnupg/**",
+          "~/.bashrc",
+          "~/.bash_profile",
+          "~/.profile",
+          "~/.zshrc",
+          "~/.gitconfig",
+          "~/.netrc",
+          "~/.kiro/agents/**",
+          "~/.kiro/hooks/**",
+          "~/.kiro/skills/**"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "shell",
+        "match": ["uv *", "make *"],
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": [
+          "rm -rf *",
+          "rm -fr *",
+          "sudo *",
+          "su *",
+          "chmod 777 *",
+          "chmod -R *",
+          "dd *",
+          "mkfs*",
+          "shutdown*",
+          "reboot*",
+          "eval *",
+          "history -c*",
+          "npm publish*",
+          "pip install *"
+        ],
+        "effect": "deny"
+      },
+      {
+        "capability": "skill",
+        "match": ["*"],
+        "effect": "allow"
+      },
+      {
+        "capability": "diagnostics",
+        "match": ["*"],
+        "effect": "allow"
+      }
+    ]
+  },
+  "resources": [
+    "skill://.kiro/skills/code-standards/SKILL.md",
+    "skill://.kiro/skills/ml-model-testing/SKILL.md",
+    "skill://.kiro/skills/unit-test-generation/SKILL.md",
+    "skill://.kiro/skills/data-pipeline/SKILL.md"
+  ],
+  "welcomeMessage": "Ready for AI/ML work. What model or feature needs building?",
+  "model": "claude-sonnet-5"
+}

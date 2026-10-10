@@ -1,0 +1,76 @@
+# ── Credentials & secrets ──
+config.toml
+config.json
+.env
+.env.*
+
+# ── Runtime / generated ──
+tmp/
+notes/
+suggestions/
+tech-debt/
+reports/
+
+# Per-consuming-project runtime state; only the empty state.yaml
+# template is a framework artefact. driftcheck's memory-store check is
+# gated on this rule's presence and goes silent without it, so removing
+# the rule is how a consuming project deliberately opts out of both.
+memory/*
+!memory/state.yaml
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.complexipy_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.egg-info/
+dist/
+build/
+
+# ── Virtual environments ──
+.venv/
+venv/
+
+# ── Node ──
+node_modules/
+
+# ── Kiro CLI internals ──
+.kiro/.cli_bash_history
+.kiro/.subagents/
+.kiro/cli-todo-lists/
+
+# ── Ralph Loop runtime (regenerated each run) ──
+.kiro/ralph-state.json
+.kiro/ralph-progress.md
+.kiro/ralph-logs/
+.kiro/ralph-test-changes.log
+
+# ── IDE ──
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+
+# ── Binary / data files (not tracked) ──
+*.enc
+*.parquet
+*.pkl
+*.pt
+*.zip
+
+# ── Media (downloaded by yt2md, not tracked) ──
+*.mp3
+*.mp4
+*.wav
+*.webm

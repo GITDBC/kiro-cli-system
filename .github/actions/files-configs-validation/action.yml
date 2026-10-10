@@ -1,0 +1,27 @@
+name: Files and Configuration Validation
+description: Validate files and configurations
+
+runs:
+  using: composite
+  steps:
+    - name: Validate VERSION file
+      shell: bash
+      run: |
+        test -f VERSION || { echo "::error::VERSION file missing"; exit 1; }
+        grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' VERSION || { echo "::error::VERSION must be semver (X.Y.Z)"; exit 1; }
+
+    - name: Validate agent JSON configs
+      shell: bash
+      run: |
+        for f in .kiro/agents/*.json; do
+          uv run python -m json.tool "$f" > /dev/null || { echo "::error::Invalid JSON: $f"; exit 1; }
+        done
+        echo "All $(ls .kiro/agents/*.json | wc -l) agent configs valid."
+
+    - name: Validate skill structure
+      shell: bash
+      run: |
+        for d in .kiro/skills/*/; do
+          test -f "${d}SKILL.md" || { echo "::error::Missing SKILL.md in $d"; exit 1; }
+        done
+        echo "All $(ls -d .kiro/skills/*/ | wc -l) skills have SKILL.md."
