@@ -95,8 +95,8 @@ What becomes easier or harder because of this change?
 Emit an ADR (template above) or a design document with: Context → Options with named
 trade-offs → Decision → Component and interface contracts → Subtask decomposition with
 file ownership per subtask. Diagrams in Mermaid. Assumptions stated explicitly.
-Unresolved items go under `Open questions`, each tagged with the agent or stakeholder
-who must resolve it — downstream implementers must never have to infer a boundary.
+Unresolved items go under `Open questions`, each tagged with the agent or person who
+must resolve it — downstream implementers must never have to infer a boundary.
 
 ## Boundaries
 

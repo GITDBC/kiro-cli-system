@@ -265,8 +265,8 @@ longer contains the trigger. The trigger must be at least four characters, so us
 distinctive marker such as `NEEDS_CHANGES`.
 
 Prefer a native loop whenever a producing stage and a checking stage alternate: it costs
-fewer orchestrator turns, and the runtime enforces the iteration count.
-`reviewing-code`, `kpi-assessment`, and the Engagement plan pattern all use it.
+fewer orchestrator turns, and the runtime enforces the iteration count. `reviewing-code`
+uses it.
 
 ## Direct pass-through
 

@@ -31,7 +31,7 @@ The placement is deliberate and should not be undone. Kiro CLI loads every
 agent's `resources` list, and inclusion modes are unsupported on the CLI
 (`kiro-cli-reference/references/steering.md`: "All steering files in the
 `.kiro/steering/` directory are loaded automatically"). While `delegation-lifecycle.md`
-and `routing.md` lived there, a probe of `engagement-manager` found their roughly 1,118
+and `routing.md` lived there, a probe of a specialist agent found their roughly 1,118
 lines filling an estimated 70-75% of a specialist's context on every dispatch, for
 content that specialist never acts on.
 
@@ -246,10 +246,9 @@ the per-model lever is `chat.modelDefaults`. The `xhigh` rows are ceilings, and 
 reserved for a measured quality gain.
 
 A future operator revisiting either value needs an eval harness first; without one the
-sweep both guides call for cannot be run. Settled, so it is not reopened:
-`claude-haiku-4.5` runs with `thinking: {type: disabled}` in workspace scope, and
-Anthropic's `effort.md` front matter omits that model from `supportedModels` — effort is
-not an available lever for it, so no `effort` value belongs in its defaults.
+sweep both guides call for cannot be run. No agent runs `claude-haiku-4.5`, so
+`chat.modelDefaults` needs entries for the two 5.5 models only; `driftcheck` warns on a
+default configured for a model no agent uses.
 
 ## Routing: the two disambiguation rules most often applied backwards
 

@@ -12,12 +12,12 @@ four different effort vocabularies appeared across eight comparable notes.
 Severity describes **consequence if the defect executes in production**, never the
 reviewer's confidence or the category of the code involved.
 
-| Severity   | Anchor                                                                                                                                       | Real example                                                                                                 |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `Critical` | Data loss, security vulnerability, credential exposure, or a crash on the normal path                                                        | Unclosed handle corrupting a written parquet partition; secret logged at debug level                         |
-| `High`     | **Silent incorrect output reaching a production consumer** — `inf`, `NaN`, a wrong value, or dropped rows, with no exception and no log line | Unguarded division feeding a capacity-planning multiplier; `inner` join silently dropping rows on a KPI path |
-| `Medium`   | Robustness gap needing an unusual or edge-case input to trigger; or a documented-behaviour mismatch with real confusion risk                 | Missing validation on an optional parameter that is always set today                                         |
-| `Low`      | Style, naming, or a documentation nit with no behavioural ambiguity                                                                          | Non-descriptive local variable name; a docstring missing an `Examples` section                               |
+| Severity   | Anchor                                                                                                                                       | Real example                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Critical` | Data loss, security vulnerability, credential exposure, or a crash on the normal path                                                        | Unclosed handle corrupting a written parquet partition; secret logged at debug level                               |
+| `High`     | **Silent incorrect output reaching a production consumer** — `inf`, `NaN`, a wrong value, or dropped rows, with no exception and no log line | Unguarded division feeding a capacity-planning multiplier; `inner` join silently dropping rows on a reporting path |
+| `Medium`   | Robustness gap needing an unusual or edge-case input to trigger; or a documented-behaviour mismatch with real confusion risk                 | Missing validation on an optional parameter that is always set today                                               |
+| `Low`      | Style, naming, or a documentation nit with no behavioural ambiguity                                                                          | Non-descriptive local variable name; a docstring missing an `Examples` section                                     |
 
 The `High` anchor is the one that drifts. Apply this test: **can the wrong value reach a
 consumer without anything in the logs saying so?** If yes, it is `High`, whether the
@@ -70,7 +70,7 @@ rubric, are what stopped the drift described above.
 ```text
 Calibration anchors (apply verbatim):
 - Unguarded division producing inf/NaN in a value written to output = High, XS
-- Inner join dropping rows on a KPI path with no row-count log = High, S
+- Inner join dropping rows on a reporting path with no row-count log = High, S
 - Missing module docstring = Low, XS
 - Method name that reads ambiguously, no rule cited = Low [preference], XS
 ```

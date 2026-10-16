@@ -69,7 +69,7 @@ mandatory active search.
 - [ ] C1 Division: every `/` with a runtime denominator is guarded. `.fill_nan()` does
       not count — `x / 0` is `inf`, not `NaN`.
 - [ ] C2 Fallbacks: no `value or default` for optional numeric/boolean fields.
-- [ ] C3 Joins and row-dropping filters on a KPI / SLA / model-input path log
+- [ ] C3 Joins and row-dropping filters on a reporting / SLA / model-input path log
       `before -> after` row counts.
 - [ ] C4 Sentinel values are written with an explicit `dtype=`.
 - [ ] C5 Bracketed severity tags match the logger method — no `[WARNING]` through

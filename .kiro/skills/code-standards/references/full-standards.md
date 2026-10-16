@@ -57,10 +57,10 @@ After:
 ```python
 # Copyright (c) 2026 ...
 """
-Growth-factor computation per cell.
+Growth-factor computation per store.
 
-Derives per-cell growth factors from historical PM counters and
-exposes them for downstream capacity planning.
+Derives per-store growth factors from historical sales records and
+exposes them for downstream demand planning.
 """
 
 # Standard libraries
@@ -68,23 +68,22 @@ from pathlib import Path
 ```
 
 ```python
-def load_cm_data(
+def load_config_data(
     date: str, logger: logging.Logger
 ) -> tuple[pl.DataFrame, dict[str, Any], dict[str, Any]]:
     """
-    Load CM data and extract partition and slice info.
+    Load config data and extract partition and region info.
 
-    Retrieves configuration management data for the target date from
-    S3 storage and extracts relevant partition and slice mapping
-    information.
+    Retrieves configuration data for the target date from S3 storage
+    and extracts relevant partition and region mapping information.
 
     Args:
         date: Target date in YYYYMMDD format.
         logger: Logger instance for operation tracking.
 
     Returns:
-        Tuple containing CM data DataFrame, partition info dict, and
-        slice info dict.
+        Tuple containing config DataFrame, partition info dict, and
+        region info dict.
     """
 ```
 
@@ -95,10 +94,10 @@ the problem it describes never reaches an operator:
 
 ```python
 # Before — warning text hidden at debug level
-logger.debug("[WARNING][GF] %s cells lack a growth factor.", n_missing)
+logger.debug("[WARNING][GF] %s stores lack a growth factor.", n_missing)
 
 # After — level matches the tag
-logger.warning("[WARNING][GF] %s cells lack a growth factor.", n_missing)
+logger.warning("[WARNING][GF] %s stores lack a growth factor.", n_missing)
 ```
 
 The tag/level match needs either a regex pre-commit hook
@@ -132,16 +131,16 @@ class SaveConfig:
 ## Classes — full example
 
 ```python
-class SpectralEfficiencyDataCombinerConfig:
+class SalesDataCombinerConfig:
     """Configuration constants."""
     JOIN_KEYS: Final[tuple[str, ...]] = (...)
 
-class SpectralEfficiencyDataCombiner(SpectralEfficiencyDataCombinerConfig):
-    """Combines DL and UL predictions."""
+class SalesDataCombiner(SalesDataCombinerConfig):
+    """Combines online and in-store predictions."""
     def __init__(
         self,
-        df_dl: pl.DataFrame,
-        df_ul: pl.DataFrame,
+        df_online: pl.DataFrame,
+        df_store: pl.DataFrame,
         logger: logging.Logger | None = None,
     ) -> None:
         ...
@@ -168,24 +167,24 @@ missing from the shared standards, not that one author was careless.
 | Remote I/O retry + log       | 2 findings at the remote-fetch boundary                         | No                       | Review checklist item C7 |
 | No I/O at import time        | 1 finding at module scope                                       | No                       | Review checklist item C8 |
 
-Finding identifiers and file paths from the source engagement are deliberately omitted:
-the counts are what justify each rule, while the paths would embed one client's module
+Finding identifiers and file paths from the source review are deliberately omitted: the
+counts are what justify each rule, while the paths would embed one project's module
 structure into a reusable standard.
 
 ### Zero-guard before division
 
 `x / 0` produces `inf`, not `NaN`, so `.fill_nan()` does not catch it. An unguarded
-ratio feeding a KPI, SLA threshold, or scheduling weight corrupts the output silently:
-no exception, no log line, no way to notice without a debugger.
+ratio feeding a report metric, SLA threshold, or scheduling weight corrupts the output
+silently: no exception, no log line, no way to notice without a debugger.
 
 ```python
 # Before — inf when the denominator is zero
-df_kpi = df_pm.with_columns(
+df_metrics = df_usage.with_columns(
     (pl.col("data_volume_mb") / pl.col("active_users")).alias("mb_per_user")
 )
 
 # After — explicit null for the undefined case
-df_kpi = df_pm.with_columns(
+df_metrics = df_usage.with_columns(
     pl.when(pl.col("active_users") > 0)
     .then(pl.col("data_volume_mb") / pl.col("active_users"))
     .otherwise(None)
@@ -214,18 +213,19 @@ priority = DEFAULT_PRIORITY if raw_priority is None else raw_priority
 
 ### Row-count telemetry on joins and row-dropping filters
 
-An `inner` join on a mismatched key drops rows without raising. On a path feeding a KPI,
-SLA evaluation, or ML training set, the loss is invisible in production logs.
+An `inner` join on a mismatched key drops rows without raising. On a path feeding a
+report metric, SLA evaluation, or ML training set, the loss is invisible in production
+logs.
 
 ```python
 # Before — silent loss
-df_merged = df_pm.join(df_cm, on=JOIN_KEYS, how="inner")
+df_merged = df_usage.join(df_config, on=JOIN_KEYS, how="inner")
 
 # After — observable loss
-rows_before = df_pm.height
-df_merged = df_pm.join(df_cm, on=JOIN_KEYS, how="inner")
+rows_before = df_usage.height
+df_merged = df_usage.join(df_config, on=JOIN_KEYS, how="inner")
 logger.debug(
-    "[DEBUG][MERGE] PM/CM join on %s: %d -> %d rows.",
+    "[DEBUG][MERGE] usage/config join on %s: %d -> %d rows.",
     JOIN_KEYS,
     rows_before,
     df_merged.height,
@@ -244,11 +244,11 @@ one populated.
 
 ```python
 # Before — dtype depends on vertical_relaxed upcasting
-df_missing = pl.DataFrame({"spectral_efficiency": [MISSING_SENTINEL]})
+df_missing = pl.DataFrame({"conversion_rate": [MISSING_SENTINEL]})
 
 # After — dtype is stated, not inferred
 df_missing = pl.DataFrame(
-    {"spectral_efficiency": pl.Series([MISSING_SENTINEL], dtype=pl.Float64)}
+    {"conversion_rate": pl.Series([MISSING_SENTINEL], dtype=pl.Float64)}
 )
 ```
 

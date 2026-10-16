@@ -120,8 +120,7 @@
     "skill://.kiro/skills/reviewing-code/SKILL.md",
     "skill://.kiro/skills/agent-creation/SKILL.md",
     "skill://.kiro/skills/security-audit/SKILL.md",
-    "skill://.kiro/skills/spec-to-dev/SKILL.md",
-    "skill://.kiro/skills/wireless-optimization/SKILL.md"
+    "skill://.kiro/skills/spec-to-dev/SKILL.md"
   ],
   "welcomeMessage": "Ready to review. Point me at the code.",
   "model": "claude-sonnet-5.5"

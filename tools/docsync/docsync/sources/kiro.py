@@ -22,7 +22,7 @@ top-level sections a CLI user needs, and ignores the sections belonging
 to the other Kiro products.
 
 Scope is then narrowed once more, to what an agent system for Python
-and telecom work consults. Whole sections are dropped by leaving them
+engineering work consults. Whole sections are dropped by leaving them
 out of CLI_SECTIONS. Pages inside a kept section, and every page below
 /docs/cli/ (which is taken wholesale), are dropped through
 EXCLUDED_PATHS, which matches the mirror path whichever upstream URL

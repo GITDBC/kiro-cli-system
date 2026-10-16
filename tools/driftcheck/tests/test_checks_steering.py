@@ -86,10 +86,10 @@ def test_numbered_headers_detect_parenthesised_enumeration(
 
 
 def test_numbered_headers_allow_proper_noun_heading(valid_root: Path) -> None:
-    """ "## 3GPP Interfaces" is a proper noun, not an enumeration."""
+    """ "## 2FA Setup" is a proper noun, not an enumeration."""
     write(
         valid_root / ".kiro" / "steering" / "domain.md",
-        "## 3GPP Interfaces\n\n## 5G Core\n",
+        "## 2FA Setup\n\n## 3D Rendering\n",
     )
     assert problems(check_numbered_headers(build_context(valid_root))) == []
 

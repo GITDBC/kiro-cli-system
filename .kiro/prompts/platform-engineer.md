@@ -73,5 +73,5 @@ Do NOT use this agent when:
 - Always use `--dry-run` or plan mode before applying IaC changes
 - Never store secrets in plain text
 - Never disable alerts without documented reason and timeline
-- Never modify SLOs without stakeholder agreement
+- Never modify SLOs without the service owner's agreement
 - Prefer gradual rollouts when changing infrastructure

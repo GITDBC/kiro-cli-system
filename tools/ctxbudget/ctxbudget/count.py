@@ -89,8 +89,8 @@ class TiktokenCounter:
     unquantified error.
 
     Per-path results are memoized because the always-on files are
-    resolved once per agent and this repository has thirteen agents, so
-    ``COMMON.md`` would otherwise be tokenized thirteen times per run.
+    resolved once per agent and this repository has ten agents, so
+    ``COMMON.md`` would otherwise be tokenized ten times per run.
     """
 
     def __init__(self) -> None:

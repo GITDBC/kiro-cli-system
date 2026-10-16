@@ -154,8 +154,8 @@ def _file_section(measurement: Measurement) -> list[str]:
         "## Always-on artifacts, weighted",
         "",
         "Sorted by weighted total, which is the order a reduction backlog "
-        "should be worked in: a token removed from a file thirteen agents "
-        "load is worth thirteen. `Loads` exceeds `Agents` only when one "
+        "should be worked in: a token removed from a file ten agents "
+        "load is worth ten. `Loads` exceeds `Agents` only when one "
         "agent pays for the same file twice, which no resolution rule in "
         "force does today.",
         "",

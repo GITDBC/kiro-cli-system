@@ -158,10 +158,7 @@
         "code-reviewer",
         "qa-engineer",
         "platform-engineer",
-        "technical-writer",
-        "telecom-engineer",
-        "kpi-analyst",
-        "engagement-manager"
+        "technical-writer"
       ],
       "trustedAgents": ["*"]
     }

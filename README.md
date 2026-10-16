@@ -4,7 +4,7 @@
 
 # Work Agents
 
-A [Kiro CLI](https://kiro.dev/docs/cli/) v3 agent system made up of twelve specialised
+A [Kiro CLI](https://kiro.dev/docs/cli/) v3 agent system made up of nine specialised
 engineering agents and an orchestrator that routes each task to the right one.
 
 ## Requirements

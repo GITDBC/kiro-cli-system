@@ -12,13 +12,13 @@ The table is transcribed from the vendored Kiro documentation --
 comparison" -- and carries only models whose window that table states
 and whose id spelling is confirmed, either by the same documentation set
 (``claude-opus-4.8``, ``claude-sonnet-4``) or by the ids that
-``kiro-cli chat --list-models`` reports, which the agent configs in this
-repository use (``claude-opus-5.5``, ``claude-sonnet-5.5``,
-``claude-haiku-4.5``). The vendored docs name the 5.x models only by
+``kiro-cli chat --list-models`` reports (``claude-opus-5.5``,
+``claude-sonnet-5.5``, which the agent configs in this repository use,
+and ``claude-haiku-4.5``). The vendored docs name the 5.x models only by
 display name ("Claude Opus 5.5", 1M), never by id. The 5.0 ids
-(``claude-opus-5``, ``claude-sonnet-5``) stay listed after the agents
-moved to 5.5: both remain selectable, and a config pinned back to one
-must not lose its window.
+(``claude-opus-5``, ``claude-sonnet-5``) and ``claude-haiku-4.5`` stay
+listed although no agent runs them: all remain selectable, and a config
+pinned to one must not lose its window.
 The GPT-5.6 tiers and the remaining open-weight models are deliberately
 absent: their windows are documented but their id spelling is not, and a
 guessed key would be a silent trap the moment it matched.

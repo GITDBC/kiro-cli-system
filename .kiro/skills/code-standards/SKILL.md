@@ -106,16 +106,16 @@ example in `references/full-standards.md`.
 
 ## Naming Conventions
 
-| Element       | Convention         | Example                           |
-| ------------- | ------------------ | --------------------------------- |
-| Modules       | `snake_case`       | `etl_orchestrator.py`             |
-| Classes       | `PascalCase`       | `SpectralEfficiencyModel`         |
-| Functions     | `snake_case`       | `load_cm_data`                    |
-| Constants     | `UPPER_SNAKE_CASE` | `LOGGER_NAME`                     |
-| Variables     | `snake_case`       | `df_cm_data`                      |
-| DataFrames    | `df_` prefix       | `df_input`, `df_cm_data`          |
-| Configuration | `Config` suffix    | `SaveConfig`, `ETLPipelineConfig` |
-| Loaders       | `Loader` suffix    | `CMDataLoader`, `NPPConfigLoader` |
+| Element       | Convention         | Example                                   |
+| ------------- | ------------------ | ----------------------------------------- |
+| Modules       | `snake_case`       | `etl_orchestrator.py`                     |
+| Classes       | `PascalCase`       | `DemandForecastModel`                     |
+| Functions     | `snake_case`       | `load_config_data`                        |
+| Constants     | `UPPER_SNAKE_CASE` | `LOGGER_NAME`                             |
+| Variables     | `snake_case`       | `df_config_data`                          |
+| DataFrames    | `df_` prefix       | `df_input`, `df_config_data`              |
+| Configuration | `Config` suffix    | `SaveConfig`, `ETLPipelineConfig`         |
+| Loaders       | `Loader` suffix    | `ConfigDataLoader`, `ParquetConfigLoader` |
 
 ## Classes
 
@@ -138,13 +138,13 @@ Defect classes that recurred across independent reviews of a large production co
 Before/after snippets, rationale, and enforcement notes in
 `references/full-standards.md`.
 
-| Rule                                                                                                                                                                    | Ruff catches it |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
-| **Guard every division** whose denominator is runtime data: `pl.when(denom != 0).then(num / denom).otherwise(None)`, NumPy `np.where(denom > 0, num / denom, default)`  | No              |
-| **Never `value or default`** for optional numeric/boolean fields — use `default if value is None else value`; `or` silently discards `0`, `0.0`, `""`, `False`          | No              |
-| **Log row counts around joins and row-dropping filters** on any path feeding a KPI, SLA evaluation, or model input: `logger.debug("... %d -> %d rows.", before, after)` | No              |
-| **Sentinel values carry an explicit dtype**: `pl.lit(SENTINEL, dtype=pl.Float64)` — never rely on `vertical_relaxed`/`diagonal_relaxed` concat to upcast                | No              |
-| `.fill_nan()` / `.fill_null()` do **not** substitute for a zero-guard: `x / 0` yields `inf`, not `NaN`                                                                  | No              |
+| Rule                                                                                                                                                                              | Ruff catches it |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| **Guard every division** whose denominator is runtime data: `pl.when(denom != 0).then(num / denom).otherwise(None)`, NumPy `np.where(denom > 0, num / denom, default)`            | No              |
+| **Never `value or default`** for optional numeric/boolean fields — use `default if value is None else value`; `or` silently discards `0`, `0.0`, `""`, `False`                    | No              |
+| **Log row counts around joins and row-dropping filters** on any path feeding a report metric, SLA evaluation, or model input: `logger.debug("... %d -> %d rows.", before, after)` | No              |
+| **Sentinel values carry an explicit dtype**: `pl.lit(SENTINEL, dtype=pl.Float64)` — never rely on `vertical_relaxed`/`diagonal_relaxed` concat to upcast                          | No              |
+| `.fill_nan()` / `.fill_null()` do **not** substitute for a zero-guard: `x / 0` yields `inf`, not `NaN`                                                                            | No              |
 
 ## I/O and Configuration Boundaries
 

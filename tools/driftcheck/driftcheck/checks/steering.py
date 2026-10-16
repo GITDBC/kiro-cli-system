@@ -56,7 +56,7 @@ SUMMARY_SUFFIX: Final[str] = "-summary"
 
 # Enumerated heading: a digit followed by "." or ")" then a space, as in
 # "## 1. Output validation". Proper nouns and standards names such as
-# "## 3GPP Interfaces" or "## 5G Core" are legitimate and never match.
+# "## 2FA Setup" or "## 3D Rendering" are legitimate and never match.
 ENUMERATED_HEADING: Final[re.Pattern[str]] = re.compile(r"^#{1,6} [0-9]+[.)] ")
 
 SECTION_DUPLICATION: Final[str] = "Steering/skill content duplication"
@@ -161,8 +161,8 @@ def check_numbered_headers(ctx: DriftContext) -> list[Finding]:
     """
     Flag enumerated markdown headings, which COMMON.md forbids.
 
-    Only enumeration matches, so proper nouns such as "## 3GPP
-    Interfaces" are left alone. Lines inside fenced code blocks are
+    Only enumeration matches, so proper nouns such as "## 2FA
+    Setup" are left alone. Lines inside fenced code blocks are
     skipped because "# 3pps" is this project's import-section-header
     comment convention, not a heading. The vendored kiro-cli-reference
     mirror is excluded.

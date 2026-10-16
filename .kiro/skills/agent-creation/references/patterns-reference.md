@@ -258,7 +258,7 @@ material every agent needs belongs there. Orchestrator-only instruction files li
 | `orchestration/delegation-lifecycle.md` | Delegation, planning and harness gates   | Orchestrator             |
 
 Adding a file to `.kiro/steering/` taxes every turn of every agent, so the bar is that
-all thirteen agents act on it. Anything narrower goes to `.kiro/orchestration/` with an
+all ten agents act on it. Anything narrower goes to `.kiro/orchestration/` with an
 explicit `resources` entry, or into a skill loaded on demand.
 
 Full coding conventions and JIRA interaction rules are deliberately NOT steering files.

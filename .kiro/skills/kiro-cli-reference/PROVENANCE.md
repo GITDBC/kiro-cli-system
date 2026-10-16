@@ -65,7 +65,7 @@ Both rules are encoded in `tools/docsync/docsync/sources/kiro.py`:
   `mobile`) and the cross-product `guides` tutorials are out of scope.
 - **Exclusions**: mirror paths listed in `EXCLUDED_PATHS`, each excluding its page and
   everything below it, whichever URL form advertised it. They drop what an agent system
-  for Python and telecom work does not consult: billing, enterprise administration,
+  for Python engineering work does not consult: billing, enterprise administration,
   upgrade guides from other products, powers, cloud sessions, the ACP, voice,
   autocomplete, full-screen and terminal-UI interfaces, GovCloud models, the enterprise
   MCP registry, installation and sign-in pages, the 2.x reference and the 2.x-to-3.0

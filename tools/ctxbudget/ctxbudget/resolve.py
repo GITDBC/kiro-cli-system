@@ -136,7 +136,7 @@ def load_agent_configs(root: Path) -> tuple[AgentConfig, ...]:
 
     An unparseable config is logged and skipped instead of failing the
     run: ``driftcheck`` owns the verdict on malformed JSON, and a
-    measurement tool that refuses to measure the other twelve agents
+    measurement tool that refuses to measure the other nine agents
     because one file is broken helps nobody.
 
     Args:

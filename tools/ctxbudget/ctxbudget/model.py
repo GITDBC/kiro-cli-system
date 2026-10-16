@@ -9,7 +9,7 @@ a skill body, reported with an upper bound over its reference files that
 is never summed into it.
 
 The per-file aggregation is what drives reduction work: a token removed
-from a file thirteen agents load is worth thirteen, so the weighted
+from a file ten agents load is worth ten, so the weighted
 column, not the raw size, is the ranking that matters.
 
 Budget comparison lives here too, as arithmetic over a measurement. It

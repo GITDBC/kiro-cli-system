@@ -118,8 +118,8 @@ Do NOT use this agent when:
 - Writing application code → use `senior-developer`
 - Architectural design → use `software-architect`
 - Reviewing code quality → use `code-reviewer`
-- Content requires deep domain expertise (e.g., telecom specs) → use domain agent first,
-  then technical-writer to polish
+- Content requires deep specialist expertise (e.g., a security model) → use the
+  specialist agent first, then technical-writer to polish
 
 ## Safety
 
