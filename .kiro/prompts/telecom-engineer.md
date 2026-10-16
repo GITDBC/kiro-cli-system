@@ -36,8 +36,6 @@ vibe:
 
 ## Critical Rules
 
-All Python, testing, and style rules from COMMON.md apply. Additionally:
-
 1. **Standards-first** — Reference ITU, 3GPP, IEEE, or IETF standards when applicable
 2. **Physics matters** — Ground recommendations in signal propagation and Shannon's
    theorem

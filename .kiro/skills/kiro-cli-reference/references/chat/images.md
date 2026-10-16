@@ -22,15 +22,15 @@ Example:
 Kiro> /path/to/architecture-diagram.png Can you explain this architecture and generate sample code for implementing it?
 ```
 
-## Using fs_read with images
+## Ask Kiro to read an image
 
-You can also explicitly use the `read` tool to share images:
+You can also ask Kiro to analyze an image by including its path:
 
 ```
 Kiro> Can you analyze this screenshot at /path/to/screenshot.png?
 ```
 
-Kiro will automatically suggest using fs\_read with Image mode when you mention image files.
+Kiro reads the image from the path in your prompt.
 
 ## Pasting images from your clipboard
 
@@ -54,6 +54,10 @@ Common use cases for sharing images with Kiro include:
 ## Supported formats and limitations
 
 Supported image formats include JPEG/JPG, PNG, GIF, and WebP. Images must be under 10MB in size, and you can share up to 10 images in a single request.
+
+In V2, Kiro automatically resizes images that exceed supported pixel dimensions while preserving their aspect ratio, and scales down oversized images in saved history when a session loads. If the model provider still rejects an image, Kiro retries automatically, then replaces the rejected images with a placeholder and shows a notice so you can continue the session.
+
+In V3, Kiro resizes images to fit the selected model instead of failing the request.
 
 For best results:
 

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10.7,<0.12.0"]
+requires = ["uv_build==0.11.30"]
 build-backend = "uv_build"
 
 [project]
@@ -7,12 +7,12 @@ name = "work-ctxbudget"
 version = "0.1.0"
 description = "Approximate context-token budgeting for the Kiro CLI agent system."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.13.*"
 authors = [
     {name = "Daniel Bazo Correa", email = "<email>"},
 ]
 dependencies = [
-    "pyyaml>=6.0,<7",
+    "pyyaml==6.0.3",
     "tiktoken==0.13.0",
 ]
 
@@ -32,7 +32,7 @@ pipeline = [
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "ruff==0.16.4",
-    "types-pyyaml>=6.0,<7",
+    "types-pyyaml==6.0.12.20260906",
 ]
 
 [project.scripts]

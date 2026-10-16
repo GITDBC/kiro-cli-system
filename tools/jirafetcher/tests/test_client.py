@@ -1,3 +1,5 @@
+"""Tests for the Jira REST client."""
+
 # Standard libraries
 from unittest.mock import MagicMock, patch
 

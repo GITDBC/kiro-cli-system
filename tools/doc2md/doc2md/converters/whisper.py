@@ -1,3 +1,5 @@
+"""Audio transcription through faster-whisper."""
+
 # Standard libraries
 import functools
 import logging

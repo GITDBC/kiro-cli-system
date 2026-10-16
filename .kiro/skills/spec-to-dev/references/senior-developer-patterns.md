@@ -84,11 +84,10 @@ def _parse_line(line: str, line_number: int) -> dict[str, str] | None:
 ## Error Handling Pattern
 
 The `error_message` / `logger.error` / `raise ExceptionType(error_message)` triad is the
-project-wide convention owned by
-`.kiro/skills/code-standards/references/full-standards.md:173-177` ("Error Handling —
-full detail"). See the `Clean Function Design` example above for the triad applied in
-context (`process_data_file`'s `FileNotFoundError` branch); no separate generic
-restatement is kept here.
+project-wide convention owned by the "Error Handling" section of
+`.kiro/skills/code-standards/SKILL.md`. See the `Clean Function Design` example above
+for the triad applied in context (`process_data_file`'s `FileNotFoundError` branch); no
+separate generic restatement is kept here.
 
 ## Async Pattern
 

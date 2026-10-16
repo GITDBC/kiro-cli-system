@@ -66,7 +66,7 @@ Kiro's Feature Specs are designed for continuous refinement, allowing you to upd
 
 1. **Update Requirements**: Either modify the `requirements.md` file directly or initiate a spec session and instruct Kiro to add new requirements or design elements.
 
-2. **Update Design**: Navigate to the `design.md` file for your spec and select **Refine**. This action will update both the design documentation and the associated task list to reflect your modified requirements.
+2. **Update Design**: In a spec chat session, ask Kiro to update the `design.md` file to reflect your modified requirements. Kiro revises the design to stay aligned with the new requirements.
 
 3. **Sync files**: Navigate to the `tasks.md` file and choose **Sync Files**. This will create new tasks that map to the new requirements.
 

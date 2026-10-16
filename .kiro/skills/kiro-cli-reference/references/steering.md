@@ -14,9 +14,9 @@ Steering gives Kiro persistent knowledge about your project through markdown fil
 |------------|:---:|:---:|:---:|:------:|
 | Workspace steering (`.kiro/steering/`) | ✓ | ✓ | ✓ | ✓ |
 | Global steering (`~/.kiro/steering/`) | ✓ | ✓ | — | — |
-| Cloud steering managed in Web settings | — | — | ✓ | — |
+| Upload local steering to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | — |
 | Generate foundation files via UI | ✓ | — | — | — |
-| Inclusion modes (always, fileMatch, manual) | ✓ | ✓ | ✓ | ✓ |
+| Inclusion modes | ✓ | V3: full; V1/V2: partial | ✓ | ✓ |
 | AGENTS.md support | ✓ | ✓ | ✓ | ✓ |
 
 On Web, "Global steering" refers to your local `~/.kiro/steering/` directory, which the cloud sandbox cannot read. To reuse personal steering across cloud sessions, upload it through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md); the cloud copy then applies to every cloud session.
@@ -95,7 +95,6 @@ Extend Kiro's understanding with specialized guidance tailored to your project's
     4. Choose a descriptive filename (e.g., `api-standards.md`)
     5. Write your guidance using standard markdown syntax
     6. Use natural language to describe your requirements
-    7. Optionally, use the **Refine** button to have Kiro refine your requirements
 
     Once created, steering files become immediately available across all Kiro interactions.
 
@@ -224,20 +223,34 @@ Auto-inclusion steering files also appear as slash commands in chat. Type `/` fo
 
 **Best for**: Context-heavy guidance that should only load when relevant - like specialized domain knowledge, complex workflows, or detailed reference material that would overwhelm always-on steering.
 
-**ℹ️ Info:** On Kiro CLI, inclusion modes are not currently supported. All steering files in the `.kiro/steering/` directory are loaded automatically.
+**ℹ️ Info:** Kiro CLI V3 supports all four inclusion modes: `always`, `fileMatch`, `manual`, and `auto`. In V1/V2, files marked `always` load automatically. Files marked `fileMatch` or `manual` are excluded from automatic loading, and those engines do not provide V3's complete matching and activation behavior.
 
 ## File references
 
-Link to live workspace files to keep steering current:
+Link to live workspace files to keep Steering current. Whole-file references work across surfaces:
 
 ```markdown
 #[[file:<relative_file_name>]]
 ```
 
+Kiro IDE and CLI V3 also support one line, an inclusive line range, or a one-level folder listing:
+
+```markdown
+# One line or an inclusive line range
+#[[file:<relative_file_name>:<line>]]
+#[[file:<relative_file_name>:<start>-<end>]]
+
+# One-level folder listing
+#[[folder:<relative_folder_name>]]
+```
+
 Examples:
-- API specs: `#[[file:api/openapi.yaml]]`
-- Component patterns: `#[[file:components/ui/button.tsx]]`
-- Config templates: `#[[file:.env.example]]`
+- API specs on any surface: `#[[file:api/openapi.yaml]]`
+- Selected rules: `#[[file:docs/api-guidelines.md:12-28]]`
+- Component patterns on any surface: `#[[file:components/ui/button.tsx]]`
+- Config directory: `#[[folder:config]]`
+
+On these surfaces, relative paths resolve from the workspace root for workspace Steering, from `~/.kiro/steering/` for global Steering, and from the containing folder for an `AGENTS.md` file. References follow the session's file-read permissions and ignore rules. If a reference cannot be resolved, Kiro leaves a visible unresolved-reference marker in the Steering content instead of silently dropping the document.
 
 ## Steering during a session
 
@@ -247,7 +260,7 @@ In addition to persistent steering files, you can steer Kiro in real time during
 - "Follow the same approach as the UserService class"
 - "Make sure to add integration tests, not just unit tests"
 
-**ℹ️ Info:** On Kiro Web, the agent asks clarifying questions upfront in [autonomous mode](https://kiro.dev/docs/web/autonomous-mode.md) - your answers act as steering for that task. In the default mode, you can steer continuously as you iterate together.
+**ℹ️ Info:** On Kiro Web, you can steer autonomous-mode tasks the same way — direction you give during the task acts as steering for it.
 
 ## Teaching through code reviews
 

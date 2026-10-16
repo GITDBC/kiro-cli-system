@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10.7,<0.12.0"]
+requires = ["uv_build==0.11.30"]
 build-backend = "uv_build"
 
 [project]
@@ -7,12 +7,12 @@ name = "work-driftcheck"
 version = "0.1.0"
 description = "Structural drift detection for the Kiro CLI agent system."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.13.*"
 authors = [
     {name = "Daniel Bazo Correa", email = "<email>"},
 ]
 dependencies = [
-    "pyyaml>=6.0,<7",
+    "pyyaml==6.0.3",
 ]
 
 [tool.uv.build-backend]
@@ -31,13 +31,11 @@ pipeline = [
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "ruff==0.16.4",
-    "types-pyyaml>=6.0,<7",
+    "types-pyyaml==6.0.12.20260815",
 ]
 
 [project.scripts]
 driftcheck = "driftcheck.cli:main"
-driftcheck-hook-agent-config = "driftcheck.hooks.agent_config:main"
-driftcheck-hook-state-yaml = "driftcheck.hooks.state_yaml:main"
 driftcheck-hook-refs-freshness = "driftcheck.hooks.references_freshness:main"
 
 [tool.ruff]

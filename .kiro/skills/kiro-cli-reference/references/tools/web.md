@@ -15,7 +15,7 @@ Web tools are available across all surfaces (IDE, CLI, Web, and Mobile).
 | `web_search` | Search the web for current information |
 | `web_fetch` | Fetch and extract text from a URL |
 
-**ℹ️ Network and proxy behavior:** `web_fetch` makes requests directly from your machine - all requests are subject to your corporate firewall rules and Kiro honors standard proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`). For additional information on configuring firewalls, see [Firewalls](https://kiro.dev/docs/privacy-and-security/firewalls.md).
+**ℹ️ Network and proxy behavior:** Request origin depends on the session. In local IDE and CLI sessions, `web_fetch` runs from your machine and honors standard proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`). In Kiro Web, Mobile, and IDE or CLI cloud sessions, it runs in the managed sandbox and follows the sandbox's [internet access settings](https://kiro.dev/docs/web/sandbox/internet-access.md). For local firewall configuration, see [Firewalls](https://kiro.dev/docs/privacy-and-security/firewalls.md).
 
 In the following demo, the agent automatically uses `web_search` to return up-to-date results for a query, then uses `web_fetch` to retrieve the latest contents at a specific URL:
 
@@ -40,7 +40,7 @@ Fetches and extracts text content from a specific URL. Supports three modes for 
 
 | Mode | Behavior | Use case |
 |------|----------|----------|
-| `selective` (default) | Returns sentences around search term matches | Targeted extraction |
+| `selective` (default) | Returns up to 8,000 characters around search term matches | Targeted extraction with bounded output |
 | `truncated` | First 8,000 characters | Quick preview |
 | `full` | Complete content (up to 10 MB) | Comprehensive analysis |
 
@@ -54,15 +54,21 @@ Fetching content from: https://kiro.dev/blog/introducing-kiro-cli/
 
 When no specific content is requested, the tool defaults to `truncated` mode (first 8 KB) to manage context.
 
+### URL handling
+
+In the IDE, `web_fetch` keeps the URL's query string and fragment and upgrades HTTP URLs to HTTPS before fetching. If a URL contains a username or password, Kiro removes those credentials and notes the change in the result.
+
 ### Limitations
 
 | Constraint | Value |
 |-----------|-------|
 | Maximum page size | 10 MB |
+| Maximum selective output | 8,000 characters |
 | Timeout | 30 seconds |
 | Maximum redirects | 10 |
+| CLI V3 redirect policy | Refuses redirects to another origin or to HTTP |
 | Content type | text/HTML only |
-| Retries | 3 automatic attempts |
+| CLI V3 transient-failure retries | 1 automatic retry |
 
 ## Governance (enterprise)
 

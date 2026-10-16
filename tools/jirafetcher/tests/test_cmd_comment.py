@@ -1,3 +1,5 @@
+"""Tests for the comment subcommand."""
+
 # Standard libraries
 import io
 from argparse import Namespace
@@ -8,12 +10,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Own modules
-from jirafetcher.cli import _cmd_comment, _resolve_comment_body, build_parser
+from jirafetcher.cli import _build_parser, _cmd_comment, _resolve_comment_body
 
 
 def _parse_comment(argv: list[str]) -> Namespace:
     """Parse argv for the comment subcommand."""
-    return build_parser().parse_args(["comment", *argv])
+    return _build_parser().parse_args(["comment", *argv])
 
 
 def test_resolve_body_from_positional() -> None:
@@ -71,7 +73,7 @@ def test_cmd_comment_self_dry_run(tmp_path: Path) -> None:
         "--self",
         "--dry-run",
     ]
-    args = build_parser().parse_args(argv)
+    args = _build_parser().parse_args(argv)
     client = MagicMock()
     client.base_url = "https://jira.test"
     client.get_issue.return_value = {"key": "P-1", "fields": {}}
@@ -98,7 +100,7 @@ def test_cmd_comment_include_parent_dry_run(tmp_path: Path) -> None:
         "--include-parent",
         "--dry-run",
     ]
-    args = build_parser().parse_args(argv)
+    args = _build_parser().parse_args(argv)
     client = MagicMock()
     client.base_url = "https://jira.test"
     subtasks = [{"key": "P-2", "fields": {"summary": "a"}}]
@@ -130,7 +132,7 @@ def test_cmd_comment_body_from_file(tmp_path: Path) -> None:
         str(config),
         "--self",
     ]
-    args = build_parser().parse_args(argv)
+    args = _build_parser().parse_args(argv)
     client = MagicMock()
     client.get_issue.return_value = {"key": "P-1", "fields": {}}
     with patch(
@@ -158,7 +160,7 @@ def test_cmd_comment_body_from_stdin(
         str(config),
         "--self",
     ]
-    args = build_parser().parse_args(argv)
+    args = _build_parser().parse_args(argv)
     client = MagicMock()
     client.get_issue.return_value = {"key": "P-1", "fields": {}}
     with patch(
@@ -205,7 +207,7 @@ def test_cmd_comment_include_parent_posts_to_all(tmp_path: Path) -> None:
         str(config),
         "--include-parent",
     ]
-    args = build_parser().parse_args(argv)
+    args = _build_parser().parse_args(argv)
     client = MagicMock()
     client.base_url = "https://jira.test"
     subtasks = [

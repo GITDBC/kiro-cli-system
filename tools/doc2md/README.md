@@ -6,20 +6,15 @@ Convert documents and audio files to Markdown using
 
 ## Requirements
 
-- Python >= 3.11
-- [uv](https://docs.astral.sh/uv/) (package manager)
+- Python 3.13 and [uv](https://docs.astral.sh/uv/)
 - NVIDIA GPU (optional, for faster audio transcription)
 
-## Setup
-
-```bash
-# Clone and install
-git clone <repo-url>
-cd work-doc-md-converter
-make setup
-```
+Set up with `make setup` inside `tools/doc2md`.
 
 ## Usage
+
+The commands below assume the tool environment is active. From the repository root,
+prefix each with `uv run --project tools/doc2md`.
 
 ```bash
 # Convert a single file
@@ -58,6 +53,12 @@ python -m doc2md.cli ./documents/
 | `--whisper-device`      | `auto`, `cpu`, or `cuda` (default: `auto`)                   |
 | `--whisper-cpu-threads` | CPU threads (default: `4`)                                   |
 
+### Configuration
+
+When `WORK_AGENTS_CONFIG` points to the repository `config.toml`, the `[doc2md]` section
+is read (see `config.toml.example`); the matching `--whisper-*` option takes priority. A
+malformed config file exits 1 with a message.
+
 ## Supported Formats
 
 Documents are converted via MarkItDown; audio files are transcribed via faster-whisper.
@@ -86,3 +87,10 @@ output/
 └── subdir/
     └── notes_docx.md
 ```
+
+## Development
+
+Targets (`make lint`, `make code-check`, `make test`, `make all`) come from
+[`tools/tool.mk`](../tool.mk); the repository gates (`make lint-doc2md`,
+`make test-doc2md`) are in the root [`Makefile`](../../Makefile). `make test` enforces
+an 80% coverage floor.

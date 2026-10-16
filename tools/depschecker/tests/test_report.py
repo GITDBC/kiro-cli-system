@@ -1,3 +1,5 @@
+"""Tests for the Markdown report rendering."""
+
 # Own modules
 from depschecker.report import (
     _update_icon,

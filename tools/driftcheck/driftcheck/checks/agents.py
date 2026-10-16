@@ -26,11 +26,13 @@ from driftcheck.types import AgentConfig, DriftContext, Finding, Severity
 # Auto routing may select non-Anthropic models. Update this list when new
 # Claude models are approved for use in this project.
 ALLOWED_MODELS: Final[tuple[str, ...]] = (
+    "claude-opus-5.5",
     "claude-opus-5",
     "claude-opus-4.8",
     "claude-opus-4.7",
     "claude-opus-4.6",
     "claude-opus-4.5",
+    "claude-sonnet-5.5",
     "claude-sonnet-5",
     "claude-sonnet-4.6",
     "claude-sonnet-4.5",
@@ -43,7 +45,12 @@ AUTO_MODEL: Final[str] = "auto"
 
 # Real credit multipliers per model family, mapped to the cost label
 # routing.md is expected to publish for agents backed by that family.
+# Matched by prefix in insertion order, so an exact id whose multiplier
+# departs from its family must precede the family entry: Kiro's
+# models.md and `kiro-cli chat --list-models` both put Claude Opus 5.5 at
+# 2.0x while every other Opus model is 2.2x.
 MODEL_COST_LABELS: Final[dict[str, tuple[str, str]]] = {
+    "claude-opus-5.5": ("high", "2.0x"),
     "claude-opus-": ("high", "2.2x"),
     "claude-sonnet-": ("medium", "1.3x"),
     "claude-haiku-": ("low", "0.4x"),

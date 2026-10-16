@@ -5,19 +5,11 @@ Markdown files ready for LLM processing.
 
 ## Requirements
 
-- Python >= 3.11
-- [uv](https://docs.astral.sh/uv/) (package manager)
+- Python 3.13 and [uv](https://docs.astral.sh/uv/)
 - A Jira instance with REST API v2 access
 - A Personal Access Token (PAT) or API token
 
-## Setup
-
-```bash
-# Clone and install
-git clone <repo-url>
-cd jira-fetcher
-make setup
-```
+Set up with `make setup` inside `tools/jirafetcher`.
 
 ## Configuration
 
@@ -31,15 +23,19 @@ Create a `config.json` file in the project root (already in `.gitignore`):
 }
 ```
 
-| Field          | Required | Description                                                 |
-| -------------- | -------- | ----------------------------------------------------------- |
-| `token`        | Yes      | Jira PAT or API token (Bearer authentication)               |
-| `statuses`     | No       | Status names to filter by (default: `In Review`, `On Hold`) |
-| `title_filter` | No       | Substring to match in issue summaries (case-insensitive)    |
+`token` is required (Jira PAT or API token, sent as a Bearer token). `statuses` defaults
+to `In Review` and `On Hold`; `title_filter` is an optional case-insensitive substring
+of the issue summary.
+
+When `config.json` does not exist, the `[jirafetcher]` section of the TOML file that
+`WORK_AGENTS_CONFIG` points to supplies the same fields (see `config.toml.example`). The
+JSON file wins when both are present. A malformed TOML file exits 1 with a message.
 
 ## Usage
 
-The CLI uses subcommands: `fetch`, `transition`, and `comment`.
+The CLI uses subcommands: `fetch`, `transition`, and `comment`. The commands below
+assume the tool environment is active; from the repository root, prefix each with
+`uv run --project tools/jirafetcher`.
 
 ### Fetch subtasks to Markdown
 
@@ -157,3 +153,10 @@ Each file contains all matching subtasks with their metadata, description, and c
 
 The Jira client automatically retries on rate-limiting (HTTP 429) and transient server
 errors (502, 503, 504) with exponential backoff, up to 3 attempts.
+
+## Development
+
+Targets (`make lint`, `make code-check`, `make test`, `make all`) come from
+[`tools/tool.mk`](../tool.mk); the repository gates (`make lint-jirafetcher`,
+`make test-jirafetcher`) are in the root [`Makefile`](../../Makefile). `make test`
+enforces an 80% coverage floor.

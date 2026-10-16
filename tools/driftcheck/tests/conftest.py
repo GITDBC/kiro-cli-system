@@ -7,20 +7,17 @@ from pathlib import Path
 import pytest
 
 # Own modules
-from driftcheck.checks.prompt_quality import (
-    KNOWN_CONTRADICTIONS,
-    REVIEW_ORIENTED_SKILLS,
-)
+from driftcheck.checks.prompt_quality import REVIEW_ORIENTED_SKILLS
 from driftcheck.checks.skills import DIRECT_INVOKE_SKILLS, ORCHESTRATOR_ONLY_SKILLS
 from driftcheck.types import DriftContext, build_context
 from tests.helpers import (
-    ROUTING_MD,
     COMMON_MD,
     DELEGATION_LIFECYCLE_MD,
     DRIFTCHECK_PYPROJECT,
     EMPTY_STATE_YAML,
     GITIGNORE,
     ORCHESTRATOR_RESOURCES,
+    ROUTING_MD,
     SENIOR_DEVELOPER_PROMPT,
     SKILL_MD,
     write,
@@ -35,8 +32,7 @@ def valid_root(tmp_path: Path) -> Path:
 
     Every allowlisted skill is materialised, because driftcheck asserts
     that its own exemption lists name skills that exist: an entry for a
-    deleted skill is dead configuration. The same holds for the files a
-    curated contradiction pair names. Deriving the tree from those
+    deleted skill is dead configuration. Deriving the tree from those
     collections keeps the fixture from rotting when they change.
 
     The tree is a framework tree, so it carries the .gitignore rule
@@ -70,18 +66,13 @@ def valid_root(tmp_path: Path) -> Path:
         SENIOR_DEVELOPER_PROMPT,
     )
     write(root / ".kiro" / "prompts" / "orchestrator.md", "# Orchestrator\n")
-    for pair in KNOWN_CONTRADICTIONS:
-        for relative in (pair.left, pair.right):
-            target = root / relative
-            if not target.exists():
-                write(target, f"# {target.stem}\n")
     write(root / "memory" / "state.yaml", EMPTY_STATE_YAML)
     write(root / "tools" / "driftcheck" / "pyproject.toml", DRIFTCHECK_PYPROJECT)
     write_agent(root, "senior-developer")
     write_agent(
         root,
         "orchestrator",
-        model="claude-sonnet-5",
+        model="claude-sonnet-5.5",
         resources=ORCHESTRATOR_RESOURCES,
         toolsSettings={"subagent": {"availableAgents": ["senior-developer"]}},
     )

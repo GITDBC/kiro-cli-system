@@ -15,6 +15,8 @@ Kiro CLI automatically saves all chat sessions on every conversation turn. Sessi
 **Storage**: Local database (`~/.kiro/`)  
 **Session ID**: UUID for each session
 
+Kiro restricts its home state and previous session data to owner-only access. This protects local conversation history and related state from other accounts on the same machine.
+
 ## Managing sessions
 
 ### From command line
@@ -35,6 +37,10 @@ kiro-cli chat --list-sessions
 # Delete session
 kiro-cli chat --delete-session <SESSION_ID>
 ```
+
+In V3, `--resume` selects the newest session that matches how the current launch is placed: local launches resume the newest matching local session, while cloud launches resume the newest matching cloud session.
+
+In the terminal UI, if `--resume-id` doesn't match a local session, Kiro no longer silently starts a replacement conversation. When cloud sessions are enabled and you provide a full session ID, Kiro checks the remote session store before reporting that the ID couldn't be resolved.
 
 ### From chat
 
@@ -62,9 +68,15 @@ kiro-cli chat --delete-session <SESSION_ID>
 
 **ℹ️ File extension:** The `.json` extension is optional when loading sessions.
 
+### Workflow step sessions
+
+Each declarative workflow step has a backing agent session, but manage the run and its steps through `/workflow`, not the ordinary `/chat resume` flow. Open the run monitor, select a paused step, and press `s` to send a text reply in that step's session.
+
+Do not assume that a backing step session is independently searchable, exportable, or resumable through `/sessions`. See [Run and manage workflows](https://kiro.dev/docs/workflows/manage.md#respond-when-a-step-needs-input).
+
 ## Session dashboard (V3)
 
-The V3 session dashboard combines local and cloud sessions from all workspaces in one view. Open it before starting a chat or from an active V3 session:
+The V3 session dashboard combines local and cloud sessions in one view. By default it lists sessions from the current directory; clear the `current workspace only` filter to see sessions from every workspace. Open it before starting a chat or from an active V3 session:
 
 ```bash
 # Open the dashboard at launch
@@ -76,9 +88,11 @@ kiro-cli chat --sessions
 
 Browse with the arrow keys and press `Enter` to resume the selected session. Local sessions from another workspace ask you to confirm the directory change before Kiro loads them. Cloud sessions resume from the cloud store.
 
-Press `Tab` to move focus between the controls and session results. When a control has focus, press `Enter` to move into the results.
+Press `Tab` to move focus between the controls and session results. Use `←`/`→` to switch between Search, Filter, Sort, and Group; the focused control lists its options inline. Use `↑`/`↓` to move through options, press `Space` to toggle a filter, and press `Enter` to return to the list. Press `Ctrl+X` to reset the filters: `current workspace only` on and all other filters off.
 
-By default, sessions appear as a flat list sorted by **Last used**. Use the list controls to sort by **Last used**, **Session name**, or **Message count**. Kiro remembers the last sort order you choose.
+By default, sessions appear as a flat list sorted by **last used**. Sort by `last used`, `session name`, or `messages`, and group by `workspace`, `recency`, `status` when available, or `none`. Kiro remembers the last sort order you choose.
+
+Use the **Filter** control to combine the `current workspace only`, `main sessions`, and `bookmarked` filters. `current workspace only` is on by default, and Kiro remembers whether you leave it on or turn it off in the [`chat.sessionDashboard.scope`](https://kiro.dev/docs/reference/settings.md#chat-interface) setting. If the current directory has no sessions, the dashboard temporarily shows every workspace without changing your saved filter choice. `includes empty` reveals empty sessions, which are hidden by default. `main sessions` keeps root and standalone sessions while hiding child sessions created by Tangent, rewind, and subagents.
 
 ### Search sessions
 

@@ -3,8 +3,6 @@
 Reference KPI catalog for the kpi-analyst agent. Each KPI includes name, formula, unit,
 typical PM counters (3GPP/vendor-neutral naming), and operational notes.
 
-## Online References
-
 ## Accessibility KPIs
 
 ### RRC Setup Success Rate

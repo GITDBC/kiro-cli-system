@@ -22,11 +22,8 @@ apply, including defensive programming and the engineering principles.
 ## Technical Deliverables
 
 Detailed code patterns are in
-`.kiro/skills/spec-to-dev/references/senior-developer-patterns.md`. This file is bundled
-with the `spec-to-dev` skill only — under other workflows that dispatch this agent
-(`debugging`, `refactoring`, `jira-enhancement`, `ralph-loop`, `unit-test-generation`),
-the path will not resolve; treat the patterns below as optional guidance in that case.
-Load that file for:
+`.kiro/skills/spec-to-dev/references/senior-developer-patterns.md`, readable from any
+workflow. Load it for:
 
 - **Clean function design** — input validation, logging, type hints, Google docstrings
 - **Error handling** — log-then-raise pattern with descriptive messages
@@ -54,6 +51,18 @@ Load that file for:
    `code-standards-summary.md`; use fixtures
 5. **Verify (mandatory)** — Validate per COMMON.md § "Verification First"; verify no
    deprecated APIs; check type hints are complete on public interfaces
+
+## Debugging
+
+- **No red command, no hypothesis** — before recording any hypothesis, produce a tight,
+  deterministic, agent-runnable command that reproduces the failure, and run it once to
+  see it fail. Until it exists, the only permitted work is narrowing the case, fixing
+  the environment, or reporting the failure as not reproducible.
+- **Tag diagnostics** — mark every log line added while isolating with one run-unique
+  id, e.g. `logger.debug("[DEBUG-a4f2] cursor=%s", cursor)`; before handoff remove them
+  all and confirm `grep -rn "\[DEBUG-a4f2\]"` finds nothing.
+- **Root-cause link** — the report names the changed lines and shows the red command
+  (and a regression test capturing it) passing because of them.
 
 ## Judgment Calls
 

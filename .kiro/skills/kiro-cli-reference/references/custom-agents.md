@@ -19,7 +19,7 @@ By default, Kiro provides access to all available tools but requires user confir
 
 Custom agents solve this by allowing you to:
 
-- **Pre-approve specific tools** - Define which tools can run without prompting
+- **Pre-approve trusted operations** - Define which operations can run without prompting
 - **Limit tool access** - Restrict which tools are available to reduce complexity
 - **Include relevant context** - Automatically load project files, documentation, or system information
 - **Configure tool behavior** - Set specific parameters for how tools should operate
@@ -27,14 +27,14 @@ Custom agents solve this by allowing you to:
 ## Benefits of using custom agents
 
 1. **Workflow optimization** - Create custom agents tailored to specific tasks like AWS infrastructure management, code reviews, or debugging sessions.
-2. **Reduced interruptions** - Pre-approve trusted tools to eliminate permission prompts during focused work sessions.
+2. **Reduced interruptions** - Pre-approve trusted operations to eliminate permission prompts during focused work sessions.
 3. **Enhanced context** - Automatically include relevant project documentation, configuration files, or system information.
 4. **Team collaboration** - Share custom agent configurations with team members to ensure consistent development environments.
 5. **Security control** - Limit tool access to only what's needed for specific workflows, reducing potential security risks.
 
 ## Relationship to MCP and built-in tools
 
-Custom agents work with both [built-in tools](https://kiro.dev/docs/tools.md) and external tools from [MCP servers](https://kiro.dev/docs/mcp.md). Use the `tools` field to specify exactly which tools from each source are available, and `toolAliases` to handle naming conflicts.
+Custom agents work with both [built-in tools](https://kiro.dev/docs/tools.md) and external tools from [MCP servers](https://kiro.dev/docs/mcp.md). Use the `tools` field to specify exactly which tools from each source are available. In CLI V3, keep full MCP selectors instead of relying on the CLI 2.x `toolAliases` field.
 
 ## Configuration file formats
 
@@ -63,7 +63,7 @@ Agent configurations support two formats - JSON and Markdown. Both support ident
     ]
   },
   "prompt": "You are a helpful coding assistant",
-  "model": "claude-sonnet-5",
+  "model": "claude-sonnet-4.6",
   "welcomeMessage": "Ready to help. What are you working on?"
 }
 ```
@@ -74,7 +74,7 @@ Agent configurations support two formats - JSON and Markdown. Both support ident
 ---
 name: my-agent
 description: A custom agent for my workflow
-model: claude-sonnet-5
+model: claude-sonnet-4.6
 tools: ["read", "write", "shell"]
 excludedTools: ["knowledge"]
 includeMcpJson: true
@@ -117,11 +117,11 @@ To use personal custom agents in cloud sessions, upload them from **Settings > S
 
 ## Previous versions
 
-If you're upgrading from IDE 0.x or CLI 2.x, agent configs are backward-compatible - existing JSON files continue to work without modification. New fields (`permissions`, `excludedTools`, `includeMcpJson`, `resources` with `skill://`, Markdown format) are all optional.
+If you're upgrading from IDE 0.x, existing JSON profiles continue to work. For CLI 2.x, profiles that still use `allowedTools` or `toolsSettings` without a `permissions` block must be converted with `/upgrade-agent` before CLI V3 can load them; other supported fields carry over. Current optional fields include `permissions`, `excludedTools`, `includeMcpJson`, `resources` with `skill://`, and Markdown format.
 
 - [IDE 0.x reference - Custom agent config](https://kiro.dev/docs/ide/0x-reference.md#custom-agent-config)
 - [CLI 2.x reference - Custom agent config](https://kiro.dev/docs/cli/2x-reference.md#custom-agent-config)
-- [What's new in CLI 3.0 - Agent config changes](https://kiro.dev/docs/cli/v3/agent-config.md)
+- [What's new in CLI V3 - Agent config changes](https://kiro.dev/docs/cli/v3/agent-config.md)
 - [What's new in IDE 1.0 - Agent config changes](https://kiro.dev/docs/ide/whats-new-v1/agent-config.md)
 
 ## Next steps

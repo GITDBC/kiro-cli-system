@@ -9,10 +9,11 @@ adapters need to exchange.
 # Standard libraries
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias
 
 # Page slug relative to a mirror directory, without the .md suffix.
-Slug: TypeAlias = str
+# Changed: TypeAlias annotation -> PEP 695 type statement - Reason: Python 3.13
+# baseline (ruff UP040).
+type Slug = str
 
 
 @dataclass(frozen=True)

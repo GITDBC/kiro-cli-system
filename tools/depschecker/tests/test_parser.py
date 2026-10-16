@@ -1,3 +1,5 @@
+"""Tests for pyproject.toml parsing."""
+
 # Standard libraries
 from pathlib import Path
 

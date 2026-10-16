@@ -1,3 +1,5 @@
+"""Minimal Jira REST client and Jira URL parsing."""
+
 # Standard libraries
 import logging
 import re

@@ -1,4 +1,7 @@
-# Security Audit Playbook
+# Three-Perspective Security Audit Checklist
+
+Perspectives A, B, and C match the coverage instruction in `../SKILL.md`. Severity
+vocabulary: `Critical`, `High`, `Medium`, `Low`; confidence: `HIGH`, `MEDIUM`.
 
 ## Audit Scope Definition
 
@@ -11,9 +14,9 @@ Before starting, confirm:
 
 ## Three-Perspective Analysis
 
-### Perspective 1: Attacker (Offensive)
+### A — Threat model (attacker view)
 
-Think like an attacker. For each entry point:
+For each entry point:
 
 1. **Enumerate attack surface**
    - Public endpoints (APIs, web forms, file uploads)
@@ -38,9 +41,9 @@ Think like an attacker. For each entry point:
    - What's the impact? (data breach, RCE, DoS)
    - Is it exposed to the internet or internal only?
 
-### Perspective 2: Defender (Defensive)
+### B — Code vulnerabilities
 
-Evaluate existing controls:
+Evaluate the controls implemented in code:
 
 1. **Authentication & Authorization**
    - Token validation (JWT signature, expiry, audience)
@@ -52,15 +55,18 @@ Evaluate existing controls:
    - Encryption at rest (database, file storage, backups)
    - Encryption in transit (TLS version, certificate pinning)
    - PII handling (masking, retention, deletion)
-   - Secret management (vault, rotation, no hardcoded secrets)
+   - Secrets in source (no hardcoded secrets)
 
-3. **Infrastructure Security**
+### C — Configuration and dependencies
+
+1. **Infrastructure Security**
    - Network segmentation (VPC, security groups, firewalls)
    - Container security (base images, privilege escalation)
    - CI/CD pipeline security (signed artifacts, SAST/DAST)
-   - Dependency management (automated CVE scanning)
+   - Dependency management (automated CVE scanning, pinning)
+   - Secret management (vault, rotation)
 
-### Perspective 3: Compliance
+### Compliance mapping (all perspectives)
 
 Map findings to compliance requirements:
 

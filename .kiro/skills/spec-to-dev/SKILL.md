@@ -1,11 +1,10 @@
 ---
 name: spec-to-dev
 description: >
-  Full specification-driven development workflow. Use when implementing features from
-  Jira tickets, specs, or feature descriptions with full plan-then-execute cycle.
-  Triggers: 'implement this ticket', 'spec to code', 'develop from requirements', 'build
-  this feature', 'new feature', 'feature end-to-end'. Not for quick fixes (use
-  reviewing-code), exploratory coding, or tasks without a clear goal.
+  Specification-driven development: plan-then-execute cycle for features from Jira
+  tickets, specs, or feature descriptions. Triggers: 'implement this ticket', 'spec to
+  code', 'build this feature', 'new feature', 'feature end-to-end'. Not for quick fixes
+  (use reviewing-code), exploratory coding, or tasks without a clear goal.
 ---
 
 # Specification-Driven Development
@@ -25,10 +24,10 @@ description: >
 structure, relevant modules, existing tests. Produce context summary.
 
 **Step 2** → `software-architect`: Analyze context, define technical approach +
-alternatives + risks, identify if ADR is needed, produce design document. For ADR
-templates and decision-record examples, and for the vertical-slicing rules used when
-decomposing subtasks, load `references/spec-to-dev-playbook.md`. Decompose into
-parallelizable subtasks:
+alternatives + risks, identify if an ADR is needed, produce the design document. For the
+design-document template, design validation criteria, and the vertical-slicing rules
+used when decomposing subtasks, load `references/spec-to-dev-playbook.md`. Decompose
+into parallelizable subtasks:
 
 ```yaml
 subtasks:
@@ -51,29 +50,29 @@ use a single subtask.
 
 ### Phase 2 — Planning
 
-**Step 3** → `orchestrator`: Build plan with Will do / Will NOT do / Risks / Agent
-sequence. **STOP for user approval before proceeding.**
+**Step 3** → `orchestrator`: Build the plan per `Planning phases` in
+`delegation-lifecycle.md`. **STOP for user approval before proceeding.**
 
 ### Phase 3 — Execution
 
-**Step 4** → `orchestrator` (Coordination Protocol + Preflight):
+**Step 4** → `orchestrator` (Coordination Protocol in `delegation-lifecycle.md`):
 
-1. Group subtasks by `depends_on` (group 0 = parallel, group N waits on N-1).
-2. Build Shared Context Contract per parallel group.
-3. Delegate each subtask to `senior-developer` in **preflight mode**.
-4. Resolve blockers/ambiguities → reroute or ask user.
-5. Delegate in **execute mode** once all preflights clear.
-6. **Interface gate**: before launching group N+1, review the subtasks in group N whose
-   `interfaces_exposed` appear in any later group's `interfaces_consumed`. Delegate one
+1. Group subtasks by `depends_on` into waves (wave 0 = parallel, wave N waits on N-1).
+2. Build the Shared Context Contract per wave.
+3. Delegate each subtask to `senior-developer` in **combined mode** by default; a
+   separate preflight turn only for the reserved cases in `Delegation modes`, followed
+   by execute mode once it clears.
+4. **Interface gate**: before launching wave N+1, review the subtasks in wave N whose
+   `interfaces_exposed` appear in any later wave's `interfaces_consumed`. Delegate one
    `code-reviewer` pass scoped to those interface contracts only — signatures, schemas,
    error contracts — not full implementation quality. Subtasks exposing nothing consumed
-   downstream skip this gate and are reviewed once at Step 6 as today.
+   downstream skip this gate and are reviewed once at Step 6.
 
 **Step 5** → `senior-developer` (per subtask): Modify ONLY `files_owned` · implement
-`interfaces_exposed` · consume `interfaces_consumed` · write tests. For interface
-contract conventions and implementation-order heuristics, load
-`references/senior-developer-patterns.md`. **GATE**: `pytest --cov` must pass with ≥80%
-coverage.
+`interfaces_exposed` · consume `interfaces_consumed` · write tests. For implementation
+order, load `references/spec-to-dev-playbook.md`; for function, error-handling, async,
+and dataclass patterns, `references/senior-developer-patterns.md`. **GATE**:
+`pytest --cov` passes at the coverage floor in `code-standards-summary.md`.
 
 **Run artifact** — `notes/spec-to-dev_<feature>_<YYYY-MM-DD>.md`, written by the
 orchestrator at Step 4 and appended to by each `senior-developer` dispatch:
@@ -119,5 +118,5 @@ examples.
 
 ## Done when
 
-- All gates pass (tests green, coverage ≥80%) · code review complete with zero critical
-  findings · documentation updated · user approved the plan before execution.
+- All gates pass (tests green, coverage at the floor) · code review complete with zero
+  critical findings · documentation updated · user approved the plan before execution.

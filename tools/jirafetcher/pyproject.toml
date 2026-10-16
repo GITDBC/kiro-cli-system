@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10.7,<0.12.0"]
+requires = ["uv_build==0.11.30"]
 build-backend = "uv_build"
 
 [project]
@@ -7,11 +7,11 @@ name = "jira-fetcher"
 version = "0.6.0"
 description = "Fetch, transition, and comment on Jira subtasks from a story."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.13.*"
 authors = [
     {name = "Daniel Bazo Correa", email = "<email>"},
 ]
-dependencies = ["requests>=2.32,<3"]
+dependencies = ["requests==2.33.1"]
 
 [tool.uv.build-backend]
 module-name = "jirafetcher"
@@ -29,7 +29,7 @@ pipeline = [
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "ruff==0.16.4",
-    "types-requests>=2.32,<3",
+    "types-requests==2.33.0.20260408",
 ]
 
 [project.scripts]
@@ -41,7 +41,7 @@ indent-width = 4
 extend-exclude = [".venv", ".uv-cache"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "PL", "UP", "N", "B"]
+select = ["E", "F", "W", "PL", "UP", "N", "B", "G", "D100", "D104"]
 ignore = [
     "E203", "E402", "E721",
     "B007", "B904", "B905",

@@ -61,7 +61,11 @@
           "**/id_rsa",
           "id_ed25519",
           "./id_ed25519",
-          "**/id_ed25519"
+          "**/id_ed25519",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -87,6 +91,11 @@
         "capability": "shell",
         "match": ["uv *", "git *", "make fmt", "make fmt-check"],
         "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": ["uv add*", "uv pip install*", "uv sync*"],
+        "effect": "ask"
       },
       {
         "capability": "shell",
@@ -120,12 +129,7 @@
       }
     ]
   },
-  "resources": [
-    "skill://.kiro/skills/code-standards/SKILL.md",
-    "skill://.kiro/skills/domain-research/SKILL.md",
-    "skill://.kiro/skills/mermaid-diagrams/SKILL.md",
-    "skill://.kiro/skills/spec-to-dev/SKILL.md"
-  ],
+  "resources": ["skill://.kiro/skills/spec-to-dev/SKILL.md"],
   "welcomeMessage": "Ready to document. What needs writing?",
-  "model": "claude-sonnet-5"
+  "model": "claude-sonnet-5.5"
 }

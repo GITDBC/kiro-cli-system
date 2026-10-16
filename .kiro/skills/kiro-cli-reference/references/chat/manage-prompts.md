@@ -79,11 +79,13 @@ Shows comprehensive information about a prompt including:
 
 ## Using prompts
 
-Once you've created prompts, invoke them in chat using the @ prefix:
+In V3, workspace, global, and MCP prompts appear in slash-command completion. Type `/` and select a prompt, or invoke it directly:
 
 ```
-@prompt-name
+/prompt-name [arguments]
 ```
+
+Completion shows the prompt's argument hints. Kiro resolves the file template or requests the MCP prompt content before sending the expanded text to the model. Other CLI engines continue to support the `@prompt-name` form.
 
 ### File and directory references (v1.26.0+)
 
@@ -135,8 +137,8 @@ This means your prompts always take precedence over files with the same name.
 ### Examples
 
 ```
-@code-review
-# Uses your local code-review prompt
+/code-review
+# Uses your local code-review prompt in V3
 
 @src/auth.rs
 # Includes the contents of src/auth.rs file
@@ -145,22 +147,22 @@ This means your prompts always take precedence over files with the same name.
 # Shows the directory structure of crates/agent/
 ```
 
-## Passing arguments to MCP prompts
+## Passing arguments to prompts
 
-MCP server prompts can accept arguments to customize their behavior. File-based prompts (local and global) do not support arguments.
+MCP prompts can declare required and optional arguments. V3 file prompts can interpolate positional arguments with `$` through `$`, all arguments with `$ARGUMENTS`, or the same full argument string with `$`.
 
-### MCP prompt argument syntax
-
-```
-@server-name/prompt-name <required-arg> [optional-arg]
-```
-
-Use `/prompts details prompt-name` to discover what arguments an MCP prompt accepts.
+### Prompt argument syntax
 
 ```
-# Example: Using MCP prompt with arguments
-@dev-tools/analyze "performance issue" "detailed"
-@security-tools/scan "web-app" "high-severity"
+/prompt-name <required-arg> [optional-arg]
+```
+
+Use `/prompts details prompt-name` to inspect an MCP prompt's declared arguments. Slash-command completion shows the same hints.
+
+```
+# Examples: V3 prompts with arguments
+/analyze "performance issue" "detailed"
+/scan "web-app" "high-severity"
 ```
 
 ## Storage locations
@@ -230,15 +232,15 @@ These examples demonstrate file-based prompt creation and MCP prompt usage.
 # Create a simple prompt without arguments
 /prompts create --name code-review --content "Please review this code for best practices, security issues, and potential improvements:"
 
-# Use the prompt (no arguments supported for file-based prompts)
-@code-review
+# Use the prompt in V3
+/code-review
 ```
 
 ### MCP prompt usage with arguments
 
 ```
 # Using MCP prompts with arguments
-@dev-tools/analyze "performance bottleneck" "cpu usage"
-@security-tools/scan "web-app" "high-severity"
-@aws-tools/deploy "my-service" "production" "us-west-2"
+/analyze "performance bottleneck" "cpu usage"
+/scan "web-app" "high-severity"
+/deploy "my-service" "production" "us-west-2"
 ```

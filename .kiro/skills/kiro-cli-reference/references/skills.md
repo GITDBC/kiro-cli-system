@@ -15,6 +15,7 @@ Skills are portable instruction packages that follow the open [Agent Skills](htt
 | Skill activation | ✓ | ✓ | ✓ | ✓ |
 | Workspace skills (`.kiro/skills/`) | ✓ | ✓ | ✓ | ✓ |
 | Global skills (`~/.kiro/skills/`) | ✓ | ✓ | — | — |
+| Upload local skills to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | — |
 
 Kiro supports the Agent Skills standard, so you can import skills from the community or other compatible AI tools, and share your own skills across the ecosystem.
 

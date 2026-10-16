@@ -1,64 +1,16 @@
 # KPI Engineering Patterns & Anti-Patterns
 
-Reference for the kpi-analyst agent. Covers correct aggregation, percentile analysis,
-edge-case handling, temporal normalization, cross-layer correlation, and catalog
-templates.
+Reference for the kpi-analyst agent: aggregation rules, the percentile-direction
+convention, minimum-attempt thresholds, normalization periods, the cross-layer fault
+matrix, and the catalog and measurement-request templates.
 
-## Online References
+## Aggregation Rules
 
-## Pattern: Explicit Numerator / Denominator
-
-Every KPI must be defined as a ratio with clearly identified numerator and denominator
-counters.
-
-```yaml
-kpi:
-  name: "E-RAB Setup Success Rate"
-  numerator:
-    counter: "ERAB_Setup_Succ"
-    description: "E-RAB successfully established"
-  denominator:
-    counter: "ERAB_Setup_Att"
-    description: "E-RAB setup attempts"
-  formula: "(numerator / denominator) × 100"
-  unit: "%"
-  direction: "higher_is_better"
-```
-
-Why: eliminates ambiguity about what is measured, enables automated validation, and
-makes counter-to-KPI traceability auditable.
-
-## Anti-Pattern: Averaging Averages
-
-**Problem:** Computing a network-wide KPI by averaging per-cell KPI values.
-
-```python
-# WRONG — averaging averages
-cell_kpis = [99.8, 99.5, 50.0]  # cell C has 2 attempts, 1 success
-network_avg = sum(cell_kpis) / len(cell_kpis)  # 83.1% — misleading
-```
-
-This gives equal weight to a cell with 2 attempts and a cell with 10,000 attempts.
-
-**Fix:** Always aggregate from raw counters, then compute the ratio.
-
-```python
-# CORRECT — weighted aggregation from counters
-cells = [
-    {"succ": 9980, "att": 10000},  # cell A: 99.8%
-    {"succ": 4975, "att": 5000},   # cell B: 99.5%
-    {"succ": 1,    "att": 2},      # cell C: 50.0%
-]
-total_succ = sum(c["succ"] for c in cells)  # 14956
-total_att = sum(c["att"] for c in cells)    # 15002
-network_kpi = (total_succ / total_att) * 100  # 99.69% — correct
-```
-
-**Rule:** `KPI_aggregated = Σ(numerator_i) / Σ(denominator_i) × 100`
-
-This applies to all ratio KPIs: success rates, drop rates, utilization. The only
-exception is throughput, where you must decide between per-user average and cell
-aggregate.
+- Every KPI is a ratio of named numerator and denominator counters, never an implicit
+  definition.
+- Aggregate from raw counters, never by averaging per-cell KPI values:
+  `KPI_aggregated = Σ(numerator_i) / Σ(denominator_i) × 100`. The one exception is
+  throughput, where per-user average and cell aggregate must be chosen explicitly.
 
 ## Pattern: Percentile Analysis vs Thresholds
 
@@ -78,56 +30,11 @@ Averages hide distribution tails. Use percentiles for integrity KPIs.
 - **Threshold-based:** `% cells with KPI > target`. Example: "95% of cells have DL PRB
   Util < 70%".
 
-```python
-import numpy as np
+## Low-Denominator Cells
 
-samples = [...]  # per-user throughput samples
-p50 = np.percentile(samples, 50)
-p95 = np.percentile(samples, 5)   # NOTE: for throughput, P95 = 5th percentile (worst 5%)
-p99 = np.percentile(samples, 1)   # worst 1%
-
-# For latency (higher is worse), P95 = 95th percentile
-latency_p95 = np.percentile(latency_samples, 95)
-```
-
-**Key distinction:** For "higher is better" metrics (throughput), P95 worst = 5th
-percentile. For "lower is better" metrics (latency, BLER), P95 worst = 95th percentile.
-
-## Anti-Pattern: Silent Division by Zero
-
-**Problem:** Cells with zero attempts produce `0/0 = NaN` or crash. Silently replacing
-with 0% or 100% corrupts analysis.
-
-```python
-# WRONG — silent corruption
-def calc_sr(succ, att):
-    if att == 0:
-        return 100.0  # assumes "no attempts = perfect" — WRONG
-    return (succ / att) * 100
-```
-
-**Fix:** Exclude cells with denominator below a minimum threshold. Report them
-separately.
-
-```python
-MIN_ATTEMPTS = 10  # configurable per KPI
-
-def calc_sr(succ: int, att: int) -> float | None:
-    """Returns SR or None if insufficient samples."""
-    if att < MIN_ATTEMPTS:
-        return None  # excluded from aggregation, flagged for review
-    return (succ / att) * 100
-
-# Aggregation: filter None values, report excluded cell count
-results = [calc_sr(c["succ"], c["att"]) for c in cells]
-valid = [(c, r) for c, r in zip(cells, results) if r is not None]
-excluded_count = len(cells) - len(valid)
-
-# Aggregate from raw counters of valid cells only
-agg_succ = sum(c["succ"] for c, _ in valid)
-agg_att = sum(c["att"] for c, _ in valid)
-network_kpi = (agg_succ / agg_att) * 100 if agg_att > 0 else None
-```
+Never replace `0/0` with 0% or 100%. Exclude cells whose denominator is below a per-KPI
+minimum from aggregation, aggregate the remaining cells from raw counters, and report
+the excluded cell count.
 
 **Minimum attempt thresholds (typical):**
 
@@ -143,17 +50,6 @@ network_kpi = (agg_succ / agg_att) * 100 if agg_att > 0 else None
 Raw counters are cumulative over the measurement period (typically 15 min or 1 hour).
 Normalize for comparison.
 
-### Busy Hour Analysis
-
-```python
-# Identify busy hour: hour with highest traffic volume
-hourly_volumes = df.groupby(df["timestamp"].dt.hour)["dl_volume_bytes"].sum()
-busy_hour = hourly_volumes.idxmax()
-
-# Filter KPIs to busy hour only for capacity assessment
-bh_data = df[df["timestamp"].dt.hour == busy_hour]
-```
-
 **Busy Hour definition (ITU-T):** The continuous 1-hour period with the highest traffic
 load. In practice, use the hour with the highest DL data volume or highest PRB
 utilization.
@@ -166,16 +62,6 @@ utilization.
 | Daily trending   | 1 hour    | Busy hour identification, daily pattern |
 | Weekly reporting | Busy hour | Capacity planning, SLA reporting        |
 | Dimensioning     | Busy hour | Network design, traffic forecast        |
-
-### Rate normalization
-
-```python
-# Convert volume counter to rate
-dl_rate_mbps = (dl_volume_bytes * 8) / (period_seconds * 1e6)
-
-# Convert event counter to rate
-ho_attempts_per_hour = ho_att_count * (3600 / period_seconds)
-```
 
 ## Pattern: Cross-Layer Correlation
 

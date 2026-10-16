@@ -5,17 +5,9 @@ Check Python dependency freshness and known vulnerabilities against
 
 ## Requirements
 
-- Python >= 3.11
-- [uv](https://docs.astral.sh/uv/) (package manager)
+- Python 3.13 and [uv](https://docs.astral.sh/uv/)
 
-## Setup
-
-```bash
-# Clone and install
-git clone <repo-url>
-cd work-depschecker
-make setup
-```
+Set up with `make setup` inside `tools/depschecker`.
 
 ## Usage
 
@@ -23,6 +15,9 @@ Freshness comes from the declared constraints in `pyproject.toml`; vulnerabiliti
 from the resolved versions in `uv.lock`, which is also the only place transitive
 dependencies appear. The lockfile is inferred as a sibling of the given
 `pyproject.toml`, so the existing invocation keeps working unchanged.
+
+The commands below assume the tool environment is active. From the repository root,
+prefix each with `uv run --project tools/depschecker`.
 
 ```bash
 # Full report (freshness + vulnerabilities), uv.lock inferred alongside
@@ -65,6 +60,12 @@ python -m depschecker.cli pyproject.toml
 `--vulns-only` and the default full report both require a lockfile and exit with code 1
 if one cannot be found. Failing loudly is deliberate: the alternative is a scan that
 reports no vulnerabilities because it audited nothing.
+
+### Configuration
+
+When `WORK_AGENTS_CONFIG` points to the repository `config.toml`, the `[depschecker]`
+section is read (see `config.toml.example`); `--timeout` takes priority. A malformed
+config file exits 1 with a message.
 
 ## Output
 
@@ -125,3 +126,10 @@ tool on a single upstream.
 plus an assertion that the requested URL contains the version segment. A live-network
 equivalent is opt-in via `DEPSCHECKER_LIVE_NETWORK=1` and skipped by default so the
 suite stays deterministic.
+
+## Development
+
+Targets (`make lint`, `make code-check`, `make test`, `make all`) come from
+[`tools/tool.mk`](../tool.mk); the repository gates (`make lint-depschecker`,
+`make test-depschecker`) are in the root [`Makefile`](../../Makefile). `make test`
+enforces an 80% coverage floor.

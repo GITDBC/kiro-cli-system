@@ -24,7 +24,7 @@ If you are a Kiro Free Tier user or a Kiro individual subscriber, your content, 
 
 If you are a [Kiro enterprise user](https://kiro.dev/docs/enterprise/concepts.md#kiro-enterprise-user), your content, such as prompts and responses, may be stored in the region where your profile is configured in order to provide and maintain the service (for example: prompt logging, daily activity report), but it will not be used for service improvement.
 
-With cross-region inferencing, your content may be processed in a different Region within the geography where your content is stored. For more information, see [Cross-region processing](#cross-region-processing).
+Where a model processes your requests can differ from where Kiro stores your content. A model's inference scope shows whether requests stay within one geography or may use supported commercial AWS Regions worldwide. Inference location does not change the Region where Kiro stores your content. See [Cross-region processing](#cross-region-processing).
 
 ## Operational signals
 
@@ -36,28 +36,27 @@ The following sections describe how cross-region inference and cross-region call
 
 ### Cross-region inference
 
-Kiro is powered by Amazon Bedrock, and uses cross-region inference to distribute traffic across different AWS Regions to enhance large language model (LLM) inference performance and reliability. With cross-region inference, you get increased throughput and resilience during high demand periods, as well as improved performance.
+Kiro is powered by Amazon Bedrock and uses cross-region inference to route requests among supported AWS Regions.
 
-Cross region inference doesn't affect where your data is stored. For information on where data is stored when you use Kiro, see [AWS Regions where content is stored and processed](#aws-regions-where-content-is-stored-and-processed).
+Cross-region inference doesn't affect where your data is stored. For information on where data is stored when you use Kiro, see [AWS Regions where content is stored and processed](#aws-regions-where-content-is-stored-and-processed).
 
 ### Supported regions for Kiro cross-region inference
 
-For models or capabilities under the experimental tag, see "[Global cross-region inference for experimental features](#global-cross-region-inference-for-experimental-features)".
+The Regions below support inference within each Kiro geography. Individual models may use one or more listed Regions. For each model's inference scope and endpoint location, see [Inference endpoint regions](https://kiro.dev/docs/models.md#inference-endpoint-regions). For the Global scope, see [Global cross-region inference](#global-cross-region-inference).
 
-| Supported Kiro geography| Inference regions |
+| Supported Kiro geography | Inference regions |
 |-------------------------|-------------------|
-| United States	| <ul><li>US East (N. Virginia) (`us-east-1`)</li><li>US West (Oregon) (`us-west-2`)</li><li>US East (Ohio) (`us-east-2`)</li><li>AWS GovCloud (US-East)</li><li>AWS GovCloud (US-West)</li></ul> | 
+| United States | <ul><li>US East (N. Virginia) (`us-east-1`)</li><li>US West (Oregon) (`us-west-2`)</li><li>US East (Ohio) (`us-east-2`)</li></ul> |
 | Europe | <ul><li>Europe (Frankfurt) (`eu-central-1`)</li><li>Europe (Ireland) (`eu-west-1`)</li><li>Europe (Paris) (`eu-west-3`)</li><li>Europe (Stockholm) (`eu-north-1`)</li><li>Europe (Milan) (`eu-south-1`)</li><li>Europe (Spain) (`eu-south-2`)</li></ul> |
+| AWS GovCloud (US) | <ul><li>AWS GovCloud (US-East)</li><li>AWS GovCloud (US-West)</li></ul> |
 
-### Global cross-region inference for experimental features
+<a id="global-cross-region-inference-for-experimental-features" />
 
-Kiro may introduce new models and capabilities under an experimental tag, which process data differently than in the table above. When a model is launched as experimental, Kiro may use global cross-region inference to improve performance, increase throughput, and take advantage of available capacity across supported commercial AWS Regions worldwide. Global cross-region inference applies only to models explicitly designated as experimental.
+### Global cross-region inference
 
-For models and capabilities marked as experimental:
+Some Kiro models and capabilities use global cross-region inference. When Global routing applies, requests may be processed in supported commercial AWS Regions worldwide, including Regions outside your Kiro profile's geography. This does not change where Kiro stores your content. Global cross-region inference does not apply to AWS GovCloud (US).
 
-- Inference requests may be processed in multiple AWS Regions globally, including Regions outside the one associated with your Kiro profile.
-- The Region where your data is stored is not affected by global cross-region inference. 
-- This global routing is used to optimize resource availability and allow consistent performance for experimental model launches.
+The [Inference endpoint regions](https://kiro.dev/docs/models.md#inference-endpoint-regions) table marks each model whose inference scope is Global. When a capability uses Global routing, its documentation identifies that routing. Lifecycle status and inference scope are independent.
 
 ## Data encryption
 
@@ -131,6 +130,10 @@ By default, Kiro collects usage data, errors, crash reports, and other metrics a
     - Spec generation
     - Tools
     - MCP
+
+### Where client telemetry is sent
+
+Kiro IDE sends client telemetry to a Kiro telemetry endpoint in the AWS Region of your selected profile. If Kiro has no telemetry endpoint in that Region, the IDE drops the telemetry rather than sending it to another Region. The endpoints are listed in [Firewall requirements](https://kiro.dev/docs/privacy-and-security/firewalls.md).
 
 ## Kiro Abuse Detection
 

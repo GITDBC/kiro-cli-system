@@ -22,7 +22,7 @@ lives in `.kiro/orchestration/` and is loaded by the orchestrator alone, so a sp
 never pays for it and never has to decide whether it applies.
 
 `delegation-lifecycle.md` reaches the session through an explicit
-`file://../orchestration/delegation-lifecycle.md` entry in
+`file://.kiro/orchestration/delegation-lifecycle.md` entry in
 `.kiro/agents/orchestrator.json`. That entry is load-bearing — removing it strips the
 orchestrator of its delegation machinery.
 
@@ -46,12 +46,20 @@ Source: `delegation-lifecycle.md`, `### Delegation modes` and `### Depth calibra
 The orchestrator sends the complete task specification in the first dispatch — scope,
 constraints, file boundaries, success criteria — and the agent opens with a brief
 preflight then implements in the same turn. Anthropic's guidance drives this for every
-model the project runs: Opus 5 "performs best when given the complete task specification
-up front and left to run", and the same page names "legacy harness scaffolding that adds
-separate verification steps" as something to remove. For Sonnet 5, which backs most of
-the specialist pool, "it is important to specify the task, intent, and relevant
-constraints upfront in the first human turn", because specifications delivered
-progressively across turns reduce token efficiency and sometimes quality.
+model the project runs. The Opus 5.5 guide says the Opus 5 patterns "remain a reasonable
+starting point", and the Opus 5 guide states that the model "performs best when given
+the complete task specification up front and left to run" and names "legacy harness
+scaffolding that adds separate verification steps" as something to remove (Opus 5
+guidance; the Opus 5.5 guide restates neither point). The Opus 5.5 guide adds that the
+model "sustains long-running autonomous work better than Claude Opus 5", run "end to end
+with parallel subagents and little oversight". For Sonnet, which backs most of the
+specialist pool, the Sonnet 5 guide holds that "it's important to specify the task,
+intent, and relevant constraints upfront in the first human turn", because
+specifications delivered progressively across turns reduce token efficiency and
+sometimes quality (Sonnet 5 guidance; the Sonnet 5.5 guide says those patterns "remain a
+reasonable starting point"). The Sonnet 5.5 guide corroborates the cost of the opposite
+pattern: "On agentic coding tasks at `low` and `medium` effort, the model sometimes
+checks in before the work is done."
 
 File count is not a criterion — a mechanical rename across twelve files qualifies, and
 so does an unambiguous multi-file change. Lines and ambiguity are the real proxies for
@@ -146,7 +154,11 @@ large multi-section run above, the same defect class landed on `High` in one sec
 Source: `delegation-lifecycle.md`, `### Delegation floor`.
 
 Anthropic's Opus 5 guidance: "If one subagent can complete the task, use one rather than
-several, and keep spawn counts low."
+several, and keep spawn counts low." This is Opus 5 guidance that still applies: the
+Opus 5.5 guide says the Opus 5 patterns "remain a reasonable starting point" and
+restates no spawning rule of its own. The Sonnet 5.5 guide corroborates the cost of
+unrequested review dispatches: telling the model to stop launching reviewer sub-agents
+at `max` effort "cut session cost by about a third, with no change in quality".
 
 The Conductor's minimum viable pool (typically 2–4) is the governing rule; the floor
 states its intent for dispatches that do not go through the Conductor.
@@ -154,7 +166,8 @@ states its intent for dispatches that do not go through the Conductor.
 A reviewing stage that checks a **different** agent's output against stated criteria is
 the endorsed writer-verifier pattern — Opus 5 "coordinates teams of subagents well, with
 effective writer-verifier patterns", and the prohibition Anthropic states is scoped to
-"your own work". That is why a review stage is allowed while re-verifying the
+"your own work". Both quotations are Opus 5 guidance; the Opus 5.5 guide has no
+equivalent statement. That is why a review stage is allowed while re-verifying the
 orchestrator's own output is not, and why such a stage is expressed as a native review
 loop rather than one extra dispatch per artifact.
 
@@ -171,43 +184,72 @@ written — but it is bought where it is uncertain rather than everywhere. The
 orchestrator's plan is a hypothesis; a preflight validates the parts of it most likely
 to be wrong.
 
-## Session effort: sources, the step-down argument, and current state
+## Session effort: sources, the step-down argument, and mechanics
 
 Source: `delegation-lifecycle.md`, `### Session effort policy`.
 
-Sources for the recommendation table: Kiro's `effort.md` ("Use `max` for security
-reviews, complex debugging sessions") and Anthropic's `xhigh` recommendation for the
-hardest coding and agentic tasks. Effort is orthogonal to the credit-multiplier Cost
-column in `routing.md` — it changes reasoning depth within a model, not which model
-runs, so the two levers are set independently.
+Sources for the recommendation table, read against `claude-opus-5.5`, the model behind
+the three `high (2.0x)` agents; the orchestrator itself runs `claude-sonnet-5.5`:
 
-Stepping down is the primary lever rather than an exception: Anthropic's `effort.md`
-directs using `low` and `medium` "liberally as your primary control for token cost and
-response time wherever your evals show quality holds", and Kiro's `effort.md` says to
-bump down when quick answers are wanted. The step-down rows read against the committed
-baselines in `.kiro/settings/cli.json` — `claude-opus-5` at `high`, `claude-sonnet-5` at
-`medium` — not against an imagined default. Anthropic also instructs re-running an
-effort sweep rather than reusing levels carried over from an earlier model; that sweep
-is currently unmeasurable here, as the project has no eval harness.
+- The Opus 5.5 guide ("Calibrate effort"): "Reserve `xhigh` and `max` for work where
+  you've measured a quality gain", and "At a given level, Claude Opus 5.5 tends to think
+  more per turn than Claude Opus 5, especially at `xhigh` and `max`." The project has no
+  measurement, and a level name now buys more thinking than before. Hence `max` is not
+  recommended by any row, the two former `max` rows sit at `xhigh`, and the design row
+  moved from `xhigh` to `high`.
+- Anthropic's `effort.md` table describes `xhigh` as for "Long-running agentic and
+  coding tasks (over 30 minutes)", which fits a full security audit and a debugging
+  session that has already failed twice.
+- The Opus 5.5 guide: at its default `medium` the model "matched or beat Claude Opus 5
+  at `high` effort" on agentic coding, and "on several coding evaluations `low` comes
+  close to it at much lower cost". This supports the `low` row for routine mechanical
+  work.
+- Kiro's `effort.md` ("Use `max` for security reviews, complex debugging sessions") is
+  model-agnostic. The model-specific Opus 5.5 guidance is the narrower source, so it
+  governs where the two differ. A measured gain at `max` is the condition for returning
+  to Kiro's recommendation.
 
-Current state, recorded so it is not re-derived: `claude-sonnet-5` runs at `medium` in
-this workspace while Anthropic documents `high` as that model's default, a deliberate
-cost choice a future operator can revisit with that comparison in hand. Settled, so it
-is not reopened: `claude-haiku-4.5` runs with `thinking: {type: disabled}` and
-`max_tokens: 16000` in workspace scope, and Anthropic's `effort.md` front matter omits
-that model from `supportedModels` — effort is not an available lever for it, so no
-`effort` value belongs in its defaults.
+Effort is orthogonal to the credit-multiplier Cost column in `routing.md` — it changes
+reasoning depth within a model, not which model runs, so the two levers are set
+independently.
 
-## Routing: why step five of the decision procedure reads the Cost column
+Stepping down is the primary lever rather than an exception. The Opus 5.5 guide: "To get
+less thinking, lower the effort level first. Lowering effort reduces thinking, and with
+it cost and latency, more reliably than prompt instructions do." The Sonnet 5.5 guide
+agrees: "To get less thinking, lower the effort level." The stronger wording is Opus 5
+guidance that still applies and has no 5.5 counterpart: Anthropic's `effort.md` directs
+using `low` and `medium` "liberally as your primary control for token cost and response
+time wherever your evals show quality holds". Kiro's `effort.md` says to bump down when
+quick answers are wanted. The step-down rows read against the committed baselines in
+`.kiro/settings/cli.json`, not against an imagined default. Both 5.5 guides instruct
+running a fresh effort sweep rather than carrying settings over from the earlier model;
+that sweep is currently unmeasurable here, as the project has no eval harness.
 
-Source: `routing.md`, `## Routing Decision Procedure`.
+The committed values live in `.kiro/settings/cli.json` and are not restated here. The
+evidence behind running both 5.5 models at `medium`: Anthropic reports that Opus 5.5 at
+`medium` matched or beat Opus 5 at `high` in fewer tokens, which matters for a model
+carrying a 2.0x multiplier; for Sonnet, Anthropic's agentic starting point is "start at
+`medium` for well-specified tasks and move to `high` for harder or longer ones". The
+documented cost is that "[a]t `low` and `medium`, on long agentic tasks, it's more
+likely to stop and check in with the user before it finishes", which the carry-through
+clause in `COMMON.md` addresses at the prompt level instead of by raising effort.
+Neither value has been measured.
 
-Step 5 uses the Cost column (`high (2.2x)`, `medium (1.3x)`, `low (0.4x)`), not a
-qualitative guess. In practice this means: reach for a `medium (1.3x)` agent before
-software-architect, senior-developer, or security-engineer when either would produce an
-acceptable result. It does NOT mean routing implementation work away from
-senior-developer — capability match comes first, and cost only breaks ties between
-agents that both genuinely qualify.
+Mechanics moved here from the policy: effort resolves per model from
+`chat.modelDefaults`, or per session via `--effort` / `/effort`, with precedence session
+→ workspace → user → built-in. `use_subagent` accepts only `agent_name`, `query`, and
+`relevant_context`, and subagents inherit the session's steering, MCP, permissions, and
+file access, which is why effort cannot be a per-dispatch lever. The recommendation
+table assumes the orchestrator's session model, `claude-sonnet-5.5`; whether a
+session-level `/effort` reaches subagents running `claude-opus-5.5` is not verified, and
+the per-model lever is `chat.modelDefaults`. The `xhigh` rows are ceilings, and `max` is
+reserved for a measured quality gain.
+
+A future operator revisiting either value needs an eval harness first; without one the
+sweep both guides call for cannot be run. Settled, so it is not reopened:
+`claude-haiku-4.5` runs with `thinking: {type: disabled}` in workspace scope, and
+Anthropic's `effort.md` front matter omits that model from `supportedModels` — effort is
+not an available lever for it, so no `effort` value belongs in its defaults.
 
 ## Routing: the two disambiguation rules most often applied backwards
 
@@ -220,25 +262,54 @@ Source: `routing.md`, `### Critical disambiguation`.
   the library name alone carries no routing signal. Route on whether the work is a data
   pipeline or data-quality task.
 
-## Debugging pattern: why qa-engineer also declares the skill
-
-Source: `routing.md`, `### Pattern details`.
-
-The Debugging row names only the executor, not every agent wired to the skill.
-`qa-engineer.json` also declares `debugging`, deliberately: qa-engineer consumes the
-same root-cause material for test-failure analysis under its own
-`identifying failure patterns or flaky tests` trigger, without participating in that
-workflow as a second executor. `check_pattern_resource_wiring` does not flag this
-because it only verifies agents named in a pattern row, never the converse (see that
-check's docstring for the reasoning).
-
 ## Security audit: why one security-engineer dispatch and not three
 
 Source: `routing.md`, `### Pattern details`.
 
-One high-cost (2.2x) invocation plus one medium (1.3x), so roughly 3.5x against the
-roughly 7.9x the four-invocation form cost. The three perspectives collapsed into one
-dispatch for two reasons: Opus 5 finds real bugs at a high rate per pass with its extra
-findings mostly real rather than false positives, which removes the single-pass-recall
-premise multi-perspective voting was built on; and three passes over the same codebase
-are not the genuinely independent tracks the delegation guidance endorses for a fan-out.
+One high-cost (2.0x) invocation plus one medium (1.3x), so roughly 3.3x against the
+roughly 7.3x the four-invocation form cost (three security-engineer invocations at 2.0x
+plus one code-reviewer at 1.3x). The three perspectives collapsed into one dispatch for
+two reasons: the Opus 5.5 guide reports "more bugs caught than on Claude Opus 5 and
+fewer false alarms" in code review, which removes the single-pass-recall premise
+multi-perspective voting was built on (Opus 5 guidance made the same point: it "finds
+real bugs at a high rate per pass"); and three passes over the same codebase are not the
+genuinely independent tracks the delegation guidance endorses for a fan-out.
+
+## State registry: scope and why it ships empty
+
+Source: the header of `memory/state.yaml` and `delegation-lifecycle.md`,
+`### State protection`.
+
+The orchestrator filters the registry by `scope` and passes only intersecting entries,
+so every entry is paid for in context on the invocations it matches. An entry belongs
+there only if it constrains future work and is captured nowhere else: coding rules live
+in `code-standards`, review rules in `reviewing-code`, delegation conventions in
+`delegation-lifecycle.md`, routing in `routing.md`, layout in `README.md` and
+`tools/TOOLS_OVERVIEW.md`, and anything a check can enforce in `tools/driftcheck`. A
+copy in the registry drifts from the reviewed original the moment one is edited and the
+other is not. `agent_feedback` is for a recurring delegation failure pattern with no
+other home — for example "code-reviewer fails silently on large contexts, retry with
+half the files".
+
+The registry was reset on 2026-08-26 because all sixteen earlier entries had been
+written into one of those artefacts; git history, not the registry, is the changelog.
+This repository is a framework installed into other projects, so the registry is
+per-consuming-project state and ships empty here; `decisions` and `agent_feedback` are
+empty by design. A full day of architectural work confirmed that steering files and
+skills hold decisions with durable force, and that rejected ideas belong in an
+out-of-scope register in the consuming project's own tree. In a framework tree,
+`memory/` holding anything but the template is a drift-check error; the check applies
+only while the root `.gitignore` ignores `memory/` contents, so a consuming project that
+tracks its own `memory/` disables it by dropping that rule. `state.yaml` structure is
+checked only by the driftcheck state check, run by the `make drift-check` gate; no hook
+validates it.
+
+A learned-state store that promotes entries into agent context without human review —
+correction detection, episode capture, threshold-based rule promotion, lessons
+auto-injection — was assessed and rejected, and the Self-improvement pattern in
+`routing.md` may not propose one. None of the reference implementations placed a review
+gate between detection and promotion, and the detection step is documented as
+unreliable: it misses subtle corrections and drops rapid ones inside a dedup window. A
+durable learned pattern belongs in a reviewed skill or steering file. The prohibition
+covers automatic promotion, not persistence; a design with an explicit human gate stays
+open.

@@ -1,12 +1,10 @@
 ---
 name: jira-enhancement
 description: >
-  Full lifecycle management of enhancement JIRAs for prototypes. Phase 1: creates
-  detailed markdown documentation (problem, solution, affected files, verification,
-  effort, risks). Phase 2: synchronizes with JIRA (create subtasks, update descriptions,
-  attach files, manage priority tables). Phase 3: audits alignment between local
-  markdowns and JIRA tickets. Triggers: 'document enhancement', 'jira enhancement',
-  'sync with jira', 'audit jira'. Not for simple ticket reads (use jira-fetcher).
+  Enhancement JIRA lifecycle for prototypes: document the enhancement in Markdown, sync
+  it to JIRA (subtasks, descriptions, attachments), and audit local Markdown against
+  tickets. Triggers: 'document enhancement', 'jira enhancement', 'sync with jira',
+  'audit jira'. Not for simple ticket reads (use jira-fetcher).
 ---
 
 # JIRA Enhancement Documentation
@@ -45,8 +43,9 @@ Ask the user for all 7 before proceeding:
 
 ## Phase 2 — Synchronize with JIRA → `senior-developer`
 
-5. **Connect to JIRA** — Use `JIRA_URL`, `JIRA_TOKEN`, `JIRA_EMAIL` env vars. Use
-   `jira-fetcher` skill. Never display tokens.
+5. **Connect to JIRA** — Through the `jira-fetcher` skill, which covers credentials and
+   which operations need the `jira` library (subtask creation, attachments) rather than
+   the CLI. Never display tokens.
 6. **Create or update JIRA** — New subtasks: identify parent, copy fields from siblings,
    create ticket, upload attachments. Existing JIRAs: update description (wiki format),
    update time tracking.

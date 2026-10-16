@@ -4,6 +4,9 @@
 import json
 from pathlib import Path
 
+# 3pps
+import pytest
+
 # Own modules
 from driftcheck.checks.agents import (
     check_agent_registry,
@@ -277,7 +280,7 @@ def test_v2_fields_permit_the_subagent_block(valid_root: Path) -> None:
     write_agent(
         valid_root,
         "orchestrator",
-        model="claude-sonnet-5",
+        model="claude-sonnet-5.5",
         toolsSettings={
             "subagent": {
                 "availableAgents": ["senior-developer"],
@@ -318,6 +321,18 @@ def test_model_governance_rejects_unapproved_model(valid_root: Path) -> None:
     assert "unapproved model 'gpt-4o'" in errors[0].message
 
 
+@pytest.mark.parametrize(
+    "model",
+    ["claude-opus-5.5", "claude-sonnet-5.5", "claude-opus-5", "claude-sonnet-5"],
+)
+def test_model_governance_accepts_both_five_generations(
+    valid_root: Path, model: str
+) -> None:
+    """Adopting 5.5 keeps the previously approved 5.0 ids approved."""
+    write_agent(valid_root, "senior-developer", model=model)
+    assert problems(check_model_governance(build_context(valid_root))) == []
+
+
 def test_model_governance_warns_on_missing_model(valid_root: Path) -> None:
     """An agent without a model field is a warning."""
     write_agent(valid_root, "senior-developer", model="")
@@ -331,7 +346,7 @@ def test_cost_labels_detect_wrong_label(valid_root: Path) -> None:
     """An opus agent documented as low cost is a warning."""
     write(
         valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.2x)", "low (0.4x)"),
+        ROUTING_MD.replace("high (2.0x)", "low (0.4x)"),
     )
     findings = check_cost_labels(build_context(valid_root))
     warnings = problems(findings)
@@ -343,12 +358,37 @@ def test_cost_labels_detect_wrong_multiplier(valid_root: Path) -> None:
     """A right label with a wrong multiplier is a warning."""
     write(
         valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.2x)", "high (1.3x)"),
+        ROUTING_MD.replace("high (2.0x)", "high (1.3x)"),
     )
     findings = check_cost_labels(build_context(valid_root))
     warnings = problems(findings)
     assert severities(warnings) == [Severity.WARNING]
     assert "cost multiplier" in warnings[0].message
+
+
+def test_cost_labels_hold_opus_five_point_five_at_two_point_zero(
+    valid_root: Path,
+) -> None:
+    """Opus 5.5 is 2.0x, so the 2.2x of the rest of its family is wrong."""
+    write(
+        valid_root / ".kiro" / "orchestration" / "routing.md",
+        ROUTING_MD.replace("high (2.0x)", "high (2.2x)"),
+    )
+    warnings = problems(check_cost_labels(build_context(valid_root)))
+    assert severities(warnings) == [Severity.WARNING]
+    assert "expected '2.0x'" in warnings[0].message
+
+
+def test_cost_labels_keep_other_opus_models_at_two_point_two(
+    valid_root: Path,
+) -> None:
+    """The 5.5 exception does not leak to the rest of the Opus family."""
+    write_agent(valid_root, "senior-developer", model="claude-opus-5")
+    write(
+        valid_root / ".kiro" / "orchestration" / "routing.md",
+        ROUTING_MD.replace("high (2.0x)", "high (2.2x)"),
+    )
+    assert problems(check_cost_labels(build_context(valid_root))) == []
 
 
 def test_cost_labels_accept_legacy_label_without_multiplier(
@@ -357,7 +397,7 @@ def test_cost_labels_accept_legacy_label_without_multiplier(
     """A bare label is tolerated when no multiplier is published."""
     write(
         valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.2x)", "high"),
+        ROUTING_MD.replace("high (2.0x)", "high"),
     )
     assert problems(check_cost_labels(build_context(valid_root))) == []
 
@@ -395,7 +435,7 @@ def write_cli_settings(root: Path, models: list[str]) -> Path:
 
 def test_model_defaults_accept_models_every_agent_uses(valid_root: Path) -> None:
     """Defaults matching the agents' own models are clean."""
-    write_cli_settings(valid_root, ["claude-opus-5", "claude-sonnet-5"])
+    write_cli_settings(valid_root, ["claude-opus-5.5", "claude-sonnet-5.5"])
     findings = check_model_defaults(build_context(valid_root))
     assert problems(findings) == []
 
@@ -458,7 +498,7 @@ def test_model_defaults_reject_non_object_model_defaults(
     """A modelDefaults entry of the wrong shape is an error."""
     write(
         valid_root / ".kiro" / "settings" / "cli.json",
-        json.dumps({"chat.modelDefaults": ["claude-opus-5"]}),
+        json.dumps({"chat.modelDefaults": ["claude-opus-5.5"]}),
     )
     errors = problems(check_model_defaults(build_context(valid_root)))
     assert severities(errors) == [Severity.ERROR]

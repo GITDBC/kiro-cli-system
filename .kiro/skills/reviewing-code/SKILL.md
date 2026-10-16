@@ -1,12 +1,11 @@
 ---
 name: reviewing-code
 description: >
-  Reviews Python code for bugs, enforces project conventions, applies fixes, and
-  validates with the project's linters and tests. Use when the user asks for a code
-  review, quality check, lint/test validation, or needs code reviewed and fixed.
-  Triggers: 'review code', 'code review', 'check quality', 'run linters', 'review and
-  fix', 'fix issues'. Not for proactive refactoring (use refactoring skill) or tech debt
-  assessment only (use tech-debt-tracking).
+  Reviews Python code for bugs and convention violations, applies fixes, and validates
+  with the project's linters and tests. Triggers: 'review code', 'code review', 'check
+  quality', 'run linters', 'review and fix', 'fix issues'. Not for proactive refactoring
+  (delegate to senior-developer) or tech debt assessment (the orchestrator's Tech debt
+  assessment pattern).
 ---
 
 # Reviewing and Fixing Code
@@ -21,39 +20,50 @@ description: >
 ```
 
 **Step 1** → `code-reviewer`: Read `pyproject.toml` and `Makefile`. Review for bugs,
-security issues, missing error handling, convention violations, performance issues. For
-Google-docstring convention details, load `references/python-docstrings.md`. For modern
-Python idioms (3.11+ syntax, stdlib replacements) worth flagging as `Simplify` findings,
-load `references/python-modern-patterns.md`. For the severity and effort anchors, the
-frozen value vocabulary, and the parallel-run calibration block, load
-`references/finding-calibration.md`.
+security issues, missing error handling, convention violations, performance issues, and
+work through the Non-Lint-Checkable Checklist below. Load on demand:
+`references/python-docstrings.md` (Google-docstring conventions),
+`references/python-modern-patterns.md` (3.13-baseline idioms worth a `Simplify`
+finding), and `references/finding-calibration.md` (severity and effort anchors, frozen
+vocabulary, parallel-run calibration block).
 
-Work through the Non-Lint-Checkable Checklist below in addition to whatever the linters
-report. Every finding must carry `file:line`, a code fragment, and a concrete fix.
+**Step 2** → `code-reviewer`: Fix `Critical` and `High` findings, plus `Medium` ones
+whose effort is `XS` or `S`. Don't refactor unrelated code. For large codebases (>15
+files with findings), split into batches of 7–12 files.
+
+**Step 3** → `code-reviewer`: Run project validation. In this repository the gate is
+`make lint-all` and `make test-all`, narrowed to `make lint-<tool>` / `make test-<tool>`
+while iterating on one tool under `tools/`, plus `make drift-check` when the review
+touched the agent system; no bare `make lint`, `make test`, or `make code-check` target
+exists. In another project, detect targets from its `Makefile` per the tooling-detection
+table in `.kiro/steering/COMMON.md`, and fall back to `uv run ruff check .`,
+`uv run mypy .` and `uv run pytest` where no Makefile provides them. Only run unit tests
+— integration tests require external services.
+
+**Step 4** → `code-reviewer`: Re-review only changed files (`git diff`).
+
+- No `Critical`/`High` findings remain → complete; do not emit the trigger.
+- Any remain → end the review output with the literal line `NEEDS_CHANGES`. The native
+  loop (target: fix, max 3 iterations) re-runs steps 2–4 only when that exact token is
+  present.
+- After the third iteration → stop and report unresolved items.
 
 ### Concrete finding bar
 
-Emit a finding only when it clears this bar: a named `file:line`, a code fragment or
-excerpt showing the actual defect, and a concrete proposed change — not a description of
-what a fix would generally look like. This is a floor, not a ranking: everything at or
-above it goes in the findings table exactly once, at the severity and effort the
-calibration anchors in `references/finding-calibration.md` assign it. There is no
-separate downstream filter or ranking stage in this skill that defers or re-weighs
-findings after Step 1 — Step 2 fixes by severity/effort tier as written below, and
-nothing upstream of that narrows the table further. State the scope actually reviewed
-(files, or `git diff` range) at the top of the report; do not silently expand review
-scope to files outside that stated range, and do not silently narrow it to skip files
-inside the range because they looked clean on a first pass.
+Emit a finding only when it has a named `file:line`, a code fragment showing the actual
+defect, and a concrete proposed change. This is a floor, not a ranking: everything at or
+above it goes in the findings table exactly once, at the severity and effort the anchors
+in `references/finding-calibration.md` assign; no later stage re-weighs it. State the
+scope reviewed (files, or `git diff` range) at the top of the report, and neither expand
+nor silently narrow it.
 
 ## Non-Lint-Checkable Checklist
 
 No linter catches these. Each item is one rule from the "Numerical Safety and Data
 Integrity" and "I/O and Configuration Boundaries" tables in
-`.kiro/skills/code-standards/SKILL.md`, which owns the rule text and the enforcement
-mechanism — load it for the exact guard, dtype, retry and re-raise patterns a finding
-should propose. They recurred across many isolated reviewer contexts in a large-scale
-multi-section review, which is why this is a mandatory active search rather than an
-incidental discovery.
+`.kiro/skills/code-standards/SKILL.md`, which owns the rule text and the patterns a
+finding should propose. This list is the canonical copy; other files point here. It is a
+mandatory active search.
 
 ```
 - [ ] C1 Division: every `/` with a runtime denominator is guarded. `.fill_nan()` does
@@ -93,25 +103,16 @@ Emit exactly these columns, in this order:
 - **Self-retracted findings are forbidden.** If the detail paragraph concludes "not a
   defect", "no functional issue", "optional", or "can be skipped", delete the row
   instead of emitting it and arguing against it.
-- **No confidence column, by design.** The frozen columns above are final; do not add a
-  `Confidence` field. Anthropic's guidance uses confidence to feed a downstream ranker
-  that this skill does not have — Step 2 fixes strictly by the `Severity`/`Effort` tiers
-  already in the table, so a qualitative confidence score would have nothing to drive
-  and would just reintroduce ranking ambiguity the concrete finding bar exists to
-  remove.
+- **No confidence column**: Step 2 fixes by `Severity`/`Effort` alone, so there is
+  nothing for a confidence score to drive.
 - `### Larger opportunities (out of scope)` is a mandatory closing section and the only
   place architectural proposals may appear: 1–3 sentences each, at most five items,
-  never numbered into the findings table, never implemented. It is a pressure valve that
-  kept scope creep out of the findings in a large multi-section run — keep it, but keep
-  it terse.
+  never numbered into the findings table, never implemented.
 
 ### Spec compliance
 
-Reported separately from the findings table above — it is a distinct axis (does the
-change do what was asked) from standards conformance (is the code correct and
-idiomatic), and mixing the two would force a `Category` value the frozen findings
-vocabulary does not have. Adapted from mattpocock/skills (MIT), which runs Standards and
-Spec as two parallel review axes.
+Reported separately from the findings table: it asks whether the change does what was
+asked, a distinct axis from standards conformance. Adapted from mattpocock/skills (MIT).
 
 Run this axis when a ticket, spec, or design document is available (Jira key, linked
 issue, design doc referenced in the PR description, or explicit user-supplied
@@ -128,38 +129,17 @@ Report shape, prose or short bullets, not the findings table:
   satisfies a different reading of the requirement than the obvious one). State "no
   divergence found" explicitly when the diff matches the spec.
 
-A divergence found here is reported in this section only; it is never folded into the
-findings table as a new `Category`, and never assigned a `Severity`/`Effort` pair from
-that table's frozen vocabulary.
-
-**Step 2** → `code-reviewer`: Fix `Critical` and `High` findings, plus `Medium` ones
-whose effort is `XS` or `S`. Don't refactor unrelated code. For large codebases (>15
-files with findings), split into batches of 7–12 files.
-
-**Step 3** → `code-reviewer`: Run project validation. In this repository the gate is
-`make lint-all` and `make test-all`, narrowed to `make lint-<tool>` / `make test-<tool>`
-while iterating on one tool under `tools/`, plus `make drift-check` when the review
-touched the agent system; no bare `make lint`, `make test`, or `make code-check` target
-exists. In another project, detect targets from its `Makefile` per the tooling-detection
-table in `.kiro/steering/COMMON.md`, and fall back to `uv run ruff check .`,
-`uv run mypy .` and `uv run pytest` where no Makefile provides them. Only run unit tests
-— integration tests require external services.
-
-**Step 4** → `code-reviewer`: Re-review only changed files (`git diff`).
-
-- No `Critical`/`High` findings remain → complete.
-- Any remain AND iteration < 3 → repeat steps 2–4.
-- Any remain AND iteration ≥ 3 → stop, report unresolved items.
+A divergence is reported in this section only, never as a findings-table row.
 
 ## Note Files for Parallel Reviews
 
 One reviewer per section, one file per reviewer, no shared write target:
-`notes/<project>-review-<YYYY-MM-DD>/<section-id>.md` plus a single
-`IMPROVEMENT_ANALYSIS.md` consolidation in the same directory. `<section-id>` is the
-module path with `/` replaced by `-` (e.g. `pipeline-transforms`, `api-handlers`). This
-is the convention in the "Notes layout" section of
-`.kiro/orchestration/delegation-lifecycle.md`; it makes `<section-id>/F3` a stable,
-greppable finding reference.
+`notes/reviewing-code_<YYYY-MM-DD>/<section-id>.md` plus a single
+`IMPROVEMENT_ANALYSIS.md` consolidation in the same directory — the
+`notes/<skill>_<YYYY-MM-DD>/<section-id>.md` shape in the "Notes layout" section of
+`.kiro/orchestration/delegation-lifecycle.md`. `<section-id>` is the module path with
+`/` replaced by `-` (e.g. `pipeline-transforms`), which makes `<section-id>/F3` a
+stable, greppable finding reference.
 
 ## Output Format
 
@@ -178,20 +158,7 @@ What: `pl.col("volume") / pl.col("units")` is unguarded; `units` is 0 for a newl
 registered entity, so the rate becomes `inf` and propagates into downstream planning
 with no log.
 
-Proposed change: wrap in `pl.when(pl.col("cells") > 0).then(...).otherwise(None)`.
-```
-
-When a finding is delivered as an inline review comment rather than a table row, use:
-
-```
-**[Critical] Security: SQL Injection Risk**
-Line 42: User input is interpolated directly into the query.
-
-**Why:** An attacker could inject malicious SQL through the name parameter.
-
-**Suggestion:**
-Use parameterized queries:
-`db.query('SELECT * FROM users WHERE name = %s', (name,))`
+Proposed change: wrap in `pl.when(pl.col("units") > 0).then(...).otherwise(None)`.
 ```
 
 The `Simplify` category keeps its provenance sub-tags: `stdlib:` (hand-rolled logic the
@@ -201,12 +168,8 @@ it). See `references/python-modern-patterns.md`.
 
 ## Rules
 
-- Always read `pyproject.toml` and `Makefile` before reviewing.
 - Priorities: bugs and security over style.
-- Never emit a finding without `file:line`, and never emit a finding you then retract.
-- Do not refactor unrelated code.
 - Use `uv run` for all tool invocations.
-- Use `git diff` to scope reviews to changed files only.
 
 ## Done when
 

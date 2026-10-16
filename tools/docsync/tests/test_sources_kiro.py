@@ -17,8 +17,11 @@ import pytest
 import docsync.net as net_module
 from docsync.sources.kiro import (
     BASE_URL,
+    CLI_SECTIONS,
+    EXCLUDED_PATHS,
     KiroSource,
     get_doc_pages,
+    is_excluded,
     page_for,
     select_pages,
 )
@@ -29,14 +32,20 @@ from docsync.types import MirrorPaths
 # documentation indexes, a page still below /docs/cli/, a page relocated
 # to a top-level section, a section index, an entry without the usual
 # trailing slash, one page advertised under both its legacy and its
-# canonical URL, and the sections of the other Kiro products.
+# canonical URL, the sections of the other Kiro products, and pages the
+# mirror excludes on purpose in both URL forms.
 SITEMAP = """<?xml version="1.0"?>
 <urlset>
   <url><loc>https://kiro.dev/docs/</loc></url>
   <url><loc>https://kiro.dev/docs/cli/</loc></url>
   <url><loc>https://kiro.dev/docs/cli/chat/context/</loc></url>
   <url><loc>https://kiro.dev/docs/cli/setup</loc></url>
+  <url><loc>https://kiro.dev/docs/mcp/usage/</loc></url>
   <url><loc>https://kiro.dev/docs/billing/managing-taxes/</loc></url>
+  <url><loc>https://kiro.dev/docs/cli/billing/managing/</loc></url>
+  <url><loc>https://kiro.dev/docs/cli/acp/</loc></url>
+  <url><loc>https://kiro.dev/docs/cli/terminal-ui/comparison/</loc></url>
+  <url><loc>https://kiro.dev/docs/getting-started/installation/</loc></url>
   <url><loc>https://kiro.dev/docs/hooks/</loc></url>
   <url><loc>https://kiro.dev/docs/cli/hooks/</loc></url>
   <url><loc>https://kiro.dev/docs/crew/agents/</loc></url>
@@ -53,17 +62,17 @@ SITEMAP = """<?xml version="1.0"?>
 MOVED_STUB = b"# Moved\n\nThis page is now at: /docs/hooks.md\n"
 
 PAGES = {
-    "https://kiro.dev/docs/billing/managing-taxes.md": b"# Taxes\n",
     "https://kiro.dev/docs/cli/chat/context.md": b"# Context\n",
     "https://kiro.dev/docs/cli/hooks.md": MOVED_STUB,
     "https://kiro.dev/docs/cli/setup.md": b"# Setup\n",
     "https://kiro.dev/docs/hooks.md": b"# Hooks\n",
+    "https://kiro.dev/docs/mcp/usage.md": b"# MCP usage\n",
 }
 
 EXPECTED_PATHS = [
-    "billing/managing-taxes.md",
     "chat/context.md",
     "hooks.md",
+    "mcp/usage.md",
     "setup.md",
 ]
 
@@ -133,10 +142,10 @@ def test_a_cli_page_drops_the_section_from_its_mirror_path() -> None:
 
 def test_a_relocated_page_keeps_the_section_in_its_mirror_path() -> None:
     """A /docs/<section>/<rest> URL is mirrored as <section>/<rest>.md."""
-    page = page_for("https://kiro.dev/docs/billing/managing-taxes/")
+    page = page_for("https://kiro.dev/docs/mcp/usage/")
     assert page is not None
-    assert page.relative_path == "billing/managing-taxes.md"
-    assert page.url == "https://kiro.dev/docs/billing/managing-taxes.md"
+    assert page.relative_path == "mcp/usage.md"
+    assert page.url == "https://kiro.dev/docs/mcp/usage.md"
 
 
 def test_a_section_index_maps_to_a_top_level_file() -> None:
@@ -182,6 +191,55 @@ def test_an_index_or_foreign_url_is_out_of_scope(url: str) -> None:
     assert page_for(url) is None
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://kiro.dev/docs/billing/managing-taxes/",
+        "https://kiro.dev/docs/cli/billing/managing/",
+        "https://kiro.dev/docs/enterprise/",
+        "https://kiro.dev/docs/cli/acp/",
+        "https://kiro.dev/docs/cli/terminal-ui/",
+        "https://kiro.dev/docs/cli/terminal-ui/comparison/",
+        "https://kiro.dev/docs/cli/v3/migration-guide/",
+        "https://kiro.dev/docs/getting-started/installation/",
+        "https://kiro.dev/docs/models/govcloud/",
+        "https://kiro.dev/docs/mcp/registry/",
+    ],
+)
+def test_an_excluded_page_is_out_of_scope_in_either_url_form(url: str) -> None:
+    """Exclusions match the mirror path, legacy or canonical URL alike."""
+    assert page_for(url) is None
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://kiro.dev/docs/cli/v3/agent-config/",
+        "https://kiro.dev/docs/cli/v3/permissions/",
+        "https://kiro.dev/docs/cli/v3/new-features/",
+        "https://kiro.dev/docs/cli/v3/tangent/",
+        "https://kiro.dev/docs/getting-started/first-project/",
+        "https://kiro.dev/docs/models/available-models/",
+    ],
+)
+def test_a_sibling_of_an_excluded_page_stays_in_scope(url: str) -> None:
+    """A page-level exclusion never drops its whole section."""
+    assert page_for(url) is not None
+
+
+def test_an_exclusion_matches_whole_path_segments_only() -> None:
+    """An entry excludes its subtree, never a path that merely extends it."""
+    assert is_excluded("voice")
+    assert is_excluded("terminal-ui/comparison")
+    assert not is_excluded("voice-notes")
+    assert not is_excluded("terminal-uix")
+
+
+def test_no_dropped_section_is_still_tracked() -> None:
+    """A section excluded wholesale is absent from CLI_SECTIONS too."""
+    assert not EXCLUDED_PATHS & CLI_SECTIONS
+
+
 def test_discovery_resolves_every_shape_in_the_sitemap(
     source: KiroSource, offline: None
 ) -> None:
@@ -222,7 +280,7 @@ def test_sync_downloads_new_pages(
     counts = sync(source, paths)
     assert (counts.new, counts.updated, counts.unchanged, counts.failed) == (4, 0, 0, 0)
     assert (paths.refs_dir / "setup.md").read_bytes() == b"# Setup\n"
-    assert (paths.refs_dir / "billing" / "managing-taxes.md").is_file()
+    assert (paths.refs_dir / "mcp" / "usage.md").is_file()
     assert (paths.refs_dir / "chat" / "context.md").is_file()
     marker = json.loads(paths.marker_path.read_text(encoding="utf-8"))
     assert marker["pages_total"] == 4
@@ -279,4 +337,17 @@ def test_the_adapter_derives_known_slugs_from_the_discovered_pages(
     counts = sync(source, paths, prune=True)
     assert counts.orphans == 1
     assert not stale.exists()
-    assert (paths.refs_dir / "billing" / "managing-taxes.md").is_file()
+    assert (paths.refs_dir / "mcp" / "usage.md").is_file()
+
+
+def test_prune_removes_a_local_copy_of_an_excluded_page(
+    source: KiroSource, paths: MirrorPaths, offline: None
+) -> None:
+    """An excluded page is never discovered, so pruning treats it as an orphan."""
+    sync(source, paths)
+    excluded = paths.refs_dir / "billing" / "managing-taxes.md"
+    excluded.parent.mkdir(parents=True)
+    excluded.write_text("# Taxes\n", encoding="utf-8")
+    counts = sync(source, paths, prune=True)
+    assert counts.orphans == 1
+    assert not excluded.exists()

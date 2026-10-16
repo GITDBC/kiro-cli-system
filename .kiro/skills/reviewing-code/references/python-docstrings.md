@@ -8,7 +8,6 @@
 - Always leave a blank line after the closing `"""`
 - Always include a `Returns` section, even for `None` returns (end with ".")
 - Generators use `Yields:` instead of `Returns:`
-- Tab-indent multi-line return descriptions for the same result
 
 ## Internal spacing
 
@@ -37,7 +36,6 @@ def example(name: str, count: int = 1) -> str:
 
 - Inline/nested functions of 1-2 lines (e.g. `re.sub` callbacks)
 - Single-line `@property` methods
-- `__init__.py` files
 
 ## Descriptions
 

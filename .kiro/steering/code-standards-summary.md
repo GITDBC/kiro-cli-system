@@ -10,7 +10,7 @@ they reference this table by name instead.
 
 | Threshold           | Value                                        |
 | ------------------- | -------------------------------------------- |
-| Python version pin  | `==3.11.*` — 3.11 exclusively, managed by uv |
+| Python version pin  | `==3.13.*` — 3.13 exclusively, managed by uv |
 | Test coverage floor | 80% minimum, enforced by the SonarQube gate  |
 | Max source line     | 88 characters (Ruff)                         |
 | Max docstring line  | 73 characters                                |
@@ -27,8 +27,8 @@ they reference this table by name instead.
 - **Error handling**: `ValueError` for validation, specific exceptions, `raise from`
 - **Testing**: pytest, `test_*` naming
 - **Security**: bandit, no credentials in source, licensecheck
-- **Naming**: snake*case functions/vars, PascalCase classes, UPPER_SNAKE constants,
-  `df*`prefix for DataFrames,`Config` suffix for config classes
+- **Naming**: `snake_case` functions/vars, `PascalCase` classes, `UPPER_SNAKE`
+  constants, `df_` prefix for DataFrames, `Config` suffix for config classes
 - **Polars** for data processing (not Pandas), NumPy for numerical computation
 - **No deprecated code**: no `datetime.utcnow()`, no
   `from __future__ import annotations`

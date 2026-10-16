@@ -78,8 +78,8 @@ kiro-cli agent create my-agent
 kiro-cli agent edit my-agent
 kiro-cli agent edit  # Defaults to current agent
 
-# Previous syntax (still supported)
-kiro-cli agent validate ./my-agent.json
+# Validate an agent config
+kiro-cli agent validate --path ./my-agent.json
 kiro-cli agent set-default my-agent
 ```
 
@@ -111,7 +111,8 @@ kiro-cli chat [OPTIONS] [INPUT]
 | `--v3` | Use the V3 agent harness for this session. Conflicts with `--v2` and `--agent-engine` |
 | `--v2` | Use the V2 agent harness for this session. Takes precedence over a saved `chat.agentEngine` value without changing it. Conflicts with `--v3` and `--agent-engine` |
 | `--trust-all-tools` | Allow the model to use any tool without confirmation |
-| `--trust-tools` | Trust only specified tools (comma-separated list) |
+| `--trust-tools` | Pre-approve listed tools. Non-interactive V3 matches exact internal tool IDs; interactive V3 ignores the flag; CLI 2.x accepts its own tool names |
+| `--sandbox` | Require the local command sandbox for a V3 headless run. Use with `--no-interactive` or `--output-format stream-json` |
 | `--require-mcp-startup` | Exit with code 3 if any MCP server fails to start |
 | `--wrap` | Line wrapping mode: `always`, `never`, or `auto` (default) |
 | `--effort <LEVEL>` | Set the initial reasoning effort level for the session: `low`, `medium`, `high`, `xhigh`, or `max` |
@@ -867,7 +868,7 @@ Control logging and Kiro home directory with these environment variables:
 
 | Variable | Values | Description |
 |----------|--------|-------------|
-| `KIRO_HOME` | path | Override the `~/.kiro` directory used for global agents, prompts, skills, steering, settings, and sessions |
+| `KIRO_HOME` | path | Override the global Kiro directory used for MCP configuration and sign-ins, permissions, sessions, Powers, settings, custom agents, Skills, Steering, Workflows, and other V3 agent state |
 | `KIRO_LOG_LEVEL` | `error`, `warn`, `info`, `debug`, `trace` | Set logging verbosity (default: `error`) |
 | `KIRO_LOG_NO_COLOR` | `1`, `true`, `yes` | Disable colored log output (v1.26.0+) |
 

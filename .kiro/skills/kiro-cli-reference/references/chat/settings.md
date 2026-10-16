@@ -4,15 +4,21 @@
 
 # In-session settings
 
-> Configure theme, keybindings, terminal input, display preferences, and prompt history from within a chat session
+> Configure response output, theme, keybindings, terminal input, display preferences, feature toggles, and prompt history from within a chat session
 
-Run `/settings` to change how Kiro looks and behaves — colors, keyboard shortcuts, multi-line input, display toggles, and prompt history scope — without leaving your chat session. Run `/settings` on its own to open the menu, or jump straight to a subcommand with `/settings <subcommand>`.
+Run `/settings` to change how Kiro responds, looks, and behaves — output style, colors, keyboard shortcuts, multi-line input, display toggles, feature toggles, and prompt history scope — without leaving your chat session. Run `/settings` on its own to open the menu, or jump straight to a subcommand with `/settings <subcommand>`.
 
-Available subcommands: `theme`, `keybindings`, `terminal`, `display`, and `history`.
+Available subcommands: `theme`, `keybindings`, `terminal`, `display`, `features`, and `history`.
 
 ## Menu controls
 
 Every settings menu shares the same controls. `Up` and `Down` move between rows. `Left` reverses a toggle or cycle. `Right` and `Enter` toggle or cycle a value, select a radio option, or open a navigation row, and `Enter` also runs action rows. `Esc` closes the top-level menu or returns from a submenu. These controls apply to `/settings`, Display, Status line, Theme, and `/verbosity`. In `/verbosity`, `Ctrl+X` cycles the preview through hidden, mini, and expanded.
+
+## Output styles in V3
+
+In a V3 session, run `/settings display` and use the **Output style** row to choose how Kiro formats responses. The available styles come from the active agent when the Display menu opens, so an upgraded agent can supply new choices without a CLI update.
+
+Your selection is saved as the global `chat.outputStyle` preference and applies to subsequent prompts. Choosing the agent's default removes the global override. A workspace-level `chat.outputStyle` value continues to take precedence; in that case, the row shows the active workspace style while you edit the global default.
 
 ## Subcommands
 
@@ -85,6 +91,7 @@ Toggle visual features for accessibility or personal preference, using the [menu
 ```
 
 Available toggles:
+- **Output style** (V3) — choose how Kiro formats responses; the active agent supplies the available styles
 - **Animations** (`chat.allowAnimations`) — when off, spinners and shimmers show static frames instead of animating
 - **ASCII art** (`chat.allowAsciiArt`) — when off, replaces braille dots, box-drawing, and Unicode symbols with plain ASCII
 - **Icons** (`chat.allowIcons`) — when off, hides status indicator icons (●, ○, ⚠) in favor of text-only labels
@@ -92,10 +99,39 @@ Available toggles:
 - **Status line** — choose whether the status line shows the date, time, current usage percentage, and remaining credits. These optional segments are hidden by default. Changes take effect immediately and persist across sessions
 - **Terminal title** — when on, sets the terminal window title from a custom name you provide with [`/title`](https://kiro.dev/docs/reference/slash-commands.md#title). Enable from `/settings display`
 - **Preserve scrollback**: when on, keeps terminal history available during overflow and resize redraws
+- **Screen reader** (`chat.screenReader`): full terminal UI only. Choose `auto` (default), `on`, or `off`. See [Screen reader support](#screen-reader-support)
 
 Animations, ASCII art, icons, and status-line changes take effect immediately. The **Show thinking** toggle is startup-only — it persists right away, but the change applies to your next chat session. See [Thinking display](#thinking-display) below.
 
 **ℹ️ Info:** Setting the environment variable `KIRO_ASCII_MODE=1` forces ASCII mode regardless of the ASCII art toggle.
+
+#### Screen reader support
+
+In the full terminal UI, screen reader support lets a screen reader follow Kiro's replies. While a reply streams and your prompt is empty, the hidden terminal cursor follows the reply text. When you start typing, open a menu, or respond to an approval, the cursor returns to that input.
+
+- **auto** (default): Kiro checks once whether VoiceOver is running on your local Mac, usually at startup or when you open `/settings display`. Over SSH or another remote connection, on other platforms, or when the check fails or takes too long, support stays off. Choose **on** in those cases.
+- **on**: always active.
+- **off**: never active.
+
+When support is active, IME input may appear in a different position. The setting is global only. To override it for a single launch, set `KIRO_SCREEN_READER` to `auto`, `on`, or `off`:
+
+```bash
+KIRO_SCREEN_READER=on kiro-cli chat
+```
+
+### `/settings features`
+
+Enable account-available agent features for future Kiro CLI processes.
+
+```bash
+/settings features
+```
+
+Enable **Workflows** to expose declarative workflow commands and controls. The choice is stored as `chat.enableWorkflows`. Exit and restart Kiro CLI after changing it; the current process does not add or remove workflow commands dynamically.
+
+When Workflows are enabled in V3, **Workflows: sub-agent tool** appears directly below the Workflows toggle. It is on by default, so the main chat can delegate directly to sub-agents or through Workflows. Turn it off to make Workflows the main chat's only delegation route; workflow steps can still use sub-agents when their agent configuration permits them. The choice is stored as `chat.enableMainAgentSubagentTool` and applies to new sessions.
+
+If **Workflows** does not appear, it is not available for your account. See [Workflows](https://kiro.dev/docs/workflows.md) for recipes, commands, and run behavior.
 
 ### `/settings history`
 
@@ -140,16 +176,19 @@ A few things to know:
 
 ## Persistence
 
-All changes made through `/settings` are saved to `~/.kiro/settings/cli.json` and apply to future sessions. You can also edit this file directly with `kiro-cli settings open`.
+Preferences changed through `/settings` persist across sessions. Most are saved to `~/.kiro/settings/cli.json`, while theme preferences are saved to `~/.kiro/settings/kiro_cli_theme.json`. You can edit the main settings file directly with `kiro-cli settings open`.
 
 ### Model and effort preferences
 
-Your `/model` and `/effort` selections persist automatically. Switch models or change the reasoning effort level once, and Kiro carries that preference into future sessions — you no longer need to run `/model set-current-as-default` to make a selection stick.
+Your `/model` selection applies to the current session only. To save the current model as the default for future sessions, run `/model set-current-as-default`; Kiro stores the default in `~/.kiro/settings/cli.json`.
 
-These preferences are written to `~/.kiro/settings/cli.json`, the same file used for other CLI settings. Per-model effort defaults live under `chat.modelDefaults`. See [Effort](https://kiro.dev/docs/models/effort.md) for the full reference.
+Effort works differently. Choosing a level in the `/model` picker persists it for that model. Using `/effort <level>` directly changes the current session only — run `/effort set-current-as-default` afterward to save it, or choose the level in `/model` instead. In V3, the `--effort` flag applies only to the session Kiro starts with.
+
+Per-model effort defaults live under `chat.modelDefaults`. See [Effort](https://kiro.dev/docs/models/effort.md) for the full reference.
 
 ## Related
 
 - [Settings reference](https://kiro.dev/docs/reference/settings.md) — full list of all CLI settings
 - [Terminal UI](https://kiro.dev/docs/cli/terminal-ui.md) — terminal UI features and configuration
 - [Configuration](https://kiro.dev/docs/configuration.md) — configuration file paths and scopes
+- [Workflows](https://kiro.dev/docs/workflows.md) — enable and run declarative workflows

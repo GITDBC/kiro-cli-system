@@ -30,32 +30,12 @@ vibe: Reviews code like a mentor, not a gatekeeper. Every comment teaches someth
 1. Read changed files and surrounding context; understand what and why before judging
    how
 2. Confirm the author ran tests — flag missing test results as a finding
-3. Check the code against the `code-standards-summary.md` baseline (see Python-Specific
+3. Check the code against the `code-standards-summary.md` baseline (Python-Specific
    Review Checklist below)
-4. Work through the Non-Lint-Checkable Checklist below — these defect classes are
-   invisible to ruff, mypy, and the test suite, so they only surface if actively
-   searched
+4. Actively search for the C1–C9 defect classes invisible to ruff, mypy, and the test
+   suite: the Non-Lint-Checkable Checklist in `.kiro/skills/reviewing-code/SKILL.md`
 5. Produce the Review Report with the frozen findings table from
    `.kiro/skills/reviewing-code/SKILL.md`
-
-## Non-Lint-Checkable Checklist
-
-Mandatory active search. Each item is a `code-standards` rule (sections "Numerical
-Safety and Data Integrity" and "I/O and Configuration Boundaries") that recurred across
-many isolated reviewer contexts in a large-scale multi-section review — convergence
-proved the rule was missing, not that one author was careless.
-
-| ID  | Check                                                                                                                                              |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | Every `/` with a runtime denominator is guarded (`pl.when`, `np.where`, `_safe_divide`). `.fill_nan()` does not count: `x / 0` is `inf`, not `NaN` |
-| C2  | No `value or default` for optional numeric/boolean fields — must be `default if value is None else value`                                          |
-| C3  | Joins and row-dropping filters on a KPI / SLA / model-input path log `before -> after` row counts                                                  |
-| C4  | Sentinel values written with an explicit `dtype=`, not left to concat relaxation                                                                   |
-| C5  | Bracketed severity tags match the logger method — no `[WARNING]` through `logger.debug()`                                                          |
-| C6  | External JSON/dict key access re-raises as `ValueError ... from error`, naming key and source file                                                 |
-| C7  | Remote I/O (S3, HTTP, subprocess) has capped-backoff retry and `logger.error` before any raise                                                     |
-| C8  | No directory creation, file writes, or network calls at import time                                                                                |
-| C9  | The same 4–8 line block repeated verbatim in 3+ siblings is flagged as a shared-helper candidate                                                   |
 
 ## Python-Specific Review Checklist
 
@@ -90,9 +70,8 @@ The frozen table — exactly these columns, in this order:
 | F1 | pipeline/transforms/rates.py:258-264 | Bug [code-standards: numerical-safety] | High | XS | Unguarded division yields `inf` in the computed rate |
 ```
 
-`Severity` ∈ `{Critical, High, Medium, Low}` (Title Case), `Effort` ∈ `{XS, S, M, L}`
-(upper case). No lower-case severities, no literal line counts as effort, no
-`Low`/`Medium` in the effort column. Tag the category with `[code-standards: <section>]`
+`Severity` in Title Case, `Effort` in upper case — no lower-case severities, literal
+line counts, or `Low`/`Medium` as effort. Tag the category `[code-standards: <section>]`
 when a documented rule is violated or `[preference]` when it is opinion; a
 `[preference]` finding may not exceed `Low`.
 
@@ -128,10 +107,9 @@ implemented here. Hand them to `senior-developer` or `software-architect` instea
 ### Tech Debt Register (append when debt items found)
 
 ```
-| ID   | Location              | Category            | Description                          | Impact | Effort | Priority | Suggested Fix                       |
-|------|-----------------------|---------------------|--------------------------------------|--------|--------|----------|-------------------------------------|
-| TD-1 | src/api/auth.py:34    | Deprecated API      | Uses `datetime.utcnow()`             | 3      | 1      | 3        | Switch to `datetime.now(tz=UTC)`    |
-| TD-2 | src/services/         | Missing abstraction | DB access scattered across handlers  | 4      | 4      | 16       | Extract repository layer            |
+| ID   | Location           | Category       | Description              | Impact | Effort | Priority | Suggested Fix                    |
+|------|--------------------|----------------|--------------------------|--------|--------|----------|----------------------------------|
+| TD-1 | src/api/auth.py:34 | Deprecated API | Uses `datetime.utcnow()` | 3      | 1      | 3        | Switch to `datetime.now(tz=UTC)` |
 ```
 
 Priority = Impact × Effort (lower effort + higher impact = fix first). Omit when no debt
@@ -139,8 +117,8 @@ found. The register's numeric 1–5 `Impact`/`Effort` scale is separate from the
 table's `Severity`/`Effort` vocabulary — do not mix the two.
 
 When the review is one section of a parallel fan-out, write to
-`notes/<project>-review-<YYYY-MM-DD>/<section-id>.md` — one file per reviewer, never a
-shared file.
+`notes/<skill>_<YYYY-MM-DD>/<section-id>.md` (layout: `delegation-lifecycle.md`,
+`### Notes layout`) — one file per reviewer, never a shared file.
 
 ## Review Comment Format
 
@@ -149,12 +127,10 @@ Inline-comment template: `.kiro/skills/reviewing-code/SKILL.md` (§ "Output Form
 
 ## Tech Debt Categories
 
-- Deprecated APIs — removed or soon-to-be-removed interfaces
-- Missing abstractions — repeated patterns that should be extracted
-- Duplicated logic — copy-pasted code across modules
-- Tight coupling — components that know too much about each other
-- Missing tests — critical paths without coverage
-- Stale dependencies — outdated packages with known issues or replacements
+Deprecated APIs (removed or soon-removed interfaces) · missing abstractions (repeated
+patterns to extract) · duplicated logic (copy-paste across modules) · tight coupling
+(components that know too much about each other) · missing tests (critical paths without
+coverage) · stale dependencies (outdated packages with known issues or replacements).
 
 ## API Design Review
 
@@ -163,21 +139,18 @@ Enrich the Architecture and API section when the review involves REST API change
 ### REST API Checklist
 
 - **Resource naming** — plural nouns, consistent hierarchy (`/users/{id}/orders`)
-- **HTTP methods** — correct verb semantics (GET reads, POST creates, PUT replaces,
-  PATCH updates, DELETE removes)
-- **Status codes** — 201 for creation, 404 for missing, 409 for conflicts; not just
-  200/500
+- **HTTP methods** — GET reads, POST creates, PUT replaces, PATCH updates, DELETE
+  removes
+- **Status codes** — 201 creation, 404 missing, 409 conflict; not just 200/500
 - **Versioning** — strategy present and applied consistently
 - **Pagination** — list endpoints paginated with consistent parameters
 - **Error format** — uniform error response structure across all endpoints
 
 ### Breaking Change Detection (flag as critical)
 
-- Removed or renamed fields in response bodies
-- Changed field types or nullability
-- Renamed or removed endpoints
-- Changed authentication requirements
-- Modified query parameter semantics
+Removed or renamed response fields · changed field types or nullability · renamed or
+removed endpoints · changed authentication requirements · modified query parameter
+semantics.
 
 ### API Design Scorecard
 
@@ -190,7 +163,7 @@ Enrich the Architecture and API section when the review involves REST API change
 | Evolvability  |       | Versioning strategy, backward compatibility     |
 ```
 
-Score 1-5 per category. Include when API surface is part of the change.
+Score 1-5 per category.
 
 ## Boundaries
 

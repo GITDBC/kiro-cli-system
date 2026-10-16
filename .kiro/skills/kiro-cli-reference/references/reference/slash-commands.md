@@ -52,13 +52,13 @@ Aliases: /exit, /q
 
 ### `/clear`
 
-Clear the current conversation history.
+Clear the active conversation state without starting a new session.
 
 ```bash
 > /clear
 ```
 
-Note: This only clears the display, not the saved conversation.
+**⚠️ Clear or start a new session:** `/clear` erases the current session's conversation history and resets its context while keeping the same session. Use `/chat new` to preserve the current conversation and start a separate one. In V3, both commands keep the current model while it remains available. `/clear` keeps its effort level, while `/chat new` loads that model's saved effort level. If the current model is unavailable, see [Model availability notices](https://kiro.dev/docs/cli/terminal-ui.md#model-availability-notices) for selection rules and recovery.
 
 ### `/context`
 
@@ -95,24 +95,34 @@ See [Context Management](https://kiro.dev/docs/cli/chat/context.md) for detailed
 
 ### `/model`
 
-Select an AI model for the current session. Use the interactive picker or specify a model name directly.
+Select an AI model for the current session and configure its reasoning settings. Use the interactive picker or specify a model name directly. In the picker, choose **Thinking** or **Effort** to see the options supported by the selected model.
 
 ```bash
 # Open interactive model picker
 > /model
 
 # Select a model directly by name
-> /model claude-opus-4.6
+> /model claude-opus-4.8
 
 # Tab completion for model names
 > /model clau<Tab>
 
 # Explicitly write the current model as the default
 > /model set-current-as-default
+
+# Show the current model's fallback in V1 or V2
+> /model fallback
+
+# Set one fallback for the current model in V1 or V2
+> /model fallback <model-id>
+
+# Clear the current model's fallback in V1 or V2
+> /model fallback clear
 ```
 
 **Available subcommands:**
 - `set-current-as-default` - Explicitly persist your current model selection as the default for all future sessions
+- `fallback [<model-id> | clear]` - Show, set, or clear the current model's fallback in V1 or V2
 
 **Features:**
 - Tab completion shows available models from the API as you type
@@ -120,7 +130,22 @@ Select an AI model for the current session. Use the interactive picker or specif
 - Fuzzy matching suggests similar models if exact name not found
 - Case-insensitive matching against model names and IDs
 
-**Note:** Your `/model` selection persists automatically. Switch models once and Kiro saves the choice to `~/.kiro/settings/cli.json`, carrying it into future sessions. The `set-current-as-default` subcommand is no longer required to make a selection stick; it remains available to explicitly write your current model as the default. See [Persistence](https://kiro.dev/docs/cli/chat/settings.md#persistence) for details.
+**Reasoning settings:**
+- **Thinking** controls whether a supported model uses extended reasoning
+- **Effort** controls how much reasoning the model applies
+- **Show thinking** in `/settings display` controls only whether reasoning blocks appear in the terminal
+
+**Model fallback (V1 and V2):**
+- If the current model refuses a turn, Kiro can try your configured fallback or a service-provided fallback.
+- When the backend marks the current model unavailable, Kiro can try only your configured fallback.
+- A model cannot use itself as its fallback.
+- A turn changes models at most three times. Kiro skips targets already tried or unavailable and explains when no usable target remains.
+
+**ℹ️ Info:** API-key sessions cannot configure model fallbacks. Kiro prints `This session's credentials cannot configure model fallbacks. Sign in to Kiro to configure one.` Kiro may also print `Fallback configuration is not enabled for this account.` If a save outcome is unknown, run `/model fallback` to check the stored value.
+
+The `/model fallback` subcommand applies to V1 and V2. In a V3 terminal UI session, the transcript reports when a turn moves to another model after a refusal or an unavailable model. See [Model fallback notices](https://kiro.dev/docs/cli/terminal-ui.md#model-fallback-notices).
+
+**Note:** Your `/model` selection applies to the current session only. To save the current model as the default for future sessions, run `/model set-current-as-default`. The saved default is stored in `~/.kiro/settings/cli.json`. See [Persistence](https://kiro.dev/docs/cli/chat/settings.md#persistence) for details. V3 terminal UI sessions also check whether saved and session models remain available. See [Model availability notices](https://kiro.dev/docs/cli/terminal-ui.md#model-availability-notices).
 
 ### `/agent`
 
@@ -190,7 +215,7 @@ See [Custom Agents](https://kiro.dev/docs/custom-agents.md) for detailed documen
 
 ### `/upgrade-agent`
 
-Migrate older agent configurations to the [v3 format](https://kiro.dev/docs/cli/v3/agent-config.md).
+Migrate older agent configurations to the [V3 format](https://kiro.dev/docs/cli/v3/agent-config.md).
 
 ```bash
 # Scan agents and open the selection menu
@@ -205,8 +230,9 @@ Migrate older agent configurations to the [v3 format](https://kiro.dev/docs/cli/
 - `diagnostics` - Review upgraded agents and their conversion warnings
 
 **Notes:**
-- Scans both `.kiro/agents/` (workspace) and `~/.kiro/agents/` (global)
+- Scans `.kiro/agents/` in the workspace and `~/.kiro/agents/` globally. If those directories don't exist, Kiro checks `.amazonq/cli-agents/` in the workspace and `~/.aws/amazonq/cli-agents/` globally. When `KIRO_AGENT_CONFIG_DIR` is set, Kiro uses that directory for the global scan and skips the workspace scan.
 - Original files are backed up to `.json.bak` before any changes
+- A symlinked config is updated through its target without replacing the symlink
 - Only agents that need upgrading appear in the selection menu
 
 See [Upgrading agent configs](https://kiro.dev/docs/cli/v3/upgrade-agent.md) for detailed documentation.
@@ -248,17 +274,22 @@ Manage chat sessions, including saving, loading, and switching between sessions.
 # Save current session to a file
 > /chat save /myproject/codereview.json
 
+# Overwrite an existing file (V3)
+> /chat save -f /myproject/codereview.json
+
 # Load a session from a file
 > /chat load /myproject/codereview.json
 ```
 
 **Available subcommands:**
-- `new` - Start a fresh conversation without restarting the CLI. Optionally pass an initial prompt (e.g., `/chat new how do I set up a React project`). Use `/chat resume` to return to previous sessions.
+- `new` - Start a fresh conversation without restarting the CLI. Optionally pass an initial prompt (e.g., `/chat new how do I set up a React project`). Use `/chat resume` to return to previous sessions. In V3, the new conversation keeps the current model while it remains available and uses that model's saved effort level. When the model list is available and the current model is unavailable, Kiro follows the [model availability rules](https://kiro.dev/docs/cli/terminal-ui.md#model-availability-notices).
 - `resume` - Open interactive session picker to choose a session to resume
-- `save` - Save current session to a file
+- `save` - Save current session to a file. In V3, pass `--force` or its short alias `-f` to overwrite an existing file at that path. A `-f`-shaped token inside a quoted path (e.g. `"a -f b".zip`) is treated as part of the path, not parsed as the flag.
 - `load` - Load a session from a file (`.json` extension is optional)
 - `save-via-script` - Save session using a custom script (receives JSON via stdin)
 - `load-via-script` - Load session using a custom script (outputs JSON to stdout)
+
+In V3, resumed or loaded sessions keep their stored model when it is unavailable. Kiro reports that requests will fail and points you to `/model`.
 
 **Notes:**
 - Sessions are automatically saved on every conversation turn
@@ -276,7 +307,7 @@ Toggle the current interactive session between inline and fullscreen mode.
 
 Fullscreen gives the conversation a dedicated terminal screen with mouse, touchpad, and keyboard scrolling. Run `/fullscreen` again to return inline. The command works with V2 and V3 and is available in both TUI and Lite; it is not available in non-interactive sessions.
 
-To start future interactive TUI sessions in fullscreen, open `/settings`, choose **Display**, and turn on **Start fullscreen**. See [Fullscreen mode](https://kiro.dev/docs/cli/fullscreen.md) for navigation, selection, and troubleshooting details.
+To start future interactive TUI sessions in fullscreen, open `/settings`, choose **Display** → **Full Screen**, and turn on **Start fullscreen**. See [Fullscreen mode](https://kiro.dev/docs/cli/fullscreen.md) for navigation, selection, and troubleshooting details.
 
 ### `/sessions`
 
@@ -548,7 +579,7 @@ Manage your knowledge base for semantic search across files and directories.
 - `--exclude` - Exclude patterns (can specify multiple)
 - `--index-type` - Fast or Best (default from settings)
 
-**Note:** This is an experimental feature. Enable with `kiro-cli settings chat.enableKnowledge true`.
+**Note:** V3 enables knowledge by default. Set `chat.enableKnowledge false` to turn it off. In V1 and V2, knowledge is experimental; enable it with `kiro-cli settings chat.enableKnowledge true`.
 
 See [Knowledge Management](https://kiro.dev/docs/cli/experimental/knowledge-management.md) for detailed documentation.
 
@@ -612,7 +643,7 @@ View tools and permissions. By default, Kiro will ask for your permission to use
 
 ### `/prompts`
 
-View and retrieve prompts. Prompts are reusable templates that help you quickly access common workflows and tasks. These templates are provided by the MCP servers you have installed and configured.
+View and manage reusable prompts. In V3, workspace, global, and MCP prompts are also advertised as direct slash commands with argument hints; invoking one resolves its template or MCP content before the expanded text reaches the model.
 
 ```bash
 # List available prompts from a tool or show all available prompts
@@ -624,8 +655,8 @@ View and retrieve prompts. Prompts are reusable templates that help you quickly 
 # Get a specific prompt by name
 > /prompts get code-review [arg]
 
-# Quick retrieval (without /prompts prefix)
-> @code-review [arg]
+# Direct V3 invocation with completion hints
+> /code-review [arg]
 
 # Create a new local prompt
 > /prompts create my-prompt
@@ -645,7 +676,7 @@ View and retrieve prompts. Prompts are reusable templates that help you quickly 
 - `edit` - Edit an existing local prompt
 - `remove` - Remove an existing local prompt
 
-**Quick tip:** To retrieve a prompt directly, use `@<prompt name> [arg]` without the `/prompts get` prefix.
+**Quick tip:** In V3, type `/` to discover saved and MCP prompts, then invoke one as `/<prompt-name> [arguments]`. Other CLI engines continue to support `@<prompt-name> [arguments]`.
 
 See [Manage Prompts](https://kiro.dev/docs/cli/chat/manage-prompts.md) for detailed documentation.
 
@@ -705,6 +736,8 @@ View MCP servers and registry status.
 ```
 
 Display Model Context Protocol servers currently active, their available tools, and registry status for managed servers.
+
+In the MCP panel, pressing `Enter` starts OAuth authentication for the selected server only when it is enabled, configured, and has a pending OAuth URL.
 
 When your organization has a registry configured, `/mcp add` and `/mcp remove` persist changes to your agent's configuration file, so additions and removals survive restarts.
 
@@ -779,13 +812,20 @@ Available in local and cloud V3 sessions. When source information is available, 
 
 ### `/powers`
 
-List the installed Powers.
+List, install, or uninstall Powers.
 
 ```bash
+# List installed Powers
 > /powers
+
+# Install by catalog name or local path
+> /powers install <name|path>
+
+# Uninstall by name
+> /powers uninstall <name>
 ```
 
-Powers are packaged bundles of MCP servers and documentation that extend the agent. See [Powers](https://kiro.dev/docs/powers.md) to learn what each one provides and how to install more.
+The install and uninstall subcommands are available in local V3 sessions. See [Install powers](https://kiro.dev/docs/powers/installation.md) for interactive and no-chat instructions.
 
 Type `/` at the prompt to find installed Powers alongside built-in commands.
 
@@ -915,13 +955,23 @@ Enable or disable experimental CLI features.
 
 ### `/tangent`
 
-Create conversation checkpoints to explore side topics.
+Manage side conversations in V3, or toggle the earlier experimental tangent mode.
 
 ```bash
+# V3: branch or return to the parent
 > /tangent
+
+# V3: merge findings into the parent
+> /tangent merge
+
+# V3: merge findings into the root or an existing named session
+> /tangent merge root
+> /tangent merge ddb
 ```
 
-Enter or exit [tangent mode](https://kiro.dev/docs/cli/experimental/tangent-mode.md) to explore tangential topics without disrupting your main conversation. Use `Ctrl+T` as a keyboard shortcut (when tangent mode is enabled).
+In V3, `/tangent merge [dest]` sends a short findings summary to the parent by default, the conversation root with `root`, or an existing named session. The source tangent remains available. See [Tangent](https://kiro.dev/docs/cli/v3/tangent.md) for naming, navigation, reopening behavior, and errors.
+
+In the earlier experimental tangent mode, `/tangent` or `Ctrl+T` toggles one checkpoint. See [Tangent mode](https://kiro.dev/docs/cli/experimental/tangent-mode.md).
 
 ### `/todos`
 
@@ -989,7 +1039,7 @@ Collecting logs...
 
 ### `/settings`
 
-Configure theme, keybindings, terminal input, display preferences, and prompt history scope through an interactive menu.
+Configure theme, keybindings, terminal input, display preferences, account-available features, and prompt history scope through an interactive menu.
 
 ```bash
 # Open the settings menu
@@ -1004,8 +1054,11 @@ Configure theme, keybindings, terminal input, display preferences, and prompt hi
 # Configure multi-line input for your terminal
 > /settings terminal
 
-# Toggle animations, ASCII art, icons, thinking display, and status-line segments
+# Toggle animations, ASCII art, icons, thinking display, status-line segments, and V3 Output style
 > /settings display
+
+# Toggle account-available features
+> /settings features
 
 # Choose per-session or global prompt history
 > /settings history
@@ -1015,7 +1068,8 @@ Configure theme, keybindings, terminal input, display preferences, and prompt hi
 - `theme` — Customize prompt and response colors with a live preview
 - `keybindings` — View configurable keyboard shortcuts (read-only reference)
 - `terminal` — Enable `Shift+Enter` / `Option+Enter` for multi-line input. Auto-configures supported terminal apps (VS Code, Alacritty, Zed, Apple Terminal, and others) or shows manual workarounds for unsupported terminals
-- `display` — Toggle animations, ASCII art, icon rendering, the thinking display (`Show thinking`), and status-line segments for date, time, current usage percentage, and remaining credits. Status-line segments are hidden by default; changes apply immediately and persist across sessions.
+- `display`: Toggle animations, ASCII art, icon rendering, the thinking display (`Show thinking`), status-line segments for date, time, current usage percentage, and remaining credits, and the V3 **Output style** row. In the full terminal UI, **Screen reader** sets screen reader support to `auto`, `on`, or `off`. Status-line segments are hidden by default; changes apply immediately and persist across sessions.
+- `features` — Enable account-available features. Enabling declarative workflows writes `chat.enableWorkflows`; restart Kiro CLI to apply the change.
 - `history` — Switch prompt history between `session` (default) and `global` modes
 
 **Notes:**
@@ -1025,45 +1079,102 @@ Configure theme, keybindings, terminal input, display preferences, and prompt hi
 
 See [In-session settings](https://kiro.dev/docs/cli/chat/settings.md) for the full subcommand reference.
 
-### `/effort`
+### `/autonomous`
 
-Set the model's reasoning effort level for the current session.
+Manage local autonomous mode in a local V3 session. Run the command without an argument to choose **on** or **off**. Turning it on lets Kiro work through a task without asking you to approve each shell command. Kiro switches to the Default agent and activates the local command sandbox first. Autonomous mode does not start when sandbox protection cannot be confirmed. Turning it off ends autonomous mode and leaves the sandbox on.
 
 ```bash
-# Open interactive effort picker
+# Open the on/off picker
+> /autonomous
+
+# Change the mode directly
+> /autonomous on
+> /autonomous off
+```
+
+See [Local command sandbox](https://kiro.dev/docs/sandbox.md#use-local-autonomous-mode/cli) for its protection rules and recovery behavior.
+
+### `/sandbox`
+
+Manage the [local command sandbox](https://kiro.dev/docs/sandbox.md#cli) in Kiro CLI 2.31 and later local V3 sessions. The command is not available in cloud sessions.
+
+```bash
+# Open sandbox settings
+> /sandbox
+
+# Choose the network mode
+> /sandbox network
+
+# Enable or disable the sandbox in your global config
+> /sandbox on
+> /sandbox off
+
+# Enable the sandbox in this project's config
+> /sandbox project on
+
+# Write enabled:false to this project's config (an active global policy stays enabled)
+> /sandbox project off
+
+# Windows only: run the one-time administrator setup
+> /sandbox setup
+```
+
+Changes save to `sandbox.json` and apply to the running session. See [Local command sandbox](https://kiro.dev/docs/sandbox.md#cli) for configuration, network modes, and recovery.
+
+### `/effort`
+
+`/model` is the primary reasoning interface. In V2 and V3, bare `/effort` opens the `/model` picker focused on the Effort setting. `/effort <level>` remains supported in both.
+
+```bash
+# Open effort controls
 > /effort
 
-# Set a specific level
+# Set a level directly
 > /effort high
-> /effort max
 ```
 
-**Available levels:** `low`, `medium`, `high`, `xhigh`, `max`
+The available levels are `low`, `medium`, `high`, `xhigh`, and `max`, depending on the active model. `/effort <level>` changes the current session only; run `/effort set-current-as-default` to save that level for the current model, or choose the level in `/model`, which saves it automatically. Use `--effort` when starting Kiro CLI to set the level before the first prompt; in V3, the flag applies only to that starting session and isn't saved as a default.
 
-Which levels are available depends on the active model. Higher effort levels use more tokens but produce more thorough responses for complex tasks.
+See [Reasoning effort](https://kiro.dev/docs/models/effort.md) for supported models, persistent per-model defaults, and configuration examples.
 
-Your `/effort` choice persists automatically. Change the level once and Kiro remembers it for future sessions. You can also set persistent per-model defaults in `~/.kiro/settings/cli.json` under `chat.modelDefaults`:
+### `/workflow`
 
-```json
-{
-  "chat": {
-    "modelDefaults": {
-      "claude-sonnet-4": {
-        "effort": "high"
-      },
-      "claude-opus-4": {
-        "effort": "max"
-      }
-    }
-  }
-}
+Open workflow history or start and manage declarative workflow runs. Workflows must be available for your account and enabled under `/settings features`; restart Kiro CLI after changing the setting.
+
+```bash
+# Open Workflow history and select a run
+> /workflow
+
+# Start a recipe through the picker
+> /workflow run
+
+# Start a named recipe with inputs
+> /workflow run investigate --brief "Trace timeout configuration" --report_path /path/to/report.md
+
+# Inspect or control a known run
+> /workflow status <workflowId>
+> /workflow pause <workflowId>
+> /workflow resume <workflowId>
+> /workflow cancel <workflowId>
+> /workflow retry <workflowId> [nodeId]
 ```
 
-**Precedence order:** loaded session effort > user defaults in cli.json > built-in defaults.
+**Subcommands:**
 
-Workspace-level overrides are also supported via `.kiro/settings/cli.json` in your project root.
+| Subcommand | Purpose |
+|---|---|
+| `run [recipe] [inputs]` | Select or start a bundled, synchronized, user, or project recipe |
+| `new <description>` | Create a reusable workflow recipe from a goal description |
+| `list` | List known workflow runs |
+| `status <workflowId>` | Print a known run's current status |
+| `pause <workflowId>` | Request a cooperative pause at the next node boundary |
+| `resume <workflowId>` | Continue a paused run |
+| `cancel <workflowId>` | Stop a run immediately; file changes remain |
+| `retry <workflowId> [nodeId]` | Retry failed or aborted work |
 
-See [Effort](https://kiro.dev/docs/models/effort.md) for detailed documentation.
+Recipe inputs accept `--key=value`, `--key value`, or the interactive form. Retry is not available for completed runs; start the recipe again to create a new run.
+
+Inside the workflow monitor, use `p` to pause, state-dependent `r` to resume or retry, `s` to respond to the selected paused step, and `Ctrl+X` to stop. See [Run and manage workflows](https://kiro.dev/docs/workflows/manage.md) for status, recovery, and cancellation behavior.
 
 ### `/goal`
 

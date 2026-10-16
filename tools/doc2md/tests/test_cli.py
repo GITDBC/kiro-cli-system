@@ -1,5 +1,8 @@
+"""Tests for the doc2md command-line interface."""
+
 # Standard libraries
 from pathlib import Path
+from unittest.mock import patch
 
 # 3pps
 import pytest
@@ -76,54 +79,127 @@ def test_load_global_defaults_valid(
     assert result["whisper_model"] == "large"
 
 
-def test_main_no_files_exits(
+def test_load_global_defaults_invalid_toml(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """
-    Verify main exits with code 1 when no files are
-    found.
+    Verify _load_global_defaults raises ValueError
+    for a malformed TOML file.
     """
 
-    monkeypatch.setattr("sys.argv", ["doc2md", str(tmp_path / "nope")])
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[doc2md\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    with pytest.raises(ValueError, match="Invalid TOML"):
+        _load_global_defaults()
+
+
+def test_main_invalid_config_returns_1(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify main returns 1 when the global config is
+    not valid TOML.
+    """
+
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[doc2md\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    assert main([str(tmp_path)]) == 1
+
+
+def test_main_no_files_returns_1(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify main returns 1 when no files are found.
+    """
+
     monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
-    with pytest.raises(SystemExit, match="1"):
-        main()
+    assert main([str(tmp_path / "nope")]) == 1
 
 
-def test_main_beam_size_validation(
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    [
+        ("--whisper-beam-size", "0"),
+        ("--whisper-beam-size", "21"),
+        ("--whisper-cpu-threads", "0"),
+        ("--whisper-cpu-threads", "33"),
+    ],
+)
+def test_main_rejects_out_of_range(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    flag: str,
+    value: str,
+) -> None:
+    """
+    Verify main rejects out-of-range whisper options
+    with an argparse error.
+    """
+
+    monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
+    with pytest.raises(SystemExit, match="2"):
+        main([str(tmp_path), flag, value])
+
+
+def test_main_rejects_non_integer_config(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """
-    Verify main rejects invalid --whisper-beam-size.
+    Verify main rejects a non-integer beam size coming
+    from the global config.
     """
 
-    f = tmp_path / "a.txt"
-    f.write_text("x")
-    monkeypatch.setattr(
-        "sys.argv",
-        ["doc2md", str(f), "--whisper-beam-size", "0"],
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[doc2md]\nwhisper_beam_size = 1.5\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    with pytest.raises(SystemExit, match="2"):
+        main([str(tmp_path)])
+
+
+def test_main_config_defaults_and_cli_override(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify config values seed the whisper options,
+    CLI flags override them, and success returns 0.
+    """
+
+    src = tmp_path / "a.txt"
+    src.write_text("x", encoding="utf-8")
+    cfg = tmp_path / "config.toml"
+    cfg.write_text(
+        '[doc2md]\nwhisper_model = "large"\nwhisper_beam_size = 3\n',
+        encoding="utf-8",
     )
-    monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
-    with pytest.raises(SystemExit):
-        main()
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    with patch("doc2md.cli.convert_files", return_value=1) as convert:
+        code = main([str(src), "-o", str(tmp_path / "out"), "--whisper-beam-size", "5"])
+
+    assert code == 0
+    wa = convert.call_args.kwargs["whisper_args"]
+    assert wa["model"] == "large"
+    assert wa["beam_size"] == 5
+    assert wa["device"] == "auto"
 
 
-def test_main_cpu_threads_validation(
+def test_main_nothing_converted_returns_1(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     """
-    Verify main rejects invalid --whisper-cpu-threads.
+    Verify main returns 1 when no file was converted.
     """
 
-    f = tmp_path / "a.txt"
-    f.write_text("x")
-    monkeypatch.setattr(
-        "sys.argv",
-        ["doc2md", str(f), "--whisper-cpu-threads", "0"],
-    )
+    src = tmp_path / "a.txt"
+    src.write_text("x", encoding="utf-8")
     monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
-    with pytest.raises(SystemExit):
-        main()
+    with patch("doc2md.cli.convert_files", return_value=0):
+        assert main([str(src), "-v"]) == 1

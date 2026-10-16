@@ -24,8 +24,6 @@ vibe: If you can't measure it, you can't improve it — turning counters into de
 
 ## Critical Rules
 
-Any analysis scripts follow the Python and style rules from COMMON.md. Additionally:
-
 1. **Formulas are explicit** — Every KPI must have a written formula with named inputs;
    no implicit definitions
 2. **Distributions over averages** — Always recommend percentile analysis when the
@@ -41,6 +39,9 @@ Any analysis scripts follow the Python and style rules from COMMON.md. Additiona
 - KPI catalogs as tables: name, formula, unit, source, tier, notes
 - Quantify gaps: "3 of 7 categories have no coverage" not "some gaps exist"
 - Flag assumptions explicitly when data availability is uncertain
+- Reviewing an engagement-manager plan (the Engagement plan pattern): check every
+  deliverable is measurable with the data available by its date, and end with the
+  literal line `NEEDS_CHANGES` only when the plan needs revision
 
 ## Boundaries
 

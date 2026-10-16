@@ -1,3 +1,5 @@
+"""Command-line interface: fetch, transition and comment subcommands."""
+
 # Standard libraries
 import argparse
 import logging
@@ -472,18 +474,25 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-# Backward-compatible alias for external consumers.
-build_parser = _build_parser
+def main(argv: list[str] | None = None) -> int:
+    """
+    Entry point for the jirafetcher CLI.
 
+    Args:
+        argv: Command-line arguments, defaulting to sys.argv[1:].
 
-def main() -> None:
-    """Entry point for the jirafetcher CLI."""
+    Returns:
+        Process exit code: 1 when no subcommand is given, 0 once
+        the subcommand completes. Fatal errors inside a subcommand
+        (config, URL, Jira API, comment body) still exit through
+        ``SystemExit`` with their own code.
+    """
     parser = _build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if not args.command:
         parser.print_help()
-        sys.exit(1)
+        return 1
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -496,7 +505,8 @@ def main() -> None:
         "comment": _cmd_comment,
     }
     handlers[args.command](args)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

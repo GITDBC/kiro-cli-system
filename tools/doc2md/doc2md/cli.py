@@ -1,9 +1,12 @@
+"""Command-line interface for doc2md."""
+
 # Standard libraries
 import argparse
 import logging
 import os
 import sys
 import tomllib
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +26,9 @@ def _load_global_defaults() -> dict[str, Any]:
 
     Returns:
         Dictionary with tool settings, or empty dict.
+
+    Raises:
+        ValueError: If the config file is not valid TOML.
     """
 
     path_str: str | None = os.environ.get("WORK_AGENTS_CONFIG")
@@ -31,9 +37,35 @@ def _load_global_defaults() -> dict[str, Any]:
     path: Path = Path(path_str)
     if not path.is_file():
         return {}
-    with path.open("rb") as fh:
-        result: dict[str, Any] = tomllib.load(fh).get(_TOOL_SECTION, {})
-        return result
+    try:
+        with path.open("rb") as fh:
+            result: dict[str, Any] = tomllib.load(fh).get(_TOOL_SECTION, {})
+    except tomllib.TOMLDecodeError as exc:
+        raise ValueError(f"Invalid TOML in config file {path}: {exc}") from exc
+    return result
+
+
+def _apply_config_defaults(
+    parser: argparse.ArgumentParser,
+    defaults: Mapping[str, Any],
+) -> None:
+    """
+    Seed the whisper options from the global config.
+
+    Command-line values still win, since argparse only falls back
+    to these defaults for options that were not passed.
+
+    Args:
+        parser: Parser built by ``_build_parser``.
+        defaults: The ``[doc2md]`` section of the global config.
+    """
+
+    parser.set_defaults(
+        **{
+            f"whisper_{key}": defaults.get(f"whisper_{key}", value)
+            for key, value in DEFAULT_WHISPER_ARGS.items()
+        }
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -86,84 +118,66 @@ def _build_parser() -> argparse.ArgumentParser:
 
     wg.add_argument(
         "--whisper-model",
-        default=None,
         help="Model name or path.",
     )
 
     wg.add_argument(
         "--whisper-language",
-        default=None,
         help="Language code (e.g. 'es'). Auto-detect if omitted.",
     )
 
     wg.add_argument(
         "--whisper-beam-size",
         type=int,
-        default=None,
         help="Beam size (default: 1).",
     )
 
     wg.add_argument(
         "--whisper-device",
         choices=["auto", "cpu", "cuda"],
-        default=None,
         help="Device (default: auto).",
     )
 
     wg.add_argument(
         "--whisper-cpu-threads",
         type=int,
-        default=None,
         help="CPU threads (default: 4).",
     )
 
     return parser
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     """
     Entry point for the doc2md CLI.
 
     Parses command-line arguments, collects input files,
-    and runs the conversion pipeline. Exits with code 1
-    if no files are found.
+    and runs the conversion pipeline.
+
+    Args:
+        argv: Command-line arguments, defaulting to sys.argv[1:].
 
     Returns:
-        None.
+        Process exit code: 1 when the global config is invalid, when
+        no files are found or when nothing was converted; 0 otherwise.
     """
 
     os.umask(0o077)
 
-    parser = _build_parser()
-    args: argparse.Namespace = parser.parse_args()
+    parser: argparse.ArgumentParser = _build_parser()
+    try:
+        defaults: dict[str, Any] = _load_global_defaults()
+    except ValueError as exc:
+        logger.error("%s.", exc)
+        return 1
+    _apply_config_defaults(parser, defaults)
+    args: argparse.Namespace = parser.parse_args(argv)
 
-    defaults: dict[str, Any] = _load_global_defaults()
-
-    w_model: str = (
-        args.whisper_model
-        if args.whisper_model is not None
-        else defaults.get("whisper_model", DEFAULT_WHISPER_ARGS["model"])
-    )
-    w_language: str | None = (
-        args.whisper_language
-        if args.whisper_language is not None
-        else defaults.get("whisper_language", DEFAULT_WHISPER_ARGS["language"])
-    )
-    w_beam: int = (
-        args.whisper_beam_size
-        if args.whisper_beam_size is not None
-        else defaults.get("whisper_beam_size", DEFAULT_WHISPER_ARGS["beam_size"])
-    )
-    w_device: str = (
-        args.whisper_device
-        if args.whisper_device is not None
-        else defaults.get("whisper_device", DEFAULT_WHISPER_ARGS["device"])
-    )
-    w_threads: int = (
-        args.whisper_cpu_threads
-        if args.whisper_cpu_threads is not None
-        else defaults.get("whisper_cpu_threads", DEFAULT_WHISPER_ARGS["cpu_threads"])
-    )
+    w_model: str = args.whisper_model
+    w_language: str | None = args.whisper_language
+    w_beam: int = args.whisper_beam_size
+    w_device: str = args.whisper_device
+    w_threads: int = args.whisper_cpu_threads
 
     if not isinstance(w_beam, int):
         parser.error("--whisper-beam-size must be an integer.")
@@ -187,7 +201,7 @@ def main() -> None:
 
     if not files:
         logger.error("No files found to process.")
-        sys.exit(1)
+        return 1
 
     files = [f.resolve() for f in files]
 
@@ -214,9 +228,8 @@ def main() -> None:
         args.output,
     )
 
-    if converted == 0:
-        sys.exit(1)
+    return 0 if converted else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

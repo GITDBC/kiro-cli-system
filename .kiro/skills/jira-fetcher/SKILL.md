@@ -1,47 +1,52 @@
 ---
 name: jira-fetcher
 description: >
-  Interacts with Jira via the Python jira library and carries the mandatory Jira safety
-  rules (credential handling, read-vs-write confirmation, prohibited and
-  double-confirmation operations). Reads and updates tickets, comments, attachments,
-  transitions, and searches. Use for any Jira interaction. Triggers: 'jira', 'ticket',
-  'issue', 'sprint', 'jira fetch', 'read ticket', 'jira search', 'update jira'. Not for
-  enhancement documentation (use jira-enhancement).
+  Any Jira interaction (read, comment, transition, search) through the jirafetcher CLI,
+  carrying the mandatory Jira safety rules. Triggers: 'jira', 'ticket', 'issue',
+  'sprint', 'read ticket', 'jira search', 'update jira'. Not for enhancement
+  documentation (use jira-enhancement).
 ---
 
 # Jira Fetcher
 
-## Prerequisites
+## How it runs
+
+**Default — the `tools/jirafetcher` CLI** (see `tools/TOOLS_OVERVIEW.md`), which covers
+fetch, transition, and comment on a ticket (`--self`), its subtasks (default), or both
+(`--include-parent`). It reads `token` from its config file (`-c`, default
+`config.json`, falling back to the `[jirafetcher]` section of `WORK_AGENTS_CONFIG`):
+
+```bash
+export WORK_AGENTS_CONFIG="<repo>/config.toml"
+uv run --project <repo>/tools/jirafetcher jirafetcher fetch --self \
+  -o <repo>/tmp/jira <jira-url>/browse/PROJ-123
+uv run --project <repo>/tools/jirafetcher jirafetcher transition -n \
+  <jira-url>/browse/PROJ-123 "In Progress"
+uv run --project <repo>/tools/jirafetcher jirafetcher comment --self -n \
+  <jira-url>/browse/PROJ-123 "Comment text."
+```
+
+Use `-n` (dry run) first for every write, then rerun without it after confirmation.
+
+**Other operations (JQL search, attachments, links, assignment, sprints)** need the
+`jira` Python library, which no `pyproject.toml` in this repository declares. If the
+user's environment does not provide it, say so and stop; do not install it. When it is
+available, credentials come from the environment:
 
 ```bash
 export JIRA_URL="https://your-jira-instance.com/"
 export JIRA_TOKEN="your-personal-access-token"
-export JIRA_EMAIL="your-email@company.com"
 ```
 
-Verify connection:
-
-```bash
-uv run python -c "
-import os
-from jira import JIRA
-jira = JIRA(server=os.environ['JIRA_URL'], token_auth=os.environ['JIRA_TOKEN'])
-print('OK — connected as', jira.myself()['displayName'])
-"
-```
-
-If this fails, check environment variables or run `uv sync --group kiro_tools`.
-
-## Operations
-
-For concrete code examples (read ticket, comments, transitions, assignment, JQL search,
-attachments, issue links, sprint/board info), load `references/jira-api-examples.md`.
+The client authenticates with `token_auth` only; code examples are in
+`references/jira-api-examples.md`.
 
 ## Workflow
 
-1. Verify `JIRA_URL` and `JIRA_TOKEN` are set.
+1. Verify credentials are configured (CLI config `token`, or `JIRA_URL`/`JIRA_TOKEN`).
 2. Ask the user what operation is needed.
-3. Execute via `uv run python -c "..."`.
+3. Execute through the CLI, or the `jira` library when the operation requires it and the
+   environment provides it.
 4. Present results; confirm write operations before executing.
 
 ## Safety
@@ -50,12 +55,12 @@ These rules apply to every Jira interaction, not only to the operations in this 
 
 ### Credentials
 
-- Read credentials only from `os.environ["JIRA_URL"]`, `os.environ["JIRA_TOKEN"]`,
-  `os.environ["JIRA_EMAIL"]`. Never hardcode them.
+- Read credentials only from `os.environ["JIRA_URL"]` and `os.environ["JIRA_TOKEN"]` (or
+  the jirafetcher config file). Never hardcode them.
 - Never display, log, or print token values in commands, outputs, or responses.
 - Never ask the user for tokens via chat.
-- If credentials are missing, inform the user, quote the export block under
-  Prerequisites, and stop.
+- If credentials are missing, inform the user, quote the configuration shown under How
+  it runs, and stop.
 - Always invoke Python through `uv run`.
 
 ### Read versus write

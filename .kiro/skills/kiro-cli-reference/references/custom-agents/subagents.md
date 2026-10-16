@@ -140,7 +140,7 @@ To restrict the tools a sub-agent can use, configure `tools` in the **sub-agent'
     CLI
     Web
 
-Sub-agents run in parallel and the main agent waits until all complete before proceeding. Each sub-agent has its own context window.
+When workflows are disabled, sub-agents run in parallel and the main agent waits until all complete before proceeding. When workflows are enabled, the main agent instead launches custom-agent delegation as a background workflow run, so you can continue the parent conversation and monitor the run under **Workflows**. Each delegated agent has its own context window.
 
 You can speed up development by leveraging sub-agents to perform multiple tasks simultaneously - for example, fetching and analyzing several tickets in parallel.
 
@@ -149,6 +149,8 @@ You can speed up development by leveraging sub-agents to perform multiple tasks 
 In the CLI, you get live progress tracking as sub-agents work. Press **Ctrl+G** to open the execution monitor to inspect each sub-agent's activity - including current tool calls and output - without interrupting your main chat.
 
 Inside the monitor, use **Ctrl+D** and **Ctrl+U** to navigate between sub-agents, and press **q** to return to the main chat.
+
+**ℹ️ Delegation in V3 sessions with Workflows enabled:** The **Workflows: sub-agent tool** setting under `/settings features` is on by default. While it is on, the main chat can delegate directly to sub-agents or through Workflows. Turn it off to limit main-chat delegation to `run_workflow`; custom agents inside a workflow can still invoke sub-agents when their tool configuration permits it. See [Background delegation and sub-agents](https://kiro.dev/docs/workflows.md#background-delegation-and-sub-agents).
 
 ### Runtime behavior
 
@@ -170,6 +172,7 @@ Sub-agents run automatically in the background. The agent delegates tasks and ag
 | Issue | Solution |
 |-------|----------|
 | Sub-agent not starting | Verify the task description is clear and actionable |
+| Unknown agent | Check the agent name with `kiro-cli agent list`; a request naming an unknown agent fails instead of falling back to the default agent |
 | Missing tool access | Check the agent configuration's `tools` field |
 | Approval prompts blocking | Add the agent to `trustedAgents`, or trust the `subagent` tool |
 | Main agent can't spawn sub-agents | Add `subagent` to the orchestrator agent's `tools` array |

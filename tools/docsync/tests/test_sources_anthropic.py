@@ -18,6 +18,7 @@ import docsync.net as net_module
 from docsync.sources.anthropic import (
     CATALOGUE_URL,
     DOCS_PREFIX,
+    EXCLUDED_PAGES,
     TRACKED_PAGES,
     AnthropicSource,
     catalogue_slugs,
@@ -34,10 +35,12 @@ from docsync.types import MirrorPaths
 # the rest of the upstream documentation.
 SUBTREE_SLUGS = (
     "build-with-claude/prompt-engineering/overview",
-    "build-with-claude/prompt-engineering/prompting-claude-opus-5",
+    "build-with-claude/prompt-engineering/prompting-claude-opus-5-5",
 )
 FOREIGN_SLUGS = (
     "build-with-claude/embeddings",
+    "models/opus-5-5/migration-guide",
+    "test-and-evaluate/develop-tests",
     "test-and-evaluate/strengthen-guardrails/reduce-latency",
 )
 
@@ -71,7 +74,7 @@ def catalogue_text(slugs: tuple[str, ...]) -> str:
 
 
 FULL_CATALOGUE = catalogue_text(
-    (*SUBTREE_SLUGS, *sorted(TRACKED_PAGES), *FOREIGN_SLUGS)
+    (*SUBTREE_SLUGS, *sorted(TRACKED_PAGES), *FOREIGN_SLUGS, *sorted(EXCLUDED_PAGES))
 )
 EXPECTED_PATHS = sorted(f"{slug}.md" for slug in (*SUBTREE_SLUGS, *TRACKED_PAGES))
 
@@ -150,7 +153,7 @@ def test_a_docs_url_reduces_to_its_slug() -> None:
 @pytest.mark.parametrize(
     "url",
     [
-        "https://www.anthropic.com/news/claude-opus-5",
+        "https://www.anthropic.com/news/claude-opus-5-5",
         f"{DOCS_PREFIX}build-with-claude/effort",
         f"{DOCS_PREFIX}.md",
         "https://platform.claude.com/docs/es/build-with-claude/effort.md",
@@ -174,6 +177,48 @@ def test_a_tracked_page_is_in_scope_by_slug() -> None:
 def test_a_sibling_of_a_tracked_page_is_out_of_scope() -> None:
     """Selecting a page never drags in its section."""
     assert not is_in_scope("build-with-claude/embeddings")
+
+
+@pytest.mark.parametrize(
+    "slug",
+    [
+        "models/opus-5-5/whats-new-opus-5-5",
+        "models/sonnet-5-5/whats-new-sonnet-5-5",
+    ],
+)
+def test_the_whats_new_page_of_each_agent_model_is_tracked(slug: str) -> None:
+    """Release notes for the models the agents run are mirrored."""
+    assert slug in TRACKED_PAGES
+
+
+@pytest.mark.parametrize(
+    "slug",
+    [
+        "models/opus-5-5/migration-guide",
+        "models/opus-5-5/overview",
+        "models/haiku-5-5/whats-new-haiku-5-5",
+    ],
+)
+def test_other_model_pages_stay_out_of_scope(slug: str) -> None:
+    """Tracking a what's-new page does not pull in its model section."""
+    assert not is_in_scope(slug)
+
+
+@pytest.mark.parametrize("slug", sorted(EXCLUDED_PAGES))
+def test_an_excluded_subtree_page_is_out_of_scope(slug: str) -> None:
+    """An exclusion overrides the prefix rule for that page only."""
+    assert slug.startswith("build-with-claude/prompt-engineering/")
+    assert not is_in_scope(slug)
+
+
+def test_an_exclusion_never_shadows_a_tracked_page() -> None:
+    """The two sets are disjoint, so no deliberate choice is undone."""
+    assert not EXCLUDED_PAGES & TRACKED_PAGES
+
+
+def test_the_evaluation_guide_is_no_longer_tracked() -> None:
+    """develop-tests left the mirror; nothing in the repository cites it."""
+    assert not is_in_scope("test-and-evaluate/develop-tests")
 
 
 def test_catalogue_parsing_ignores_non_documentation_links() -> None:
@@ -315,3 +360,15 @@ def test_a_dry_run_reports_orphans_without_deleting(
     counts = sync(source, paths, dry_run=True)
     assert counts.orphans == 1
     assert stale.is_file()
+
+
+def test_prune_removes_a_local_copy_of_an_excluded_page(
+    source: AnthropicSource, paths: MirrorPaths, offline: None
+) -> None:
+    """An excluded page is never discovered, so pruning treats it as an orphan."""
+    sync(source, paths)
+    excluded = paths.refs_dir / f"{sorted(EXCLUDED_PAGES)[0]}.md"
+    excluded.write_text("# Excluded\n", encoding="utf-8")
+    counts = sync(source, paths, prune=True)
+    assert counts.orphans == 1
+    assert not excluded.exists()

@@ -19,7 +19,7 @@ ROUTING_MD = """# Agent Routing Schema
 
 | Agent            | Cost        |
 | ---------------- | ----------- |
-| senior-developer | high (2.2x) |
+| senior-developer | high (2.0x) |
 
 ## Routing Rules
 
@@ -36,13 +36,11 @@ routing:
 
 ## Collaboration Patterns
 
-| Task            | Skill                  | Agents           |
-| --------------- | ---------------------- | ---------------- |
-| Review          | reviewing-code         | senior-developer |
-| Autonomous      | ralph-loop             | senior-developer |
-| Security audit  | security-audit         | —                |
-| Design review   | software-design-review | —                |
-| Debt assessment | tech-debt-tracking     | —                |
+| Task            | Skill              | Agents           |
+| --------------- | ------------------ | ---------------- |
+| Review          | reviewing-code     | senior-developer |
+| Autonomous      | ralph-loop         | senior-developer |
+| Security audit  | security-audit     | —                |
 """
 
 COMMON_MD = """# Common Directives
@@ -127,8 +125,6 @@ name = "work-driftcheck"
 
 [project.scripts]
 driftcheck = "driftcheck.cli:main"
-driftcheck-hook-agent-config = "driftcheck.hooks.agent_config:main"
-driftcheck-hook-state-yaml = "driftcheck.hooks.state_yaml:main"
 driftcheck-hook-refs-freshness = "driftcheck.hooks.references_freshness:main"
 """
 
@@ -232,7 +228,7 @@ def write_agent(
     """
     config: dict[str, object] = {
         "name": slug,
-        "model": "claude-opus-5",
+        "model": "claude-opus-5.5",
         "prompt": f"file://../prompts/{slug}.md",
         "resources": [
             "file://.kiro/steering/COMMON.md",

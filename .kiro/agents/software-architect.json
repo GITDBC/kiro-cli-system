@@ -54,7 +54,11 @@
           "**/*.py",
           "*.toml",
           "**/*.toml",
-          "package.json"
+          "package.json",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -118,18 +122,10 @@
     ]
   },
   "resources": [
-    "skill://.kiro/skills/code-standards/SKILL.md",
-    "skill://.kiro/skills/mermaid-diagrams/SKILL.md",
     "skill://.kiro/skills/concise-communication/SKILL.md",
     "skill://.kiro/skills/agent-creation/SKILL.md",
-    "skill://.kiro/skills/data-pipeline/SKILL.md",
-    "skill://.kiro/skills/domain-research/SKILL.md",
-    "skill://.kiro/skills/self-improvement/SKILL.md",
-    "skill://.kiro/skills/software-design-review/SKILL.md",
-    "skill://.kiro/skills/spec-to-dev/SKILL.md",
-    "skill://.kiro/skills/tech-debt-tracking/SKILL.md",
-    "skill://.kiro/skills/tech-evaluation/SKILL.md"
+    "skill://.kiro/skills/spec-to-dev/SKILL.md"
   ],
   "welcomeMessage": "Ready to design. What's the problem space?",
-  "model": "claude-opus-5"
+  "model": "claude-opus-5.5"
 }

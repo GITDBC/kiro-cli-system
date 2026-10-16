@@ -1,9 +1,9 @@
 # Preflight Report format
 
 On-demand reference. Read it when a dispatch declares `mode: preflight` — a separate,
-read-only preflight turn whose only deliverable is this report. Combined mode, the
-default through Medium complexity, needs a 2-3 line preflight and does not consult this
-file.
+read-only preflight turn whose only deliverable is this report — or `mode: autonomous`
+(`## Autonomous Mode` below). Combined mode, the default through Medium complexity,
+needs a 2-3 line preflight and does not consult this file.
 
 The rules that govern when each mode applies live in `.kiro/steering/COMMON.md`
 (`## Preflight Protocol`) for the agent side and
@@ -16,9 +16,10 @@ artifact only.
 ```markdown
 ## Preflight Report
 
-**Task understanding**: [1-2 sentences restating what you need to do] **Complexity
-assessment**: trivial | low | medium | high **Feasibility**: ✅ fully feasible | ⚠️
-feasible with risks | ❌ blocked
+<!-- prettier-ignore -->
+**Task understanding**: [1-2 sentences restating what you need to do]
+**Complexity assessment**: trivial | low | medium | high
+**Feasibility**: ✅ fully feasible | ⚠️ feasible with risks | ❌ blocked
 
 ### Can do
 
@@ -43,6 +44,23 @@ feasible with risks | ❌ blocked
 - [Ordered list of steps]
 - [Files you will read/modify]
 ```
+
+## Autonomous Mode
+
+Applies when the dispatch says `mode: autonomous` — non-interactive workflows (Ralph
+Loop, CI-triggered tasks). `.kiro/skills/ralph-loop/ralph.sh` injects a compressed copy
+of these rules into every iteration prompt; keep the two consistent.
+
+| Situation                     | Resolution                                        |
+| ----------------------------- | ------------------------------------------------- |
+| Ambiguity                     | Assume most conservative option, document it      |
+| Blocker (needs another agent) | Attempt alternative; if impossible, mark deferred |
+| High-risk assumption          | Choose the reversible option, document the risk   |
+| Scope unclear                 | Implement the minimal interpretation              |
+
+**Never block on missing input.** Document every assumption under
+`### Autonomous Decisions`, prefer reversible over optimal, and defer rather than fail:
+skip blocked subtasks and report them at the end.
 
 ## Why the template is not always-on
 

@@ -7,12 +7,10 @@ from pathlib import Path
 import pytest
 
 # Own modules
-from ctxbudget import model
 from ctxbudget.model import (
     agent_baseline,
     compare_budget,
     derive_calibration,
-    extra_metric_rows,
     file_loads,
     measure,
     measured_figures,
@@ -22,7 +20,6 @@ from ctxbudget.resolve import load_agent_configs, resolve_agent
 from ctxbudget.types import (
     ArtifactKind,
     Measurement,
-    MetricRow,
     Observation,
 )
 from tests.helpers import FakeCounter, write, write_agent
@@ -381,47 +378,3 @@ def test_unrecorded_and_removed_subjects_warn(measurement: Measurement) -> None:
     _, warnings = compare_budget(measurement, {"agent:ghost": 10}, 2.0)
     assert any("agent:alpha is not recorded" in warning for warning in warnings)
     assert any("agent:ghost is recorded" in warning for warning in warnings)
-
-
-class _Family:
-    """Minimal metric family, exercising the one extension seam."""
-
-    @property
-    def name(self) -> str:
-        """Return the section title."""
-        return "Fixture family"
-
-    def rows(self, measurement: Measurement) -> tuple[MetricRow, ...]:
-        """
-        Emit one row per measured agent.
-
-        Args:
-            measurement: Completed measurement.
-
-        Returns:
-            One row per agent.
-        """
-        return tuple(
-            MetricRow(
-                subject=baseline.agent,
-                metric="artifacts",
-                value=str(len(baseline.artifacts)),
-                note="",
-            )
-            for baseline in measurement.baselines
-        )
-
-
-def test_extension_seam_contributes_a_section(
-    measurement: Measurement, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Let a registered family add rows without touching resolve or count."""
-    monkeypatch.setattr(model, "EXTRA_METRICS", (_Family(),))
-    sections = extra_metric_rows(measurement)
-    assert [title for title, _ in sections] == ["Fixture family"]
-    assert len(sections[0][1]) == len(measurement.baselines)
-
-
-def test_no_registered_family_adds_nothing(measurement: Measurement) -> None:
-    """Stay silent by default: the seam ships empty."""
-    assert extra_metric_rows(measurement) == ()

@@ -33,22 +33,13 @@ Additionally:
 4. Write draft, test every code example in a clean environment
 5. Ship docs in the same PR as the feature/API change
 
-## Documentation Templates
+## Mermaid Diagrams
 
-Section outlines for pipeline, test, configuration and dependency documents, plus the
-diagram conventions that apply to them, are in
-`.kiro/skills/domain-research/references/document-templates.md`. Load it when writing
-one of those four document types.
+Diagrams must render in both MkDocs Material and GitHub Markdown:
 
-### README & MkDocs Templates
-
-Load `.kiro/skills/domain-research/references/technical-writer-patterns.md` for concrete
-templates:
-
-- **README template** — objective, quick start, installation, usage, configuration
-  table, API reference, development, license
-- **MkDocs configuration** — Material theme, dark/light toggle, mkdocstrings, mermaid
-  fences, admonitions, nav structure
+- Node IDs alphanumeric plus underscores; no `()`, `[]`, `"` or `/` inside label text.
+- No `style`, `classDef` or CSS — the theme handles styling.
+- Declare the direction explicitly; keep each diagram under 15 nodes and to one concern.
 
 ## Structured Document Generation
 

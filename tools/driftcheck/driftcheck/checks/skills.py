@@ -26,14 +26,9 @@ DIRECT_INVOKE_SKILLS: Final[frozenset[str]] = frozenset(
         "code-standards",
         "commit-message",
         "concise-communication",
-        "mermaid-diagrams",
-        "data-to-md",
         "jira-fetcher",
         "kiro-cli-reference",
         "claude-prompting-reference",
-        "exploratory-data-analysis",
-        "statistical-analysis",
-        "unit-test-generation",
     }
 )
 
@@ -174,13 +169,11 @@ def check_pattern_resource_wiring(ctx: DriftContext) -> list[Finding]:
     that every agent NAMED in a pattern row declares the skill in its
     resources; it never checks the converse, i.e. it does not flag an
     agent that declares a skill while appearing in no pattern row
-    alongside it (or in no pattern row at all). That gap let the
-    Debugging pattern row list only senior-developer while
-    qa-engineer.json legitimately also declares `debugging` for its own
-    test-failure-analysis trigger, with nothing raising a warning. This
+    alongside it (or in no pattern row at all). An agent could therefore
+    declare a workflow skill such as `deps-audit` without appearing in
+    that skill's pattern row, and nothing would raise a warning. This
     is deliberate rather than an oversight: several skills (notably
-    code-standards, declared by eleven agents, plus
-    concise-communication and mermaid-diagrams) are legitimately
+    code-standards and concise-communication) are legitimately
     cross-cutting and declared by many agents while being named in no
     pattern row at all, so a converse check would need an allowlist of
     such cross-cutting skills to avoid flagging all of them as errors.

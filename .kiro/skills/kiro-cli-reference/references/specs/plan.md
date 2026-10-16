@@ -118,7 +118,7 @@ Once you approve the plan, execution begins automatically:
 2. The complete plan is passed to the execution agent as context
 3. Implementation begins immediately with the approved plan as the guide
 
-**ℹ️ Info:** In the CLI, automatic plan execution requires the v3 engine. In classic mode, you are prompted to confirm the handoff before execution begins. If a plan doesn't transfer to execution, make sure you explicitly approved it when asked.
+**ℹ️ Info:** In the CLI, automatic plan execution requires the V3 harness. In classic mode, you are prompted to confirm the handoff before execution begins. If a plan doesn't transfer to execution, make sure you explicitly approved it when asked.
 
 ## Read-only access
 

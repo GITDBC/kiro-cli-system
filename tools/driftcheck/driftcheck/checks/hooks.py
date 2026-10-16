@@ -3,21 +3,12 @@ Checks over the hook commands declared by standalone hook files.
 
 CLI 3.0 moved hook definitions out of each agent config's embedded
 ``hooks`` object into standalone ``.kiro/hooks/*.json`` files (schema
-version ``v1``, PascalCase triggers, regex ``matcher``). A hook command
-reaches its implementation in one of two ways, and both have to be
-validated or the check degrades into a no-op:
-
-- **Script file**: a token ending in ``.py``, ``.sh`` or ``.js``, which
-  must exist relative to the repository root.
-- **Console script**: a ``uv run --project <tool> <name>`` invocation,
-  where ``<name>`` must be declared in that tool's ``[project.scripts]``
-  table.
-
-Validating only the first form is how this check silently passed after
-the hooks moved into ``tools/driftcheck``: the commands no longer carry
-a ``.py`` token, so nothing was inspected at all. A ``uv run`` command
-that resolves to neither form is therefore an error rather than an
-implicit pass.
+version ``v1``, PascalCase triggers, regex ``matcher``). A command whose
+token ends in ``.py``, ``.sh`` or ``.js`` names a script file, which
+must exist relative to the repository root. Any other command — such as
+a ``uv run --project <tool> <name>`` console script — is left to the
+runtime: resolving console scripts across tool manifests was dropped as
+unused weight.
 
 The same check also validates the shape of each hook entry itself: the
 ``trigger`` must be one of the eleven documented PascalCase trigger
@@ -44,7 +35,6 @@ issued it.
 import json
 import os
 import re
-import tomllib
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Final
@@ -92,23 +82,6 @@ SHELL_TOOL_IDS: Final[tuple[str, ...]] = ("execute_bash", "control_bash_process"
 # Guardrail every shell-capable agent must have wired.
 GIT_SAFETY_SCRIPT: Final[str] = ".kiro/hooks/git-safety.sh"
 SHELL_TAG: Final[str] = "shell"
-
-UV_RUN: Final[tuple[str, str]] = ("uv", "run")
-PROJECT_FLAG: Final[str] = "--project"
-
-# `uv run` flags that consume the following token as their value, so it
-# must not be mistaken for the command being run.
-VALUE_FLAGS: Final[tuple[str, ...]] = (
-    PROJECT_FLAG,
-    "--python",
-    "-p",
-    "--with",
-    "--with-requirements",
-    "--directory",
-    "--group",
-    "--extra",
-    "--index",
-)
 
 SECTION_HOOKS: Final[str] = "Hook script path references"
 SECTION_GIT_SAFETY: Final[str] = "Git-safety hook coverage"
@@ -166,9 +139,8 @@ def check_hook_scripts(ctx: DriftContext) -> list[Finding]:
     Validates, per standalone hook file: the document's schema
     ``version`` is ``"v1"``; each entry's ``trigger`` is one of the
     eleven documented PascalCase names; a non-empty ``matcher`` compiles
-    as a regex; and the ``action.command`` resolves to an existing
-    script file or a console script declared in a tool's
-    ``[project.scripts]`` table.
+    as a regex; and an ``action.command`` naming a script file points
+    at one that exists and, when run directly, is executable.
 
     Args:
         ctx: Shared check context.
@@ -455,17 +427,24 @@ def _validate_command(root: Path, file_name: str, command: str) -> Finding | Non
         An ERROR finding, or None when the command resolves.
     """
     token = _script_token(command)
-    if token is not None:
-        if (root / token).exists():
-            return None
+    if token is None:
+        return None
+    script = root / token
+    if not script.exists():
         return Finding(
             Severity.ERROR,
             SECTION_HOOKS,
             f"{file_name} hook references missing script: {token}",
         )
-    if not _is_uv_run(command):
-        return None
-    return _validate_console_script(root, file_name, command)
+    # A script run directly (first token, no interpreter) needs the execute
+    # bit; without it the runtime fails the hook on every event.
+    if command.split(maxsplit=1)[0] == token and not os.access(script, os.X_OK):
+        return Finding(
+            Severity.ERROR,
+            SECTION_HOOKS,
+            f"{file_name} hook runs {token} directly, but it is not executable",
+        )
+    return None
 
 
 def _script_token(command: str) -> str | None:
@@ -482,119 +461,3 @@ def _script_token(command: str) -> str | None:
         if token.endswith(SCRIPT_SUFFIXES):
             return token
     return None
-
-
-def _is_uv_run(command: str) -> bool:
-    """
-    Report whether a command is a ``uv run`` invocation.
-
-    Args:
-        command: Full shell command declared by the hook action.
-
-    Returns:
-        True when the command starts with "uv run".
-    """
-    return tuple(command.split()[:2]) == UV_RUN
-
-
-def _validate_console_script(
-    root: Path, file_name: str, command: str
-) -> Finding | None:
-    """
-    Validate a ``uv run`` command against a tool's declared scripts.
-
-    Args:
-        root: Repository root.
-        file_name: Standalone hook file name, used in messages.
-        command: Full ``uv run`` command declared by the hook action.
-
-    Returns:
-        An ERROR finding, or None when the console script is declared.
-    """
-    project, script = _console_script_target(command)
-    if script is None:
-        return Finding(
-            Severity.ERROR,
-            SECTION_HOOKS,
-            f"{file_name} hook command names neither a script file nor a "
-            f"console script: {command}",
-        )
-    manifest = root / project / "pyproject.toml" if project else root / "pyproject.toml"
-    relative = manifest.relative_to(root) if manifest.is_relative_to(root) else manifest
-    if not manifest.is_file():
-        return Finding(
-            Severity.ERROR,
-            SECTION_HOOKS,
-            f"{file_name} hook runs console script '{script}' but "
-            f"{relative} does not exist",
-        )
-    try:
-        declared = _declared_scripts(manifest)
-    except (OSError, tomllib.TOMLDecodeError) as error:
-        return Finding(
-            Severity.ERROR,
-            SECTION_HOOKS,
-            f"{file_name} hook runs console script '{script}' but "
-            f"{relative} cannot be read: {error}",
-        )
-    if script in declared:
-        return None
-    return Finding(
-        Severity.ERROR,
-        SECTION_HOOKS,
-        f"{file_name} hook runs console script '{script}' not declared in "
-        f"{relative} [project.scripts]",
-    )
-
-
-def _console_script_target(command: str) -> tuple[str, str | None]:
-    """
-    Split a ``uv run`` command into its project and console script.
-
-    Args:
-        command: Full ``uv run`` command declared by the hook action.
-
-    Returns:
-        Tuple of (project directory, console script name). The name is
-        None when the command runs no positional command at all.
-    """
-    tokens = command.split()[len(UV_RUN) :]
-    project = ""
-    index = 0
-    while index < len(tokens):
-        token = tokens[index]
-        if token in VALUE_FLAGS:
-            if token == PROJECT_FLAG and index + 1 < len(tokens):
-                project = tokens[index + 1]
-            index += 2
-            continue
-        if token.startswith("-"):
-            key, separator, value = token.partition("=")
-            if separator and key == PROJECT_FLAG:
-                project = value
-            index += 1
-            continue
-        return project, token
-    return project, None
-
-
-def _declared_scripts(manifest: Path) -> frozenset[str]:
-    """
-    Read the ``[project.scripts]`` names declared by a pyproject.toml.
-
-    Args:
-        manifest: Path to the tool's pyproject.toml.
-
-    Returns:
-        Declared console script names.
-
-    Raises:
-        OSError: If the manifest cannot be read.
-        tomllib.TOMLDecodeError: If the manifest is not valid TOML.
-    """
-    with manifest.open("rb") as handle:
-        data = tomllib.load(handle)
-    scripts = data.get("project", {}).get("scripts", {})
-    if not isinstance(scripts, dict):
-        return frozenset()
-    return frozenset(str(name) for name in scripts)

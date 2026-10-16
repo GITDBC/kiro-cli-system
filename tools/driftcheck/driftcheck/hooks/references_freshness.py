@@ -1,11 +1,13 @@
 """
 Startup hook: check the kiro-cli-reference doc mirror for staleness.
 
-Reads (and discards) the agentSpawn event JSON from stdin. Prints a
+Registered in .kiro/hooks/hooks.json as a workspace SessionStart hook.
+Reads (and discards) the SessionStart event JSON from stdin. Prints a
 reminder on stdout when the mirror is older than the threshold, prints
 nothing when it is fresh, and always exits 0 — startup is never blocked.
 
-No network I/O, so it stays well inside the 5 s hook timeout.
+No network I/O, so it stays well inside the 15 s timeout hooks.json
+sets for it.
 """
 
 # Standard libraries
@@ -43,7 +45,7 @@ def _read_stdin_event() -> None:
     """Consume and discard the hook event JSON from stdin."""
     try:
         sys.stdin.read()
-    except Exception as error:  # noqa: BLE001 - stdin is optional context
+    except Exception as error:  # stdin is optional context
         warn(f"could not read the hook event ({error!r})")
 
 
@@ -138,7 +140,7 @@ def main() -> int:
     _read_stdin_event()
     try:
         run()
-    except Exception as error:  # noqa: BLE001 - degrade, never break the agent
+    except Exception as error:  # degrade, never break the agent
         warn(f"doc freshness check skipped ({error!r})")
     return 0
 

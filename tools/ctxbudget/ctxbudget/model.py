@@ -41,8 +41,6 @@ from ctxbudget.types import (
     Calibration,
     FileLoad,
     Measurement,
-    MetricFamily,
-    MetricRow,
     Observation,
     ResolvedAgent,
     ResolvedEntry,
@@ -50,12 +48,6 @@ from ctxbudget.types import (
 )
 
 logger = logging.getLogger(__name__)
-
-# The one documented extension seam. A later wave appends its own
-# MetricFamily instances here — duplication detection, directive
-# inventories, description-overlap signals — and report.py renders each
-# as an extra section. Nothing in resolve.py or count.py changes.
-EXTRA_METRICS: tuple[MetricFamily, ...] = ()
 
 # Budget-key prefixes. Flat keys with a prefix keep the committed budget
 # a single-level document that diffs cleanly, while still separating the
@@ -253,26 +245,6 @@ def file_loads(baselines: tuple[AgentBaseline, ...]) -> tuple[FileLoad, ...]:
         for label, count in tokens.items()
     ]
     return tuple(sorted(rows, key=lambda row: (-row.weighted, row.label)))
-
-
-def extra_metric_rows(
-    measurement: Measurement,
-) -> tuple[tuple[str, tuple[MetricRow, ...]], ...]:
-    """
-    Run every registered extension metric family.
-
-    Args:
-        measurement: Completed measurement.
-
-    Returns:
-        One (section title, rows) pair per family that produced rows.
-    """
-    sections: list[tuple[str, tuple[MetricRow, ...]]] = []
-    for family in EXTRA_METRICS:
-        rows = family.rows(measurement)
-        if rows:
-            sections.append((family.name, rows))
-    return tuple(sections)
 
 
 def derive_calibration(

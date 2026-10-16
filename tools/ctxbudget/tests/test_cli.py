@@ -180,7 +180,7 @@ def test_calibrate_resolves_the_window_from_the_declared_model(tree: Path) -> No
     """
     Default the window per model rather than to one constant.
 
-    Both fixture agents declare ``claude-opus-5``, a 1M-token model. The
+    Both fixture agents declare ``claude-opus-5.5``, a 1M-token model. The
     200K constant this replaced would have divided the percentage by a
     fifth of the real window and recorded a factor five times too small.
     """

@@ -1,3 +1,5 @@
+"""Read declared dependency constraints from pyproject.toml."""
+
 # Standard libraries
 import logging
 import re

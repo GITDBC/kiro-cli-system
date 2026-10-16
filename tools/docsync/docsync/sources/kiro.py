@@ -20,6 +20,14 @@ top-level URL is the one fetched.
 Second, the mirror is a CLI reference, so it tracks /docs/cli/ plus the
 top-level sections a CLI user needs, and ignores the sections belonging
 to the other Kiro products.
+
+Scope is then narrowed once more, to what an agent system for Python
+and telecom work consults. Whole sections are dropped by leaving them
+out of CLI_SECTIONS. Pages inside a kept section, and every page below
+/docs/cli/ (which is taken wholesale), are dropped through
+EXCLUDED_PATHS, which matches the mirror path whichever upstream URL
+form advertised it. An excluded page is never discovered, so --prune
+removes a local copy of it like any other orphan.
 """
 
 # Standard libraries
@@ -51,16 +59,16 @@ LEGACY_SECTION: Final[str] = "cli"
 # sections of the other Kiro products (crew, ide, web, mobile) and the
 # cross-product tutorial series (guides) are deliberately absent: a page
 # outside this set is not mirrored, so extending the mirror is an edit
-# here rather than a change to the shared engine.
+# here rather than a change to the shared engine. Account and
+# organisation administration (billing, enterprise), product migration
+# guides (upgrade-guides), powers and cloud sessions are left out too:
+# no agent in this repository consults them.
 CLI_SECTIONS: Final[frozenset[str]] = frozenset(
     {
-        "billing",
         "checkpoints",
-        "cloud-sessions",
         "compaction",
         "configuration",
         "custom-agents",
-        "enterprise",
         "getting-started",
         "hooks",
         "how-kiro-works",
@@ -68,18 +76,66 @@ CLI_SECTIONS: Final[frozenset[str]] = frozenset(
         "mcp",
         "models",
         "permissions",
-        "powers",
         "privacy-and-security",
         "reference",
         "skills",
         "specs",
         "steering",
         "tools",
+    }
+)
+
+# Mirror paths, without the .md suffix, that are never mirrored. An entry
+# excludes the page at that path and every page below it, so a section
+# name drops the whole subtree. Matching on the mirror path rather than
+# the URL means one entry covers both the legacy /docs/cli/ form and the
+# canonical top-level form. The dropped sections are repeated here so a
+# legacy /docs/cli/<section>/ URL cannot bring them back. Page-level
+# entries cover interfaces this repository does not use (ACP editors,
+# voice input, shell autocomplete, the full-screen and terminal UIs),
+# GovCloud and the enterprise MCP registry, installation and sign-in,
+# and the 2.x-to-3.0 migration material; the 3.0 pages describing the
+# current agent format, permissions and features stay.
+EXCLUDED_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "2x-reference",
+        "acp",
+        "autocomplete",
+        "billing",
+        "cloud-sessions",
+        "enterprise",
+        "fullscreen",
+        "getting-started/authentication",
+        "getting-started/installation",
+        "mcp/registry",
+        "models/govcloud",
+        "powers",
+        "terminal-ui",
         "upgrade-guides",
+        "v3/acp-migration",
+        "v3/hooks-migration",
+        "v3/migration-guide",
+        "v3/upgrade-agent",
+        "voice",
     }
 )
 
 LOCATION_TAG: Final[re.Pattern[str]] = re.compile(r"<loc>([^<]+)</loc>")
+
+
+def is_excluded(local: str) -> bool:
+    """
+    Report whether a mirror path falls under EXCLUDED_PATHS.
+
+    Args:
+        local: Mirror path without its suffix, e.g. "v3/acp-migration".
+
+    Returns:
+        True when the path equals an excluded entry or lies below one.
+    """
+    return any(
+        local == entry or local.startswith(f"{entry}/") for entry in EXCLUDED_PATHS
+    )
 
 
 def page_for(url: str) -> Page | None:
@@ -89,15 +145,16 @@ def page_for(url: str) -> Page | None:
     Sitemap entries carry a trailing slash, so the slug is taken with
     the surrounding slashes stripped. The mirror path drops the legacy
     /docs/cli/ section and keeps every other section, which is what
-    makes a relocated page such as /docs/billing/managing-taxes/ land
-    on the billing/managing-taxes.md it already occupies.
+    makes a relocated page such as /docs/hooks/types/ land on the
+    hooks/types.md it already occupies.
 
     Args:
         url: Absolute URL as advertised in the sitemap.
 
     Returns:
-        Page to mirror, or None when the URL is a documentation index or
-        belongs to a section outside the CLI reference.
+        Page to mirror, or None when the URL is a documentation index,
+        belongs to a section outside the CLI reference, or maps to a
+        path listed in EXCLUDED_PATHS.
     """
     if not url.startswith(DOCS_PREFIX):
         return None
@@ -112,6 +169,8 @@ def page_for(url: str) -> Page | None:
     elif section in CLI_SECTIONS:
         local = slug
     else:
+        return None
+    if is_excluded(local):
         return None
     return Page(url=f"{DOCS_PREFIX}{slug}.md", relative_path=f"{local}.md")
 

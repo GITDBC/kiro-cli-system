@@ -9,50 +9,47 @@ description: >
 
 # Code Standards
 
-Always-on coding standards. Apply to all code produced in this project. This body covers
-the most frequently violated rules; for exhaustive detail (full prohibited-code list,
-complete code examples, less-common categories), load `references/full-standards.md`.
+On-demand detail behind the always-on `.kiro/steering/code-standards-summary.md`, whose
+threshold table is the single copy of every numeric limit cited below. This body covers
+the most frequently violated rules; for complete code examples, the full prohibited-code
+list, and less-common categories, load `references/full-standards.md`.
 
 ## Language and Version
 
-- **Python 3.11** exclusively (`requires-python = "==3.11.*"`)
+- **Python 3.13** exclusively (version pin in the threshold table)
 - Package manager: **uv** (build and dependency resolution)
 - Dependencies pinned to exact versions (no open ranges)
 
 ## Formatting and Style (Ruff)
 
-- Max line length: **88 characters** · Indentation: **4 spaces** · Quotes: **double**
-  (`"`)
+- Line length and indentation per the threshold table · Quotes: **double** (`"`)
 - Line ending: **auto** · Magic trailing comma: not skipped
-- Active rule categories: E, F, W, PL, UP, N, B, I. Ignored: `PLC0415`, `N802`,
-  `PLR0913`, `PLR2004`. Full table in `references/full-standards.md`.
+- Active rule categories: E (pycodestyle errors), F (pyflakes), W (warnings), PL
+  (pylint), UP (pyupgrade), N (pep8-naming), B (bugbear), I (isort). Ignored: `PLC0415`
+  (non-top-level imports), `N802` (non-lowercase function names), `PLR0913` (too many
+  arguments), `PLR2004` (magic values).
 - Required additions in any new or refreshed project config: `G` (flake8-logging-format,
   catches f-strings in logger calls) and `D100`/`D104` (module docstrings). Both enforce
   rules already mandatory below and are the only mechanical coverage available for them.
 
-## Mandatory PEPs
-
-- PEP 8: style guide · PEP 257: docstrings · PEP 484/526: type hints on all public
-  functions
-- PEP 585: `list[str]` not `List[str]` · PEP 604: `X | Y` not `Union[X, Y]`
-
 ## Prohibited Code (most common)
 
-- `datetime.utcnow()` → use `datetime.now(tz=datetime.UTC)`
+- `datetime.utcnow()` (deprecated since 3.12) → use `datetime.now(tz=UTC)` with
+  `from datetime import UTC, datetime`
 - `from __future__ import annotations`
 - `logging.warn()` → use `logging.warning()`
 - `distutils` → use `setuptools` or `build`
 - Invalid escape sequences (`"\d"`) → use raw strings `r"\d"`
 
-Full list of removed/deprecated modules and APIs (Python 3.13 removals, `imp`,
-`asynchat`, etc.) in `references/full-standards.md`.
+The remaining removed/deprecated modules and APIs (Python 3.13 removals, `imp`,
+`asynchat`, etc.) are listed in `references/full-standards.md`.
 
 ## Import Organization
 
 Strict ordering with mandatory section headers (`# Standard libraries`, `# 3pps`,
 `# Own modules`). isort: `known-first-party`: `["src"]`; section order future → stdlib →
-third-party → first-party → local-folder. Full example in
-`references/full-standards.md`.
+third-party → first-party → local-folder; `combine-as-imports` and
+`split-on-trailing-comma` true. Full example in `references/full-standards.md`.
 
 ## Type Hints
 
@@ -67,12 +64,13 @@ Full guide: `.kiro/skills/reviewing-code/references/python-docstrings.md`. Full 
 example in `references/full-standards.md`.
 
 - Format: **Google Docstring** exclusively
-- Content starts on the line after `"""` · max **73 characters** per line
+- Content starts on the line after `"""` · docstring line limit per the threshold table
 - **Module docstring mandatory** in every `.py` file, including `__init__.py`: one
   paragraph stating the module purpose, placed after the copyright header and before
   `# Standard libraries`. Ruff `D100`/`D104` catch this.
 - `Returns` section mandatory, even for `None`
-- No types or default values in descriptive text
+- No types or default values in descriptive text · examples only when usage is not
+  obvious
 - Identical parameters must have identical descriptions across the codebase
 
 ## Logging
@@ -84,6 +82,8 @@ example in `references/full-standards.md`.
   emitted through `logger.debug()`. Promote the call to the matching level instead of
   compensating with a tag.
 - NEVER remove or modify existing logging statements; new logs may be added
+- Logger configured via JSON with `RotatingFileHandler`; each pipeline defines its own
+  `LOGGER_NAME`; module tags when applicable: `[INFO][MODULE] Message`
 
 ## Error Handling
 
@@ -106,14 +106,16 @@ example in `references/full-standards.md`.
 
 ## Naming Conventions
 
-| Element    | Convention         | Example                   |
-| ---------- | ------------------ | ------------------------- |
-| Modules    | `snake_case`       | `etl_orchestrator.py`     |
-| Classes    | `PascalCase`       | `SpectralEfficiencyModel` |
-| Functions  | `snake_case`       | `load_cm_data`            |
-| Constants  | `UPPER_SNAKE_CASE` | `LOGGER_NAME`             |
-| DataFrames | `df_` prefix       | `df_input`                |
-| Config     | `Config` suffix    | `SaveConfig`              |
+| Element       | Convention         | Example                           |
+| ------------- | ------------------ | --------------------------------- |
+| Modules       | `snake_case`       | `etl_orchestrator.py`             |
+| Classes       | `PascalCase`       | `SpectralEfficiencyModel`         |
+| Functions     | `snake_case`       | `load_cm_data`                    |
+| Constants     | `UPPER_SNAKE_CASE` | `LOGGER_NAME`                     |
+| Variables     | `snake_case`       | `df_cm_data`                      |
+| DataFrames    | `df_` prefix       | `df_input`, `df_cm_data`          |
+| Configuration | `Config` suffix    | `SaveConfig`, `ETLPipelineConfig` |
+| Loaders       | `Loader` suffix    | `CMDataLoader`, `NPPConfigLoader` |
 
 ## Classes
 
@@ -123,7 +125,8 @@ constructor start. Full example in `references/full-standards.md`.
 
 ## Data Processing and Performance
 
-- **Polars** for all production data processing; Pandas only when strictly necessary
+- **Polars** for all production data processing; Pandas only when strictly necessary as
+  an intermediate step
 - `LazyFrame` (`scan_parquet`) for read optimization · NumPy for pure numerical
   computation
 - Avoid: row-by-row operations, unnecessary format conversions, expensive objects inside
@@ -157,22 +160,24 @@ item on the reviewer checklist in `.kiro/skills/reviewing-code/SKILL.md`.
 ## Testing
 
 - Framework: **pytest** with `pytest-order` and `pytest-cov`
-- Coverage: minimum 80% (SonarQube) · reports in `coverage.xml`
-- Structure: `tests/` mirroring `src/` · `test_*.py` files · pytest fixtures (not
-  `setUp`/`tearDown`)
-- Full detail (markers, scope, options) in `references/full-standards.md`.
+- Coverage floor per the threshold table (SonarQube gate) · reports in `coverage.xml`
+- Structure: `tests/` mirroring `src/` · `test_*.py` files · `Test*` classes · `test_*`
+  functions · pytest fixtures (not `setUp`/`tearDown`) · `unittest.mock` or
+  `pytest-mock`
+- Custom markers: `@pytest.mark.training`, `@pytest.mark.inference` · `session` scope
+  for expensive fixtures · `assert_frame_equal` for DataFrames · options
+  `--strict-markers`, `--tb=short`
 
 ## Security
 
 - **Bandit**: `bandit -r src/ -ll` · **licensecheck** for license verification
-- Credentials never in source code; auth tokens/secrets never logged, even at debug
-  level
+- Credentials never in source code (use external JSON files or secret managers); auth
+  tokens/secrets never logged, even at debug level
 
 ## Engineering Principles
 
-- **DRY** · **KISS** · **YAGNI** (stdlib/platform/installed dep before custom code)
-- **Single Responsibility** · **Low coupling** (inject dependencies)
-- **Defensive Programming**: validate inputs, handle errors gracefully
+The principles in `code-standards-summary.md` apply, plus **strategic over tactical**:
+invest 10–20% of development time in design improvements.
 
 ## References
 

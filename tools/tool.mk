@@ -1,7 +1,7 @@
 # Shared recipe body for every tool under tools/. Included by each tool's
-# Makefile, which contributes only its module name via CURDIR — see the
-# comment on TOOLS in the root Makefile for the directory-equals-module
-# invariant this depends on.
+# Makefile, which contributes only its module name via CURDIR. The directory
+# name must equal the module name, since the root lint-<tool> target runs
+# `mypy <tool>` inside tools/<tool>.
 MODULE := $(notdir $(patsubst %/,%,$(CURDIR)))
 
 .PHONY: setup clean lint code-check test all
@@ -11,9 +11,11 @@ MODULE := $(notdir $(patsubst %/,%,$(CURDIR)))
 setup:
 	@uv sync --all-groups
 
+# The .venv exclusion keeps `clean` from deleting bytecode and caches that
+# belong to the tool's own environment.
 clean:
-	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache -o -name .complexipy_cache -o -name .ruff_cache \) -exec rm -rf {} +
-	@find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+	@find . -type d \( -name __pycache__ -o -name .pytest_cache -o -name .mypy_cache -o -name .complexipy_cache -o -name .ruff_cache \) -not -path "*/.venv/*" -prune -exec rm -rf {} +
+	@find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -not -path "*/.venv/*" -delete
 
 lint:
 	@uv run ruff format .
@@ -25,6 +27,6 @@ code-check:
 	@uv run mypy $(MODULE)
 
 test:
-	@uv run pytest tests/
+	@uv run pytest tests/ --cov=$(MODULE) --cov-fail-under=80
 
-all: setup clean lint code-check test
+all: setup lint code-check test

@@ -1,17 +1,3 @@
-# Global tool configuration for work-agents
-#
-# Each section below corresponds to one of the user-facing tools in tools/
-# that reads configuration (jirafetcher, depschecker, doc2md). Tools read
-# their section automatically when the WORK_AGENTS_CONFIG environment
-# variable points to this file. CLI arguments always take priority over
-# values defined here.
-#
-# The repository-maintenance tools (driftcheck, docsync) read no
-# configuration and have no section here.
-#
-# Copy this file as config.toml and fill in your values.
-# This file MUST be in .gitignore — it may contain secrets.
-
 [jirafetcher]
 token = ""                                    # Jira PAT or API token (required)
 statuses = ["In Review", "On Hold"]           # Status filters

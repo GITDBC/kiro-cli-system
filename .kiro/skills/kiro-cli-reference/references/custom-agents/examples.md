@@ -8,13 +8,15 @@
 
 This page provides practical examples of custom agents you can use as starting points for your own workflows.
 
-**ℹ️ Info:** Some examples below show both the current (v3) format and the older (v2) format for comparison. Use the [`/upgrade-agent`](https://kiro.dev/docs/custom-agents/configuration-reference.md#upgrading-from-older-configs) command to convert older configs automatically.
+**ℹ️ Info:** Some examples below show both the current (v3) format and the older (v2) format for comparison. Current examples use `permissions.rules`; `allowedTools`, `toolAliases`, and `toolsSettings` appear only in legacy examples. Use the [`/upgrade-agent`](https://kiro.dev/docs/custom-agents/configuration-reference.md#upgrading-from-older-configs) command to convert older configs automatically.
+
+**ℹ️ Info:** The inline `hooks` arrays in the current examples are profile-scoped CLI V3 configuration. To run the same automation independently of an agent profile or across IDE and CLI, place the definitions in standalone [Hook files](https://kiro.dev/docs/hooks.md).
 
 ## AWS specialist agent
 
 This custom agent is optimized for AWS infrastructure management. It pre-approves safe operations while restricting destructive commands.
 
-IDE 1.0 / CLI 3.0
+CLI V3
 IDE 0.x / CLI 2.x (legacy)
 
 ```json
@@ -42,7 +44,7 @@ IDE 0.x / CLI 2.x (legacy)
       "action": { "type": "command", "command": "aws sts get-caller-identity" }
     }
   ],
-  "model": "claude-sonnet-4"
+  "model": "claude-sonnet-4.6"
 }
 ```
 
@@ -62,7 +64,7 @@ IDE 0.x / CLI 2.x (legacy)
   "hooks": {
     "agentSpawn": [{ "command": "aws sts get-caller-identity" }]
   },
-  "model": "claude-sonnet-4"
+  "model": "claude-sonnet-4.6"
 }
 ```
 
@@ -76,7 +78,7 @@ IDE 0.x / CLI 2.x (legacy)
 
 This custom agent is designed for general software development tasks, including code review, testing, and Git operations.
 
-IDE 1.0 / CLI 3.0
+CLI V3
 IDE 0.x / CLI 2.x (legacy)
 
 ```json
@@ -93,16 +95,11 @@ IDE 0.x / CLI 2.x (legacy)
     }
   },
   "tools": ["read", "write", "shell", "@github/issue_read", "@github/search_issues"],
-  "allowedTools": ["read", "@github/issue_read", "@github/search_issues"],
-  "toolAliases": {
-    "@github/issue_read": "issue",
-    "@github/search_issues": "issues"
-  },
   "permissions": {
     "rules": [
       { "capability": "fs_write", "match": ["src/**", "tests/**", "docs/**", "*.md", "*.json"], "effect": "allow" },
       { "capability": "shell", "match": ["git *", "npm *"], "effect": "allow" },
-      { "capability": "mcp", "match": ["@github/issue_read", "@github/search_issues"], "effect": "allow" }
+      { "capability": "mcp", "match": ["github/issue_read", "github/search_issues"], "effect": "allow" }
     ]
   },
   "resources": [
@@ -157,7 +154,7 @@ IDE 0.x / CLI 2.x (legacy)
 
 This custom agent focuses specifically on code review tasks, with tools and context optimized for analyzing code quality, security, and best practices.
 
-IDE 1.0 / CLI 3.0
+CLI V3
 IDE 0.x / CLI 2.x (legacy)
 
 ```json
@@ -166,7 +163,6 @@ IDE 0.x / CLI 2.x (legacy)
   "description": "Specialized agent for code review and quality analysis",
   "prompt": "You are a code review specialist focused on quality, security, and best practices",
   "tools": ["read", "shell"],
-  "allowedTools": ["read"],
   "permissions": {
     "rules": [
       { "capability": "shell", "match": ["grep *", "find *", "git diff *", "git log *", "eslint *", "pylint *"], "effect": "allow" },
@@ -219,7 +215,7 @@ IDE 0.x / CLI 2.x (legacy)
 
 This example shows how to create a custom agent tailored to a specific project, including project-specific MCP servers, documentation, and build processes.
 
-IDE 1.0 / CLI 3.0
+CLI V3
 IDE 0.x / CLI 2.x (legacy)
 
 ```json
@@ -239,16 +235,11 @@ IDE 0.x / CLI 2.x (legacy)
     }
   },
   "tools": ["read", "write", "shell", "@docker", "@database"],
-  "allowedTools": ["read", "@docker/docker_ps", "@docker/docker_logs", "@database/query_read_only"],
-  "toolAliases": {
-    "@docker/docker_ps": "containers",
-    "@docker/docker_logs": "logs",
-    "@database/query_read_only": "query"
-  },
   "permissions": {
     "rules": [
       { "capability": "fs_write", "match": ["src/**", "tests/**", "migrations/**", "docker-compose.yml", "Dockerfile"], "effect": "allow" },
       { "capability": "shell", "match": ["npm test", "npm run build", "docker-compose *"], "effect": "allow" },
+      { "capability": "mcp", "match": ["docker/docker_ps", "docker/docker_logs", "database/query_read_only"], "effect": "allow" },
       { "capability": "shell", "match": ["rm -rf *", "sudo *"], "effect": "deny" }
     ]
   },
@@ -319,7 +310,9 @@ This example shows an agent configured to use a remote MCP server:
     }
   },
   "tools": ["@find-a-domain"],
-  "allowedTools": ["@find-a-domain"]
+  "permissions": {
+    "rules": [{ "capability": "mcp", "match": ["find-a-domain/*"], "effect": "allow" }]
+  }
 }
 ```
 
@@ -341,7 +334,9 @@ For servers requiring OAuth with specific scopes:
     }
   },
   "tools": ["@github"],
-  "allowedTools": ["@github"]
+  "permissions": {
+    "rules": [{ "capability": "mcp", "match": ["github/*"], "effect": "allow" }]
+  }
 }
 ```
 
@@ -359,7 +354,9 @@ If you encounter OAuth scope errors, you can use an empty array to bypass scope 
     }
   },
   "tools": ["@github"],
-  "allowedTools": ["@github"]
+  "permissions": {
+    "rules": [{ "capability": "mcp", "match": ["github/*"], "effect": "allow" }]
+  }
 }
 ```
 
@@ -368,9 +365,9 @@ If you encounter OAuth scope errors, you can use an empty array to bypass scope 
 - **Start simple** - Begin with basic tool configurations and add complexity as needed
 - **Use descriptive names** - Choose custom agent names that clearly indicate their purpose
 - **Include relevant context** - Add project documentation and configuration files to resources
-- **Pre-approve safe tools** - Include frequently used, low-risk tools in allowedTools
+- **Pre-approve safe operations** - Add narrow `permissions.rules` for frequently used, low-risk operations
 - **Use hooks for dynamic context** - Include current system state through command hooks
-- **Limit tool scope** - Use toolsSettings to restrict tool access to relevant paths and services
+- **Limit tool scope** - Use `permissions.rules` to restrict operations to relevant paths, commands, and MCP tools
 - **Test thoroughly** - Verify that your custom agent configuration works as expected
 - **Document your custom agents** - Use clear descriptions to help team members understand custom agent purposes
 

@@ -1,42 +1,38 @@
 ---
 name: deps-audit
 description: >
-  Dependency audit using depschecker. Use when checking dependency freshness,
-  vulnerabilities, or planning upgrades. Triggers: 'check dependencies', 'audit deps',
-  'outdated packages', 'vulnerability scan'. Not for general code review or security
-  audits beyond dependencies.
+  Dependency freshness and vulnerability audit with depschecker. Triggers: 'check
+  dependencies', 'audit deps', 'outdated packages', 'vulnerability scan'. Not for code
+  review or security audits beyond dependencies (use security-audit).
 ---
 
 # Dependency Audit
 
-## Invocation
-
-Use when: checking dependency freshness, scanning for vulnerabilities, or planning
-upgrades ahead of a migration.
-
-Do NOT use when: general code review without a dependency focus (`reviewing-code`) or a
-full security audit beyond dependencies (`security-audit`).
-
 ## Workflow
 
-1. **senior-developer** — Freshness check:
-   - Run
-     `cd tools/depschecker && uv run depschecker --freshness-only <path-to-pyproject.toml>`.
-   - Highlight packages with major/minor updates requiring migration effort.
-   - Produce summary with upgrade recommendations and risk assessment.
+One **security-engineer** dispatch covers freshness and vulnerabilities:
 
-2. **security-engineer** — Vulnerability scan:
-   - Run
-     `cd tools/depschecker && uv run depschecker --vulns-only <path-to-pyproject.toml>`.
-   - Cross-reference with freshness report: flag whether upgrading resolves each
-     vulnerability.
-   - Produce prioritized report: Package | Current | CVE/Advisory | Severity | Fixed in
-     | Upgrade resolves?
-   - State "uncertain" rather than asserting a fix when the advisory data does not
-     clearly confirm the upgrade resolves the CVE. A false "resolves" claim leaves the
-     team exposed.
+1. Run one combined report, with absolute paths and the output written to a file so it
+   does not flood the context (see `tools/TOOLS_OVERVIEW.md`):
 
-Pass the full senior-developer report as context to the security-engineer step.
+   ```bash
+   export WORK_AGENTS_CONFIG="<repo>/config.toml"
+   uv run --project <repo>/tools/depschecker depschecker \
+     --lock <abs-project>/uv.lock \
+     -o <repo>/tmp/deps-report.md \
+     <abs-project>/pyproject.toml
+   ```
+
+   Without a `uv.lock`, the scan exits 1; pass `--freshness-only` and state that
+   vulnerabilities were not checked.
+
+2. Read the report and highlight packages whose major/minor updates require migration
+   effort.
+3. Cross-reference each vulnerability with the freshness data and produce a prioritized
+   table: Package | Current | CVE/Advisory | Severity | Fixed in | Upgrade resolves?
+   State "uncertain" rather than asserting a fix when the advisory data does not clearly
+   confirm the upgrade resolves the CVE; a false "resolves" claim leaves the team
+   exposed.
 
 ## Success Criteria
 

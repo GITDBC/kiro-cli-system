@@ -1,3 +1,5 @@
+"""Render freshness and vulnerability results as Markdown."""
+
 # Standard libraries
 import logging
 

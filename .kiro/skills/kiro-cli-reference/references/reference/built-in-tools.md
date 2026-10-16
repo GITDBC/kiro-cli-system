@@ -8,6 +8,8 @@
 
 Kiro CLI includes a collection of built-in tools that enhance your terminal experience with AI-powered assistance for common development tasks.
 
+**ℹ️ Info:** This page documents the CLI 2.x tool identifiers and `toolsSettings` configuration. For the CLI V3 tool catalog and tag-based configuration, see [Tools](https://kiro.dev/docs/tools.md). The CLI 2.x structured AWS tool used the internal name `use_aws` and preferred alias `aws`; it is not a V3 built-in. Connect an AWS MCP server instead.
+
 ## File read
 **Tool name**: `read`
 
@@ -251,6 +253,14 @@ You can also configure the `shell` tool in the agent configuration to control wh
 
 **Note**: `allowedCommands` and `deniedCommands` support regex formatting. regex entered are anchored with \A and \z, and does NOT support look-around, including look-ahead and look-behind.
 
+**⚠️ Environment variables can change what a command runs:** Kiro CLI does not control the environment variables that a command sets. A variable assignment in front of a command can make a read-only program run another program.
+
+Kiro CLI asks for approval when a command sets a variable from its list of known dangerous variables. That list cannot include every variable that every tool reads. An `allowedCommands` pattern that matches text before the program name, such as `.*git diff`, also matches commands with variable assignments.
+
+You are responsible for the commands that you let Kiro CLI run without approval. If the agent works in a repository that you do not trust, keep `autoAllowReadonly` off and review each command before you approve it.
+
+This note applies to the `shell` settings on this page. It does not apply to V3 (`kiro-cli --v3`), which uses permission rules instead of `toolsSettings`. For details, see [Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md).
+
 ### Side channels for wrapper scripts
 
 When the agent runs a shell command, Kiro CLI exports two environment variables that point to per-invocation FIFOs. Wrapper scripts can write to them to route output independently of stdout:
@@ -274,11 +284,11 @@ echo "ok"  # plain stdout — captured normally
 
 Both variables are only set when the agent is driving the command; wrappers should fall back gracefully if the variable is empty (for example, test with `[ -n "$" ]`).
 
-## Execute AWS commands
+## Execute AWS commands (CLI 2.x legacy)
 
-**Tool name**: `aws`
+**Internal tool name**: `use_aws`
 
-**Aliases**: `use_aws`
+**Preferred alias**: `aws`
 
 **Description**: Tool for making AWS CLI calls with the specified service, operation, and parameters
 
@@ -606,17 +616,17 @@ This tool has no configuration options.
 
 Symbol lookups and code edits inside your current workspace run without prompting. Anything targeting files **outside the workspace** requires your approval first, which prevents accidental reads or writes against credentials, system configs, or other projects on disk.
 
-## Tool Search
+## Tool Search (V2)
 
 **Tool name**: `tool_search`
 
 **Description**: Find and load MCP tools on demand instead of sending every tool definition with each request.
 
-Tool Search is automatically allowed without user permission prompts (read-only operation). For enabling, settings, and how Tool Search works, see [Tool Search](https://kiro.dev/docs/mcp/tool-search.md).
+This legacy tool is available in V2 sessions when Tool Search is enabled. Kiro CLI 2.31 and later local V3 sessions load MCP tools automatically through `tool_load` and `tool_call`. See [Tool Search](https://kiro.dev/docs/mcp/tool-search.md) for availability and settings.
 
 ### Parameters
 
-The `tool_search` tool accepts the following parameters:
+The V2 `tool_search` tool accepts these parameters:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -624,7 +634,7 @@ The `tool_search` tool accepts the following parameters:
 | `query` | string | One of `tool_id` or `query` | Keywords to search for matching tools |
 | `max_results` | integer | No | Maximum results to return (default: 5) |
 
-Provide exactly one of `tool_id` or `query`, not both. Matched tools are immediately activated and available for the agent to invoke.
+Provide exactly one of `tool_id` or `query`, not both. Matched tools become available to the agent.
 
 ## Delegate tasks
 
@@ -685,29 +695,20 @@ This tool has no configuration options.
 
 **Tool name**: `goal`
 
-**Description**: Manages goal-driven iterative loops where the agent works autonomously toward an objective with built-in verification. The agent uses this tool internally to track goal state, iteration count, and verification results across the loop.
+**Description**: Lets the agent report that the goal you set with `/goal` is complete. Only you create or clear a goal: `/goal <description> [--max <N>]` starts the loop (default 5 iterations, ceiling 50) and `/goal clear` cancels it. The agent cannot set a goal with this tool.
 
-When you run `/goal`, the agent invokes this tool to:
-- Register the goal and acceptance criteria
-- Track iteration progress (default: 5 iterations, configurable with `--max`)
-- Record verification results after each implementation cycle
-- Mark the goal complete or report failure
+The tool has one command, `complete`, which takes a `summary` of what was accomplished and how it was verified. Until the agent calls it, the goal loop re-prompts the agent at the start of each iteration. See [Goal](https://kiro.dev/docs/cli/chat/goal.md) for usage documentation.
 
 ```bash
 > /goal refactor the auth module to use JWT tokens and ensure all tests pass
+goal set: "refactor the auth module to use JWT tokens and ensure all tests pass" (max 5)
 
-Setting goal: refactor the auth module to use JWT tokens... (using tool: goal)
+[Agent implements changes, runs the tests, then calls goal complete with a summary]
 
- ✓ Goal registered (max iterations: 5)
- - Iteration 1/5 starting
-
-[Agent implements changes, then verifies...]
-
- ✓ Goal complete — all acceptance criteria met
- - Completed in 3 iterations
+ ✓ Goal complete
 ```
 
-This tool is used internally by the `/goal` command. You don't invoke it directly — use the `/goal` slash command instead. See [Goal](https://kiro.dev/docs/cli/chat/goal.md) for usage documentation.
+In CLI V3, `/goal` is a command behind the Workflows opt-in and does not use this tool.
 
 This tool has no configuration options.
 
@@ -833,7 +834,7 @@ Tools can be explicitly allowed in the `allowedTools` section of the agent confi
 }
 ```
 
-If a tool is not in the `allowedTools` list, the user will be prompted for permission when the tool is used unless an allowed `toolSettings` configuration is set.
+If a tool is not in the `allowedTools` list, the user will be prompted for permission when the tool is used unless an allowed `toolsSettings` configuration is set.
 
 Some tools have default permission behaviors:
 - `report` is trusted by default

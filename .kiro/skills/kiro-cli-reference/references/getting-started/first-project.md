@@ -61,7 +61,7 @@ Before starting, ensure you have:
        - Select the repository you want to work with
 
     3. **Create a task**:
-       - Choose **New Task** to start working with the agent on your project
+       - Click **New session** to start working with the agent on your project
        - Describe what you'd like to accomplish
 
 Coming soon to Mobile.
@@ -196,7 +196,7 @@ Agent hooks eliminate manual work by automatically executing predefined actions 
 
     You can ask the agent to create hooks conversationally, or define them directly in your agent configuration file. See [Hook triggers](https://kiro.dev/docs/hooks/types.md) for available event types and the [Agent Configuration Reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#hooks-field) for the complete syntax.
 
-    Kiro Web loads project Hooks from `.kiro/hooks/` in your repository. You can ask the agent to create a Hook in `.kiro/hooks/`, or add a Hook JSON file there yourself. For personal Hooks, upload them from **Settings > Sync**, then manage them under **Settings > Hooks**. Hook command actions run inside the cloud sandbox.
+    Kiro Web can store personal Hook configuration through **Settings > Sync**. Apply that cloud configuration to new local IDE or CLI sessions to use the Hooks without copying files into your local `.kiro` directory. Kiro Web sessions do not run event-driven Hooks or Hook command actions.
 
 Hooks aren't available on Mobile.
 
@@ -251,7 +251,7 @@ Model Context Protocol (MCP) allows Kiro to access specialized tools, APIs, know
 
     MCP tools are available in your CLI chat sessions automatically. Kiro selects the appropriate tool based on your request.
 
-    MCP servers can be configured for Kiro Web through the sandbox settings. See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for setup instructions.
+    Kiro Web loads MCP servers from `.kiro/settings/mcp.json` in your repository, and you can add more through the sandbox settings or [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md). See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for setup instructions.
 
 Coming soon to Mobile.
 

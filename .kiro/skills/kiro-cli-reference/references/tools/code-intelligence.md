@@ -290,6 +290,8 @@ Not every language server supports every operation (some may not support rename 
 
 Symbol lookups and code analysis within your workspace run without prompting. Operations targeting files outside the workspace require approval.
 
+A rename or format asks before each file it changes, one prompt per file, including files the language server adds to the edit beyond the one you named. A `deny` rule on any file in the edit refuses the whole edit, and nothing is written. Kiro computes the edit against each file as you last saved it; if a file changes before the edit is applied, Kiro refuses the edit instead of applying it at stale positions.
+
 ## Next steps
 
 - [Built-in tools overview](https://kiro.dev/docs/tools.md) - full tool catalog

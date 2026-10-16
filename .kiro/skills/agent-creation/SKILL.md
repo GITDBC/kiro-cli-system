@@ -49,8 +49,10 @@ validation loop (do → validate → fix → repeat).
 ### Phase 3 — Review → `code-reviewer`
 
 Check: clarity (another LLM can follow unambiguously) · no routing overlap · project
-convention adherence · body passes the progressive-disclosure test · description answers
-"what?" and "when?".
+convention adherence · `name` matches the directory (kebab-case, 1–64 chars) ·
+description answers "what?" and "when?" and keeps the `Not for ...` boundary · body
+passes the progressive-disclosure test · every `references/` file is reachable from the
+body (`make drift-check` reports unreachable ones).
 
 ### Phase 4 — Security audit → `security-engineer`
 
@@ -64,8 +66,12 @@ All CRITICAL/HIGH items must be resolved before integration.
 **For agents:** add to routing table in `routing.md`, add to `availableAgents` in
 `orchestrator.json`, add collaboration patterns.
 
-**For skills:** verify triggers correctly on 2+ realistic prompts; add collaboration
-pattern to `routing.md` if multi-agent.
+**For skills:** add a `skill://.kiro/skills/<name>/SKILL.md` entry to the `resources` of
+every agent that declares the skill (including the orchestrator when it runs the
+workflow); add or update the skill's Collaboration Patterns row in `routing.md` (every
+non-direct-invoke skill needs one); verify it triggers correctly on 2+ realistic
+prompts; run `make drift-check`. The integration checklist in
+`references/patterns-reference.md` lists the remaining wiring.
 
 ## Skill Authoring Rules
 
@@ -77,7 +83,11 @@ to a specific draft is unclear.
 - **Pointer rule** — state what the material is and name the branches that should reach
   it, front-loading the leading word and giving one trigger per branch.
 - **No-op hunt** — delete every instruction the model already follows by default, whole
-  sentence at a time.
+  sentence at a time. Generic engineering method (how to debug, design a pipeline,
+  structure a report) is a no-op too: a skill earns its place only with facts the model
+  cannot derive — repository paths and conventions, `tools/` invocations, safety rules,
+  orchestration contracts, frozen output formats, or domain data. A workflow with none
+  of those becomes a "pattern only" row in `routing.md`, not a skill.
 - **Positive instruction** — state the target behaviour rather than the prohibition it
   replaces. This governs skill **bodies**; skill **descriptions** keep their explicit
   `Not for ...` boundaries.
@@ -86,58 +96,28 @@ to a specific draft is unclear.
 
 ## Reference Material
 
-`references/patterns-reference.md` — templates and structural conventions of this
-repository: prompt skeleton, agent JSON shape, resource conventions, steering-file
-table, integration checklist. Reach for it in Phase 2 before writing any file, and in
-Phase 5 when wiring the artifact into routing. Where it and the upstream standard
-disagree, this repository's conventions win.
+`references/patterns-reference.md` — this repository's templates and conventions (prompt
+skeleton, agent JSON shape, resource conventions, steering-file table, integration
+checklist). Load it in Phase 2 before writing any file and in Phase 5. Where it and the
+upstream standard disagree, this repository's conventions win.
 
-`references/agentskills/` holds a vendored mirror of the official Agent Skills standard
-documentation (CC-BY-4.0). `references/agentskills/PROVENANCE.md` records the upstream
-paths, the fetch date and the attribution; corrections go upstream and arrive through
-`make sync-agentskills`, which overwrites local edits.
+`references/agentskills/` — vendored mirror of the official Agent Skills documentation
+(CC-BY-4.0; provenance in `PROVENANCE.md`; refreshed by `make sync-agentskills`, which
+overwrites local edits):
 
-- **Format specification** — `agentskills/specification.md` carries the normative
-  frontmatter fields and their limits, the directory layout, and file-reference
-  semantics. Reach for it when a frontmatter constraint is in question, when placing
-  content between `scripts/`, `references/` and `assets/`, or when validating a name.
-- **Description tuning** — `agentskills/optimizing-descriptions.md` explains how a
-  description drives triggering, how to design should-trigger and should-not-trigger
-  queries, and how to run the optimisation loop. Reach for it when a skill fails to
-  fire, when it fires on unrelated prompts, or when writing a new description.
-- **Authoring practice** — `agentskills/best-practices.md` covers scoping and
-  calibration: starting from real expertise, gotchas sections, defaults over menus,
-  procedures over declarations, output templates. Reach for it when a draft reads
-  generic or when the level of prescription for a step is unclear.
-- **Output evaluation** — `agentskills/evaluating-skills.md` describes eval-driven
-  iteration: test cases, assertions, grading, aggregation. Reach for it when a skill
-  triggers correctly but its output quality is disputed, or when a proposed change needs
-  evidence that it helps.
-- **Script bundling** — `agentskills/using-scripts.md` compares one-off commands with
-  bundled scripts and covers self-contained dependencies and script interfaces. Reach
-  for it when a skill has to execute code, or when choosing between an inline command
-  and a `scripts/` entry.
-- **First-skill walkthrough** — `agentskills/quickstart.md` builds one minimal skill end
-  to end. Reach for it when onboarding someone to the format, or when a worked minimal
-  example settles a structural question faster than the specification.
-
-## Skill Quality Checklist
-
-- [ ] `name` matches directory, kebab-case, 1–64 chars
-- [ ] `description` states what and when, includes the `Not for ...` boundary, under
-      1024 chars
-- [ ] Body passes the progressive-disclosure test; branch-specific detail sits in
-      `references/`
-- [ ] Every file in `references/` is reachable from the body (`make drift-check` reports
-      unreachable ones)
-- [ ] Instructions explain _why_, not just _what_
-- [ ] Examples included where usage is not obvious
-- [ ] Tested with at least 2 realistic prompts
+| File                         | Load when                                                      |
+| ---------------------------- | -------------------------------------------------------------- |
+| `specification.md`           | a frontmatter limit, directory layout, or name is in question  |
+| `optimizing-descriptions.md` | a skill misfires or a new description is being written         |
+| `best-practices.md`          | a draft reads generic or the level of prescription is unclear  |
+| `evaluating-skills.md`       | output quality is disputed or a change needs evidence          |
+| `using-scripts.md`           | a skill must execute code (inline command vs `scripts/` entry) |
+| `quickstart.md`              | a minimal worked example settles a structural question         |
 
 ## Done when
 
 - Artifact files created following conventions.
 - Review passes with no critical issues.
 - Security audit clean (no CRITICAL/HIGH open).
-- Integration complete (routing table, orchestrator config).
+- Integration complete (routing row, `skill://` entries or `availableAgents`).
 - Tested with realistic prompts.

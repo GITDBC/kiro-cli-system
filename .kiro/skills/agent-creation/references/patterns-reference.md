@@ -114,7 +114,7 @@ Do NOT use this agent when:
     "skill://.kiro/skills/<relevant-skill>/SKILL.md"
   ],
   "welcomeMessage": "One line stating what the agent is ready to do.",
-  "model": "claude-sonnet-5"
+  "model": "claude-sonnet-5.5"
 }
 ```
 

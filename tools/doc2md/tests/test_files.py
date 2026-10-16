@@ -1,3 +1,5 @@
+"""Tests for input file collection."""
+
 # Standard libraries
 from pathlib import Path
 from unittest.mock import patch

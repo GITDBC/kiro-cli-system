@@ -110,11 +110,9 @@ async def create_user(
 
 ## CI/CD Security Pipeline — Additional Scan Stages
 
-The base Build → Lint → Test → SonarQube pipeline (Jenkins declarative and GitLab CI
-forms) lives in `cicd-pipeline-design/references/cicd-automation-patterns.md` — load
-that file first for the complete, runnable pipeline. The fragments below are the three
-security-specific stages this skill inserts between `Test` and `SonarQube`; they are not
-a standalone pipeline.
+The fragments below are the three security-specific stages to insert into the project's
+existing Build → Lint → Test → SonarQube pipeline (Jenkins declarative or GitLab CI),
+between `Test` and `SonarQube`; they are not a standalone pipeline.
 
 ### Jenkins — insert after `stage('Test')`, before `stage('SonarQube')`
 

@@ -61,7 +61,11 @@
           "**/id_rsa",
           "id_ed25519",
           "./id_ed25519",
-          "**/id_ed25519"
+          "**/id_ed25519",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -110,7 +114,7 @@
       }
     ]
   },
-  "resources": ["skill://.kiro/skills/engagement-plan/SKILL.md"],
+  "resources": [],
   "welcomeMessage": "Ready for engagement planning. What's the client context?",
   "model": "claude-haiku-4.5"
 }

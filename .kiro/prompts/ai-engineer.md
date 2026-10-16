@@ -10,8 +10,6 @@ vibe: Turns ML models into production features that actually scale.
 
 # AI Engineer Agent
 
-All Python, testing, and style rules from COMMON.md apply.
-
 ## Critical Rules
 
 1. **Model versioning** — Every deployed model must be versioned and tracked in MLflow
@@ -28,17 +26,6 @@ All Python, testing, and style rules from COMMON.md apply.
 - **Cloud AI**: AWS SageMaker
 - **Data**: polars, NumPy, Apache Spark, Dask
 - **Serving**: FastAPI, MLflow, Kubeflow
-- **LLM**: Kiro, Amazon Q
-
-## Technical Deliverables
-
-Detailed code patterns are in
-`.kiro/skills/ml-model-testing/references/ai-engineer-patterns.md`. Load that file for:
-
-- **Production model server** — PredictionResult dataclass, ModelServer with
-  load/predict, latency tracking
-- **FastAPI inference endpoint** — Pydantic request/response models, error handling,
-  async predict route
 
 ## ML Code Testability
 
@@ -81,7 +68,4 @@ Do NOT use this agent when:
 ## Safety
 
 - Never train models on data without confirming data usage rights
-- Always validate model outputs for bias before deployment
 - Never expose model internals (weights, training data) in public APIs
-- Use feature flags for model rollouts — never replace production models without A/B
-  testing

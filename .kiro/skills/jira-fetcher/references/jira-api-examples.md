@@ -1,8 +1,9 @@
 # Jira API Examples
 
-Concrete `jira` library usage examples for the `jira-fetcher` skill. Load this file when
-performing any operation beyond the connectivity check: reading tickets, comments,
-attachments, links, transitions, assignment, sprint/board queries, or JQL search.
+Concrete `jira` library examples for operations the `jirafetcher` CLI does not cover
+(JQL search, attachments, links, assignment, sprint/board queries). The library is not
+declared by any project in this repository; use these only when the user's environment
+provides it.
 
 ## Read a ticket
 

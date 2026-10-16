@@ -144,7 +144,7 @@ def test_orchestration_placement_detects_dropped_resource(
     write_agent(
         valid_root,
         "orchestrator",
-        model="claude-sonnet-5",
+        model="claude-sonnet-5.5",
         resources=["file://.kiro/steering/COMMON.md"],
         toolsSettings={"subagent": {"availableAgents": ["senior-developer"]}},
     )

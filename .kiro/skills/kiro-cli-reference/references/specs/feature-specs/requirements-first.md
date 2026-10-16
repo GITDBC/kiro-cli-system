@@ -197,7 +197,7 @@ If requirements lack specificity:
 
 If you need to modify requirements after design is generated:
 1. Edit the requirements.md document
-2. Click **Refine** in the design.md file
+2. Ask Kiro, in a spec chat session, to update the design to match
 3. Kiro will update design and tasks to match new requirements
 4. This is expected - iteration is part of the process
 

@@ -37,7 +37,7 @@ Because the harness is shared, a capability behaves the same wherever it's avail
 
 ### The boundary is a protocol
 
-Clients talk to the harness through the open [Agent Client Protocol](https://kiro.dev/docs/cli/acp.md) (ACP). That includes Kiro's own surfaces: the IDE, CLI, Web, and Mobile apps all speak ACP, extended with Kiro-specific methods (under the spec's `_kiro/` namespace) for features like live steering, spec workflows, rich permission prompts, and context usage tracking. Local clients connect over stdio; Web and Mobile connect to a sandboxed harness over WebSocket. Same binary, same tools, same behavior on either transport.
+Clients talk to the harness through the open [Agent Client Protocol](https://kiro.dev/docs/acp.md) (ACP). That includes Kiro's own surfaces: the IDE, CLI, Web, and Mobile apps all speak ACP, extended with Kiro-specific methods (under the spec's `_kiro/` namespace) for features like live steering, spec workflows, rich permission prompts, and context usage tracking. Local clients connect over stdio; Web and Mobile connect to a sandboxed harness over WebSocket. Same binary, same tools, same behavior on either transport.
 
 **ℹ️ Info:** Kiro isn't limited to its own surfaces. Because the boundary is standard ACP, compatible editors like JetBrains IDEs and Zed can use Kiro as their agent too. They connect the same way Kiro's own clients do.
 
@@ -81,8 +81,8 @@ You'll find these under **Features** in the sidebar (Models has its own section)
 
 The loop is the same everywhere, but the computer it runs on differs by surface:
 
-- **IDE and CLI** run the harness on your machine by default. Tools operate on your local filesystem, shell commands run in your shell, and builds use your locally installed toolchain and credentials. Both can also create and attach to [cloud sessions](https://kiro.dev/docs/cloud-sessions.md) that run in the same managed sandbox Web uses.
-- **Web and Mobile** run the same harness in a managed [cloud sandbox](https://kiro.dev/docs/web/sandbox.md). Kiro clones your connected repository into an isolated environment, works there, and delivers changes back as pull requests. Nothing executes on your machine, and sessions keep running after you close your laptop. Mobile picks up the same cloud sessions, so you can start work in the browser and check in from your phone.
+- **IDE and CLI** run the harness on your machine by default. Tools operate on your local filesystem, shell commands run in your shell, and builds use your locally installed toolchain and credentials. You can turn on the [local command sandbox](https://kiro.dev/docs/sandbox.md) to run those shell commands inside an OS-level boundary that limits their network access. Both clients can also create and attach to [cloud sessions](https://kiro.dev/docs/cloud-sessions.md) that run in the same managed sandbox Web uses.
+- **Web and Mobile** run the same harness in a managed [cloud sandbox](https://kiro.dev/docs/web/sandbox.md). Kiro clones your connected repository into an isolated environment, works there, and delivers changes back as pull requests or merge requests. Nothing executes on your machine, and sessions keep running after you close your laptop. Mobile picks up the same cloud sessions, so you can start work in the browser and check in from your phone.
 
 A cloud session belongs to your account rather than to any one app, so you can start it on one surface and pick it up on another. See [Cloud sessions](https://kiro.dev/docs/cloud-sessions.md) for how each surface creates and attaches to them.
 
@@ -109,6 +109,7 @@ Configuration follows the same shared model. What you define once applies wherev
 |-------|----------|--------------|
 | Project | `.kiro/` in your repository | The repo. Teammates and every surface that opens it get the same steering, specs, agents, hooks, and MCP servers |
 | User | `~/.kiro/` on your machine | You. Personal agents, skills, steering, and settings across all local projects |
+| Cloud | Your local `~/.kiro/` setup, synced to your account with [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | You. Personal steering, agents, hooks, skills, Powers, MCP servers, and workflows in every cloud session. Steering, agents, skills, Powers, and hooks can also apply to new local sessions |
 | Workspace trust | `~/.kiro/workspace-roots/<hash>/` | Your machine only. Per-project permission rules stored outside the repo, so a cloned repository can never grant itself trust |
 
 This is why Kiro Web and Mobile can pick up your project's agents and steering with no setup: they read the same `.kiro/` directory from your repository that the IDE and CLI use locally. See [Configuration scopes](https://kiro.dev/docs/configuration.md) for the complete reference.

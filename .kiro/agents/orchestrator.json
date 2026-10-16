@@ -3,7 +3,6 @@
   "description": "Orchestrator agent that analyzes tasks and delegates to specialized subagents. Entry point for all user requests.",
   "prompt": "file://../prompts/orchestrator.md",
   "welcomeMessage": "Orchestrator ready. Describe your task and I'll route it to the right agent(s).",
-  "keyboardShortcut": "ctrl+o",
   "tools": ["read", "write", "shell", "web", "subagent", "knowledge"],
   "includeMcpJson": false,
   "includePowers": false,
@@ -63,7 +62,11 @@
           "**/id_rsa",
           "id_ed25519",
           "./id_ed25519",
-          "**/id_ed25519"
+          "**/id_ed25519",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -91,7 +94,6 @@
           "make drift-check",
           "make fmt-check",
           "make hook-test",
-          "cp memory/state.yaml*",
           "git status*",
           "git diff*",
           "git log*"
@@ -173,10 +175,10 @@
       "type": "knowledgeBase",
       "source": "file://.kiro/skills/kiro-cli-reference/references",
       "name": "KiroCLIDocs",
-      "description": "Kiro CLI official documentation, vendored and synced by `make sync-docs`. Search for CLI commands, configuration, custom agents, skills, steering, specs, MCP, hooks, permissions, models, tools, reference, enterprise, billing, privacy and security, experimental features.",
+      "description": "Kiro CLI official documentation, vendored and synced by `make sync-docs`. Search for agent-system topics: CLI commands and slash commands, custom agent configuration, permissions, hooks, MCP servers, steering, skills, subagents, models and settings.",
       "indexType": "best",
       "autoUpdate": false
     }
   ],
-  "model": "claude-opus-5"
+  "model": "claude-sonnet-5.5"
 }

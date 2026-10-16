@@ -1,3 +1,5 @@
+"""Command-line interface for the dependency report."""
+
 # Standard libraries
 import argparse
 import logging
@@ -10,7 +12,7 @@ from typing import Any
 # Own modules
 from depschecker.lock import parse_lock
 from depschecker.parser import parse_pyproject
-from depschecker.pypi import check_freshness, scan_vulnerabilities
+from depschecker.pypi import DEFAULT_TIMEOUT, check_freshness, scan_vulnerabilities
 from depschecker.report import render_freshness, render_full, render_vulnerabilities
 from depschecker.types import DepStatus, VulnStatus
 
@@ -26,6 +28,9 @@ def _load_global_defaults() -> dict[str, Any]:
 
     Returns:
         Dictionary with tool settings, or empty dict.
+
+    Raises:
+        ValueError: If the config file is not valid TOML.
     """
 
     path_str: str | None = os.environ.get("WORK_AGENTS_CONFIG")
@@ -34,9 +39,12 @@ def _load_global_defaults() -> dict[str, Any]:
     path: Path = Path(path_str)
     if not path.is_file():
         return {}
-    with path.open("rb") as fh:
-        result: dict[str, Any] = tomllib.load(fh).get(_TOOL_SECTION, {})
-        return result
+    try:
+        with path.open("rb") as fh:
+            result: dict[str, Any] = tomllib.load(fh).get(_TOOL_SECTION, {})
+    except tomllib.TOMLDecodeError as exc:
+        raise ValueError(f"Invalid TOML in config file {path}: {exc}") from exc
+    return result
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -95,8 +103,11 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--timeout",
         type=int,
-        default=None,
-        help="HTTP timeout per PyPI request in seconds (default: 15).",
+        default=DEFAULT_TIMEOUT,
+        help=(
+            "HTTP timeout per PyPI request in seconds "
+            f"(default: {DEFAULT_TIMEOUT}, or `timeout` in the global config)."
+        ),
     )
 
     parser.add_argument(
@@ -126,7 +137,7 @@ def _resolve_lock_path(pyproject: Path, explicit: Path | None) -> Path:
     return pyproject.parent / _LOCK_NAME
 
 
-def _load_resolved(lock: Path, required: bool) -> dict[str, str]:
+def _load_resolved(lock: Path, required: bool) -> dict[str, str] | None:
     """
     Read resolved versions from the lockfile.
 
@@ -136,7 +147,8 @@ def _load_resolved(lock: Path, required: bool) -> dict[str, str]:
 
     Returns:
         Mapping of package name to resolved version, empty
-        if absent and not required.
+        if absent and not required, or None when the lockfile
+        is required but missing, or cannot be parsed.
     """
 
     if not lock.is_file():
@@ -146,7 +158,7 @@ def _load_resolved(lock: Path, required: bool) -> dict[str, str]:
                 "versions; pass --lock or use --freshness-only.",
                 lock,
             )
-            sys.exit(1)
+            return None
         logger.warning(
             "Lockfile not found: %s. Freshness will compare against the "
             "declared constraint instead of the resolved version.",
@@ -157,8 +169,8 @@ def _load_resolved(lock: Path, required: bool) -> dict[str, str]:
     try:
         return parse_lock(lock)
     except tomllib.TOMLDecodeError as exc:
-        logger.error("Failed to parse lockfile %s: %s", lock, exc)
-        sys.exit(1)
+        logger.error("Failed to parse lockfile %s: %s.", lock, exc)
+        return None
 
 
 def _collect_freshness(
@@ -220,7 +232,7 @@ def _collect_vulnerabilities(
     return scan_vulnerabilities(packages, timeout=timeout)
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     """
     Entry point for the depschecker CLI.
 
@@ -228,16 +240,24 @@ def main() -> None:
     resolved versions from ``uv.lock``, queries PyPI, and
     outputs a Markdown report.
 
+    Args:
+        argv: Command-line arguments, defaulting to sys.argv[1:].
+
     Returns:
-        None.
+        Process exit code: 1 when the global config, the
+        pyproject or a required lockfile is missing or invalid;
+        0 otherwise.
     """
 
-    args: argparse.Namespace = _build_parser().parse_args()
-
-    defaults: dict[str, Any] = _load_global_defaults()
-    timeout: int = (
-        args.timeout if args.timeout is not None else defaults.get("timeout", 15)
-    )
+    parser: argparse.ArgumentParser = _build_parser()
+    try:
+        defaults: dict[str, Any] = _load_global_defaults()
+    except ValueError as exc:
+        logger.error("%s.", exc)
+        return 1
+    parser.set_defaults(timeout=defaults.get("timeout", DEFAULT_TIMEOUT))
+    args: argparse.Namespace = parser.parse_args(argv)
+    timeout: int = args.timeout
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
@@ -247,20 +267,24 @@ def main() -> None:
     pyproject: Path = args.pyproject
     if not pyproject.exists():
         logger.error("File not found: %s.", pyproject)
-        sys.exit(1)
+        return 1
 
     try:
         declared: dict[str, str] = parse_pyproject(pyproject)
     except tomllib.TOMLDecodeError as exc:
-        logger.error("Failed to parse TOML: %s", exc)
-        sys.exit(1)
+        logger.error("Failed to parse TOML: %s.", exc)
+        return 1
 
     lock: Path = _resolve_lock_path(pyproject, args.lock)
-    resolved: dict[str, str] = _load_resolved(lock, required=not args.freshness_only)
+    resolved: dict[str, str] | None = _load_resolved(
+        lock, required=not args.freshness_only
+    )
+    if resolved is None:
+        return 1
 
     if not declared and not resolved:
         logger.warning("No dependencies found in %s.", pyproject)
-        sys.exit(0)
+        return 0
 
     if args.freshness_only:
         report: str = render_freshness(
@@ -282,7 +306,8 @@ def main() -> None:
         logger.info("Report written to %s.", args.output)
     else:
         sys.stdout.write(report)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

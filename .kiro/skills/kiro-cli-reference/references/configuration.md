@@ -11,6 +11,7 @@ Kiro uses a layered configuration system with three scopes. Configuration closer
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
 | Global scope (`~/.kiro/`) | ✓ | ✓ | — | — |
+| [Cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | — |
 | Project scope (`.kiro/`) | ✓ | ✓ | ✓ | ✓ |
 | Agent scope (`.kiro/agents/` or `~/.kiro/agents/`) | ✓ | ✓ | — | — |
 
@@ -20,7 +21,9 @@ Kiro uses a layered configuration system with three scopes. Configuration closer
 2. **Project** — specific to a workspace. Stored in `<project-root>/.kiro/`.
 3. **Agent** — defined per agent in `~/.kiro/agents/` (global) or `.kiro/agents/` (project).
 
-**💡 Override the global directory with KIRO_HOME:** Set the `KIRO_HOME` environment variable to redirect the global `~/.kiro` directory to a different location. Agents, skills, steering, settings, and sessions all resolve against `KIRO_HOME` when it's set — useful for keeping separate Kiro profiles on the same machine.
+**💡 Override the global directory with KIRO_HOME:** Set `KIRO_HOME` to an absolute path to keep separate Kiro profiles, such as work and personal. In V3, Kiro stores its global configuration, sign-ins, sessions, and agent state there. Existing MCP sign-ins are copied there once when you first use the path.
+
+Kiro ignores a relative path, a filesystem root, your home directory, or one of its ancestors and uses `~/.kiro` instead.
 
 ## Inspect configuration in V3
 
@@ -58,12 +61,14 @@ The category summary and the in-panel Powers, Steering, and Skills lists are rea
 |---------------|-------------|---------------|
 | [MCP servers](https://kiro.dev/docs/mcp/configuration.md) | `~/.kiro/settings/mcp.json` | `.kiro/settings/mcp.json` |
 | [Permissions](https://kiro.dev/docs/permissions.md) | `~/.kiro/settings/permissions.yaml` | `~/.kiro/workspace-roots/<hash>/permissions.yaml` (per-user, outside the repo) |
+| [Local command sandbox](https://kiro.dev/docs/sandbox.md) | `~/.kiro/settings/sandbox.json` | `.kiro/settings/sandbox.json` |
 | [Custom agents](https://kiro.dev/docs/custom-agents.md) | `~/.kiro/agents/` | `.kiro/agents/` |
 | [Steering](https://kiro.dev/docs/steering.md) | `~/.kiro/steering/` | `.kiro/steering/` |
 | [Skills](https://kiro.dev/docs/skills.md) | `~/.kiro/skills/` | `.kiro/skills/` |
 | [Hooks](https://kiro.dev/docs/hooks.md) | `~/.kiro/hooks/` | `.kiro/hooks/` |
 | [Powers](https://kiro.dev/docs/powers.md) | `~/.kiro/powers/` | — |
 | [Specs](https://kiro.dev/docs/specs.md) | — | `.kiro/specs/` |
+| [Workflows](https://kiro.dev/docs/workflows.md) | `~/.kiro/workflows/` | `.kiro/workflows/` |
 | Settings (CLI) | `~/.kiro/settings/cli.json` | — |
 
 ## What each scope supports
@@ -74,12 +79,14 @@ Not every feature is available at every scope. The table below shows where each 
 |---------------|:------:|:-------:|:-----------:|
 | MCP servers | ✓ | ✓ | ✓ (`mcpServers` field or `includeMcpJson`) |
 | Permissions | ✓ | ✓ | ✓ (`permissions` field) |
+| Local command sandbox | ✓ | ✓ | — |
 | Custom agents | ✓ | ✓ | N/A |
 | Steering | ✓ | ✓ | ✓ (`resources` field) |
 | Skills | ✓ | ✓ | ✓ (`resources` field) |
 | Hooks | ✓ | ✓ | ✓ (CLI only, `hooks` field) |
 | Powers | ✓ | — | ✓ (`includePowers` field) |
 | Specs | — | ✓ | — |
+| Workflows | ✓ | ✓ | — |
 | Settings | ✓ | — | — |
 
 ## Resolving conflicts
@@ -90,10 +97,14 @@ When the same configuration exists in multiple scopes, the scope closest to your
 |---------------|---------------------------|
 | MCP servers | Agent > Project > Global |
 | Permissions | deny wins regardless of scope (deny-overrides algorithm) |
+| Local command sandbox | An active global policy is the floor; a project can turn it on or tighten it, but cannot weaken it |
 | Custom agents | Project > Global (same-name: project wins with warning) |
 | Steering | All scopes merged (not overridden) |
 | Skills | All scopes merged |
 | Hooks | All scopes merged |
+| Workflows | Project > Global > synchronized account recipes > bundled recipes |
+
+An invalid higher-priority workflow recipe does not hide a valid lower-priority recipe with the same name. Available synchronized and bundled recipes can vary by account and client version.
 
 **💡 Tip:** Permissions use a deny-overrides algorithm — a `deny` rule in any scope blocks the action regardless of `allow` rules elsewhere. See [Permissions](https://kiro.dev/docs/permissions.md) for details.
 
@@ -101,7 +112,7 @@ Since MCP servers can be configured in three scopes and agents have an `includeM
 
 ## Web and Mobile
 
-Web and Mobile read project configuration committed to the repository, but their coverage differs: Mobile reads project steering and skills, while Kiro Web additionally reads project MCP servers, custom agents, and Hooks (see the table below). Neither surface reads global `~/.kiro/` configuration, since there is no local filesystem. Kiro Web can also use selected personal configuration that you upload through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md).
+Web and Mobile read the project configuration listed below from cloned repositories, but their coverage differs. Mobile reads project Steering and Skills, while Kiro Web additionally reads project MCP servers, custom agents, and Hooks. Neither surface reads global `~/.kiro/` configuration, since there is no local filesystem.
 
 | Configuration | Web | Mobile |
 |---------------|:---:|:------:|
@@ -113,12 +124,22 @@ Web and Mobile read project configuration committed to the repository, but their
 | Sandbox MCP (configured via Web settings) | ✓ | — |
 | Permissions YAML and interactive approvals | — | — |
 
-For cloud sessions, open **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config) to upload personal Steering, custom agents, Skills, and Hooks. Manage the uploaded items from their feature-specific settings pages. This managed cloud configuration is separate from the `~/.kiro/` directory on your computer and does not modify your local files.
+### Account-uploaded workflows
+
+Workflows use a separate account-upload path in Kiro Web:
+
+| Method | Web | Mobile |
+|---|:---:|:---:|
+| Upload one recipe through **Settings > Workflows** | ✓ | Not documented |
+| Import `.kiro/workflows/` through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md) | ✓ | Not documented |
+
+For cloud sessions, open **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config) to upload personal Steering, custom agents, Hooks, Skills, Powers, MCP settings, or a complete `.kiro/workflows/` folder. Manage the uploaded items from their feature-specific settings pages. This managed cloud configuration is separate from the `~/.kiro/` directory on your computer and does not modify your local files.
 
 See [Custom agents: surface behavior](https://kiro.dev/docs/custom-agents.md#surface-behavior) for details on Web and Mobile limitations.
 
 ## Next steps
 
+- [Workflows](https://kiro.dev/docs/workflows.md) — orchestrate reusable multi-step agent work
 - [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md) - upload personal configuration for cloud sessions
 - [Custom agents](https://kiro.dev/docs/custom-agents.md) — create and configure specialized agents
 - [Steering](https://kiro.dev/docs/steering.md) — project context and conventions

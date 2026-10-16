@@ -10,10 +10,10 @@ Hooks run shell commands or agent prompts automatically when specific events hap
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Event-driven hooks | ✓ | ✓ | ✓ | — |
-| Shell command actions | ✓ | ✓ | ✓ | — |
-| Agent prompt actions | ✓ | ✓ | ✓ | — |
-| Create Hooks by asking the agent in chat | ✓ | ✓ | ✓ | — |
+| Event-driven hooks | ✓ | ✓ | — | — |
+| Shell command actions | ✓ | ✓ | — | — |
+| Agent prompt actions | ✓ | ✓ | — | — |
+| Create Hooks by asking the agent in chat | ✓ | ✓ | — | — |
 
 ## What you can do with hooks
 
@@ -43,35 +43,16 @@ This file lives at `.kiro/hooks/lint-on-save.json` and activates automatically -
 
 ## How hooks work
 
-Hook configurations are JSON files stored in `.kiro/hooks/`. Each file defines one or more hooks with a trigger event, an optional matcher pattern, and an action.
+Project Hook configurations are JSON files stored in `.kiro/hooks/`. Kiro CLI V3 also loads global Hooks from `~/.kiro/hooks/`, so one Hook can run across every workspace. Global and workspace Hooks run alongside each other. Each file defines one or more Hooks with a trigger event, an optional matcher pattern, and an action.
 
 When the trigger event fires, Kiro checks the matcher. If it matches (or no matcher is specified), the action executes:
 
 - **Command actions** run a shell command in your project root. The command receives session context as JSON on STDIN.
 - **Agent actions** inject a prompt into the current conversation, steering the agent's behavior.
 
-### Available triggers
+### Choose a trigger
 
-| Trigger | When it fires | IDE | CLI | Web | Can block? |
-|---------|--------------|:---:|:---:|:---:|:----------:|
-| [Prompt Submit](https://kiro.dev/docs/hooks/types.md#prompt-submit) | When a message is sent to the agent | ✓ | ✓ | — | Yes |
-| [Agent Stop](https://kiro.dev/docs/hooks/types.md#agent-stop) | When the agent finishes responding | ✓ | ✓ | — | No |
-| [Session Start](https://kiro.dev/docs/hooks/types.md#session-start-ide-only) | When a new session begins (IDE) | ✓ | — | — | No |
-| [Agent Spawn](https://kiro.dev/docs/hooks/types.md#agent-spawn-cli-only) | When the agent is activated (CLI) | — | ✓ | — | No |
-| [Pre Tool Use](https://kiro.dev/docs/hooks/types.md#pre-tool-use) | Before a tool is about to execute | ✓ | ✓ | — | Yes |
-| [Post Tool Use](https://kiro.dev/docs/hooks/types.md#post-tool-use) | After a tool has executed | ✓ | ✓ | — | No |
-| [File Create](https://kiro.dev/docs/hooks/types.md#file-create) | After the agent creates a new file | ✓ | — | — | No |
-| [File Save](https://kiro.dev/docs/hooks/types.md#file-save) | After the agent saves or edits a file | ✓ | — | — | No |
-| [File Delete](https://kiro.dev/docs/hooks/types.md#file-delete) | After the agent deletes a file | ✓ | — | — | No |
-| [Pre Task Execution](https://kiro.dev/docs/hooks/types.md#pre-task-execution-ide-only) | Before a spec task starts | ✓ | — | — | Yes |
-| [Post Task Execution](https://kiro.dev/docs/hooks/types.md#post-task-execution-ide-only) | After a spec task completes | ✓ | — | — | No |
-| [Legacy Manual Hook](https://kiro.dev/docs/hooks/types.md#legacy-manual-hooks-ide-only) | Legacy IDE 0.x hooks, run manually | Legacy only | — | — | No |
-
-**ℹ️ Info:** File triggers respond only to changes made by the agent. Saving, creating, or deleting a file manually in the editor does not trigger `PostFileSave`, `PostFileCreate`, or `PostFileDelete`.
-
-**ℹ️ Info:** Existing manual Hooks from IDE 0.x continue to appear as legacy Hooks and can still be run from the Agent Hooks panel. To create a new on-demand workflow, create a [manually included Steering file](https://kiro.dev/docs/steering.md#manual-inclusion) instead.
-
-See [Hook Triggers](https://kiro.dev/docs/hooks/types.md) for detailed descriptions, matcher patterns, and use cases for each trigger type.
+Use [Hook types](https://kiro.dev/docs/hooks/types.md) to choose the trigger for your task. It is the authoritative trigger list and documents surface availability and trigger-specific behavior.
 
 ## Hook file schema
 
@@ -99,8 +80,8 @@ Each hook file is a standalone JSON file at `.kiro/hooks/<id>.json`. The full sc
 | `hooks` | Yes | Array of hook definitions |
 | `hooks[].name` | Yes | Human-readable identifier for the hook |
 | `hooks[].description` | No | Documentation only |
-| `hooks[].trigger` | Yes | Event that fires the hook (PascalCase - see [triggers table](#available-triggers)) |
-| `hooks[].matcher` | No | Regex pattern to filter which events fire this hook. For `PreToolUse`/`PostToolUse`, matches tool name. For file events, matches file path. Defaults to always-match. |
+| `hooks[].trigger` | Yes | Event that fires the hook (PascalCase - see [Hook types](https://kiro.dev/docs/hooks/types.md)) |
+| `hooks[].matcher` | No | Filters which events fire this hook. For `PreToolUse`/`PostToolUse`, a tool selector (tool ID, category tag, `@mcp`, `@<server>`, or wildcard) or a regex against the tool ID; see [Hook types](https://kiro.dev/docs/hooks/types.md#pre-tool-use). For file events, a regex against the file path. Defaults to always-match. |
 | `hooks[].action.type` | Yes | `"command"` (shell command) or `"agent"` (inject prompt) |
 | `hooks[].action.command` | Cond. | Shell command to run (required when `type` is `"command"`) |
 | `hooks[].action.prompt` | Cond. | Prompt text to inject (required when `type` is `"agent"`) |
@@ -158,9 +139,10 @@ If `confirmCommand` exits non-zero, times out, or prints invalid JSON, the stati
 
 ### File naming and location
 
-- **Location**: `.kiro/hooks/` in your project root
+- **Workspace location**: `.kiro/hooks/` in your project root
+- **Global location (CLI V3)**: `~/.kiro/hooks/` for Hooks that run in every workspace
 - **Naming**: Any `.json` filename works - use descriptive kebab-case names (e.g., `lint-on-save.json`, `guard-writes.json`)
-- **Multiple hooks per file**: A single file can define multiple hooks in the `hooks` array
+- **Multiple Hooks per file**: A single file can define multiple Hooks in the `hooks` array
 - **Activation**: Hooks activate automatically when a session starts - no manual registration needed
 
 ## Setting up hooks
@@ -185,16 +167,16 @@ If `confirmCommand` exits non-zero, times out, or prints invalid JSON, the stati
 
     See [Hook Actions](https://kiro.dev/docs/hooks/actions.md) for exit code behavior and the [Configuration Reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#hooks-field) for the complete schema.
 
-    Kiro Web loads project Hooks from `.kiro/hooks/` in your repository. You can ask the agent to create a Hook in `.kiro/hooks/`, add a Hook JSON file there yourself, or create a personal Hook under **Settings > Hooks**.
+    Kiro Web can store personal Hook configuration through **Settings > Sync** and show uploaded configuration under **Settings > Hooks**. Apply that cloud configuration to new local IDE or CLI sessions to use the Hooks without copying files into your local `.kiro` directory.
 
-    To use personal Hooks in cloud sessions, upload them from **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then manage them under **Settings > Hooks**. Command actions execute inside the cloud sandbox, not on your computer.
+    Kiro Web sessions do not run the event-driven triggers or command and agent actions documented on this page, and Web chat does not create Hooks.
 
 ## Previous versions
 
-The `.kiro/hooks/*.json` format was introduced in **IDE 1.0** and **CLI 3.0**. If you're upgrading from an earlier version:
+The `.kiro/hooks/*.json` format was introduced in **IDE 1.0** and **CLI V3**. If you're upgrading from an earlier version:
 
 - **From IDE 0.x** - Hooks moved from the previous format to standalone JSON files with PascalCase trigger names. See [What's new in IDE 1.0: Hooks](https://kiro.dev/docs/ide/whats-new-v1/hooks.md) for the trigger mapping.
-- **From CLI 2.x** - Hooks moved from embedded fields in agent config to standalone files. Run `kiro-cli agent migrate` to auto-convert, or see [CLI 3.0 Hooks migration](https://kiro.dev/docs/cli/v3/hooks-migration.md) for the manual mapping.
+- **From CLI 2.x** - Run `/upgrade-agent` to convert object-form Hooks into a profile-scoped array. Move definitions that should run independently of a profile or across surfaces into standalone `.kiro/hooks/*.json` files. See [CLI V3 Hooks migration](https://kiro.dev/docs/cli/v3/hooks-migration.md) for both current placements and the trigger mapping.
 
 ## Next steps
 

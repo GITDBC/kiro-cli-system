@@ -8,6 +8,10 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -17,11 +21,11 @@ updates:
     labels:
       - "dependencies"
       - "npm"
+    groups:
+      npm:
+        patterns:
+          - "*"
 
-  # `directories` (plural) supports globbing — confirmed against GitHub's
-  # current Dependabot options reference. Each tools/<name>/pyproject.toml is
-  # matched without listing tool names here, so this entry cannot drift from
-  # the Makefile's TOOLS list the way the three CI-side lists did.
   - package-ecosystem: "uv"
     directories:
       - "/tools/*"
@@ -31,3 +35,9 @@ updates:
     labels:
       - "dependencies"
       - "uv"
+    # With `directories`, one group spans every tools/* directory, so a pin
+    # shared by several tools moves in one pull request, not one per tool.
+    groups:
+      uv:
+        patterns:
+          - "*"

@@ -1,3 +1,5 @@
+"""Tests for the depschecker command-line interface."""
+
 # Standard libraries
 from pathlib import Path
 from unittest.mock import patch
@@ -12,6 +14,7 @@ from depschecker.cli import (
     _resolve_lock_path,
     main,
 )
+from depschecker.pypi import DEFAULT_TIMEOUT
 from depschecker.types import DepStatus, VulnStatus
 
 MINIMAL_PYPROJECT: str = '[project]\ndependencies = ["requests>=2.32,<3"]\n'
@@ -108,12 +111,12 @@ def test_resolve_lock_path_prefers_explicit() -> None:
 
 def test_default_timeout() -> None:
     """
-    Verify the default timeout is None (resolved
-    later in main).
+    Verify the parser defaults the timeout to
+    DEFAULT_TIMEOUT.
     """
 
     ns = _build_parser().parse_args([])
-    assert ns.timeout is None
+    assert ns.timeout == DEFAULT_TIMEOUT
 
 
 def test_freshness_only_flag() -> None:
@@ -183,8 +186,7 @@ def test_main_file_not_found(
 
     monkeypatch.setattr("sys.argv", ["depschecker", str(tmp_path / "nope.toml")])
     monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
-    with pytest.raises(SystemExit, match="1"):
-        main()
+    assert main() == 1
 
 
 def test_main_missing_lock_is_fatal_for_vulns(
@@ -199,8 +201,7 @@ def test_main_missing_lock_is_fatal_for_vulns(
     pyproject = _project(tmp_path, with_lock=False)
     monkeypatch.setattr("sys.argv", ["depschecker", str(pyproject)])
     monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
-    with pytest.raises(SystemExit, match="1"):
-        main()
+    assert main() == 1
 
 
 def test_main_freshness_only_tolerates_missing_lock(
@@ -222,7 +223,7 @@ def test_main_freshness_only_tolerates_missing_lock(
 
     status = DepStatus(name="requests", declared="2.32", latest="2.33.1")
     with patch("depschecker.cli.check_freshness", return_value=status):
-        main()
+        assert main() == 0
 
     out = capsys.readouterr().out
     assert "requests" in out
@@ -245,7 +246,7 @@ def test_main_vulns_only_audits_transitive(
     monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
 
     with patch("depschecker.cli.scan_vulnerabilities", return_value=[]) as mock_scan:
-        main()
+        assert main() == 0
 
     audited = mock_scan.call_args.args[0]
     assert ("urllib3", "2.6.3", False) in audited
@@ -275,7 +276,7 @@ def test_main_stdout(
         patch("depschecker.cli.check_freshness", return_value=status),
         patch("depschecker.cli.scan_vulnerabilities", return_value=vulns),
     ):
-        main()
+        assert main() == 0
 
     out = capsys.readouterr().out
     assert "requests" in out
@@ -304,7 +305,7 @@ def test_main_writes_output_file(
         patch("depschecker.cli.check_freshness", return_value=status),
         patch("depschecker.cli.scan_vulnerabilities", return_value=[]),
     ):
-        main()
+        assert main() == 0
 
     assert "Freshness" in report.read_text(encoding="utf-8")
 
@@ -322,5 +323,89 @@ def test_main_invalid_lock_toml(
     (tmp_path / "uv.lock").write_text("not = = toml", encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["depschecker", str(pyproject)])
     monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
-    with pytest.raises(SystemExit, match="1"):
-        main()
+    assert main() == 1
+
+
+def test_load_global_defaults_invalid_toml(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify _load_global_defaults raises ValueError for
+    a malformed TOML file.
+    """
+
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[depschecker\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    with pytest.raises(ValueError, match="Invalid TOML"):
+        _load_global_defaults()
+
+
+def test_main_invalid_config_returns_1(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify main returns 1 when the global config is
+    not valid TOML.
+    """
+
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[depschecker\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    assert main([str(_project(tmp_path))]) == 1
+
+
+@pytest.mark.parametrize(
+    ("cli", "expected"),
+    [([], 30), (["--timeout", "5"], 5)],
+)
+def test_main_timeout_from_config_or_cli(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    cli: list[str],
+    expected: int,
+) -> None:
+    """
+    Verify the config timeout applies unless the CLI
+    flag overrides it.
+    """
+
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[depschecker]\ntimeout = 30\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    pyproject = _project(tmp_path)
+    with patch("depschecker.cli.check_freshness") as fresh:
+        fresh.return_value = DepStatus(name="requests", declared="2.32")
+        assert main([str(pyproject), "--freshness-only", *cli]) == 0
+    assert fresh.call_args.kwargs["timeout"] == expected
+
+
+def test_main_invalid_pyproject_returns_1(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify main returns 1 on an unparseable pyproject.
+    """
+
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("[project\n", encoding="utf-8")
+    monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
+    assert main([str(pyproject)]) == 1
+
+
+def test_main_no_dependencies_returns_0(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """
+    Verify main returns 0 when nothing is declared or
+    locked.
+    """
+
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[project]\nname = "x"\n', encoding="utf-8")
+    monkeypatch.delenv("WORK_AGENTS_CONFIG", raising=False)
+    assert main([str(pyproject), "--freshness-only", "-v"]) == 0

@@ -1,3 +1,5 @@
+"""Render Jira issues as Markdown files grouped by status."""
+
 # Standard libraries
 import logging
 import re

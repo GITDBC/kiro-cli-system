@@ -2,8 +2,9 @@
 #
 # git-safety.sh — PreToolUse hook that blocks destructive git operations.
 #
-# Wiring: attached as a `preToolUse` hook with matcher `execute_bash` in every
-# agent config whose `tools` list includes `shell`. Per
+# Wiring: registered once in the standalone hook file .kiro/hooks/hooks.json as
+# a `PreToolUse` hook with matcher `execute_bash|control_bash_process`; no agent
+# config declares it inline. Per
 # .kiro/skills/kiro-cli-reference/references/hooks.md, exit code 2 blocks the
 # tool call and returns STDERR to the LLM; exit code 0 allows it silently.
 #

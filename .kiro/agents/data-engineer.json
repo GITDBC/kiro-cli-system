@@ -61,7 +61,11 @@
           "**/id_rsa",
           "id_ed25519",
           "./id_ed25519",
-          "**/id_ed25519"
+          "**/id_ed25519",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -87,6 +91,11 @@
         "capability": "shell",
         "match": ["uv *", "make *"],
         "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": ["uv add*", "uv pip install*", "uv sync*"],
+        "effect": "ask"
       },
       {
         "capability": "shell",
@@ -120,11 +129,7 @@
       }
     ]
   },
-  "resources": [
-    "skill://.kiro/skills/code-standards/SKILL.md",
-    "skill://.kiro/skills/data-pipeline/SKILL.md",
-    "skill://.kiro/skills/exploratory-data-analysis/SKILL.md"
-  ],
+  "resources": ["skill://.kiro/skills/code-standards/SKILL.md"],
   "welcomeMessage": "Ready for data engineering. What pipeline or schema needs work?",
-  "model": "claude-sonnet-5"
+  "model": "claude-sonnet-5.5"
 }

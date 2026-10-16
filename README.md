@@ -4,32 +4,37 @@
 
 # Work Agents
 
-Specialized engineering agents orchestrated by a central agent that delegates tasks
-automatically. Built for [Kiro CLI](https://kiro.dev/docs/cli/) v3.
+A [Kiro CLI](https://kiro.dev/docs/cli/) v3 agent system made up of twelve specialised
+engineering agents and an orchestrator that routes each task to the right one.
 
-## Configuration
+## Requirements
+
+To use this project you need Kiro CLI v3 and [uv](https://docs.astral.sh/uv/) (Python
+3.13), which manages the Python environment of every available tool. If you want to
+develop your own version of the project, you also need `make` to run the Makefile
+targets and Node.js with `npx` to run Prettier.
+
+## Usage
+
+All configuration is managed through the `config.toml` file, which you must fill in with
+the appropriate credentials. Once it is ready, you can start the Kiro system with the
+following steps:
 
 ```bash
-cp config.toml.example config.toml
+cp config.toml.example config.toml   # gitignored; may hold secrets
+kiro-cli chat --agent orchestrator --v3
 ```
 
-Tools read their section from `config.toml` when `WORK_AGENTS_CONFIG` points to it. CLI
-arguments take priority. Gitignored (may contain secrets).
+Routing rules: [routing.md](.kiro/orchestration/routing.md). Permissions are set per
+agent in `.kiro/agents/`.
 
-## Kiro CLI Quick Start
+## Ralph Loop
 
-```bash
-kiro-cli chat --agent orchestrator --trust-all-tools --v3
-```
-
-The orchestrator picks the right agent(s) and delegates via `use_subagent`, see
-[routing.md](.kiro/orchestration/routing.md) for more details.
-
-## Ralph Loop (Autonomous Development)
-
-Time-budgeted autonomous loop: implements first, then verifies/tests with remaining
-time.
+Autonomous, time-budgeted development: implement first, then verify with the time left.
 
 ```bash
 .kiro/skills/ralph-loop/ralph.sh --time 3h "Implement user auth with JWT and tests"
 ```
+
+For short interactive tasks, `.kiro/skills/ralph-loop/ralph-session.sh start "<prompt>"`
+keeps the current session iterating through a Stop hook instead.

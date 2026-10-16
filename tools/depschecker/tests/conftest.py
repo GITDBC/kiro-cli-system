@@ -1,3 +1,5 @@
+"""Fixtures shared by the depschecker test suite."""
+
 # Standard libraries
 import json
 from pathlib import Path

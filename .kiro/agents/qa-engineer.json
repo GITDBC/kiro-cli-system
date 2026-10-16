@@ -54,7 +54,11 @@
           "**/*.py",
           "*.toml",
           "**/*.toml",
-          "package.json"
+          "package.json",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -107,6 +111,11 @@
       },
       {
         "capability": "shell",
+        "match": ["uv add*", "uv pip install*", "uv sync*"],
+        "effect": "ask"
+      },
+      {
+        "capability": "shell",
         "match": ["*"],
         "exclude": ["uv *", "git *", "make *"],
         "effect": "deny"
@@ -133,13 +142,7 @@
       }
     ]
   },
-  "resources": [
-    "skill://.kiro/skills/code-standards/SKILL.md",
-    "skill://.kiro/skills/debugging/SKILL.md",
-    "skill://.kiro/skills/tech-evaluation/SKILL.md",
-    "skill://.kiro/skills/ml-model-testing/SKILL.md",
-    "skill://.kiro/skills/release-readiness/SKILL.md"
-  ],
+  "resources": [],
   "welcomeMessage": "Ready to analyze. What needs evaluating?",
-  "model": "claude-sonnet-5"
+  "model": "claude-sonnet-5.5"
 }

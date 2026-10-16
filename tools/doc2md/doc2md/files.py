@@ -1,3 +1,5 @@
+"""Input file collection with exclusion and size limits."""
+
 # Standard libraries
 import logging
 from pathlib import Path

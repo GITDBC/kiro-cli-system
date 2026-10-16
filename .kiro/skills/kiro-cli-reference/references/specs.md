@@ -84,7 +84,7 @@ All specs follow a three-phase workflow that transforms your idea into executabl
     - To execute the entire plan, ask the agent to work through all tasks.
     - To scope the work, name the specific tasks you want implemented (for example, "implement tasks 1 and 2").
 
-    When the work is complete, the agent opens a pull request with a description of what was done. You can continue to provide feedback and have the agent push updates.
+    When the work is complete, the agent opens a pull request or merge request with a description of what was done. You can continue to provide feedback and have the agent push updates.
 
 ### Running tasks in parallel
 
@@ -124,7 +124,8 @@ For systematically diagnosing and fixing bugs with surgical precision while prev
     2. Kiro will ask if you are developing a Feature or fixing a Bug
        - If you choose Feature, describe your feature and choose your workflow: **Requirements-First** or **Design-First**
        - If you choose Bug, describe your bug
-    3. Follow the workflow through each phase to implementation
+    3. As you move through each phase, select the floating **Review** button on requirements, design, bugfix, or behavior documents. It opens [Markdown Review](https://kiro.dev/docs/ide/editor/markdown-review.md), where you can comment on exact passages and send your comments to Kiro at once.
+    4. Follow the workflow through each phase to implementation
 
     [Video](https://kiro.dev/videos/specs-start.mp4)
 

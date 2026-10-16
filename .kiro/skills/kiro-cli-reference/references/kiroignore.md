@@ -12,10 +12,10 @@ Where supported, ignore patterns apply across the agent's tools - blocked files 
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Workspace `.kiroignore` | ✓ | V3 search | — | — |
+| Workspace `.kiroignore` | ✓ | V3 | — | — |
 | Global ignore file (`~/.kiro/settings/kiroignore`) | ✓ | — | — | — |
 
-The IDE enforces `.kiroignore` across supported agent tools. In CLI V3, support is limited to filtering content-search and filename-search results. Web support is not available yet.
+The IDE enforces `.kiroignore` across supported agent tools. In CLI V3, a workspace `.kiroignore` blocks matching files from direct reads and filters them from content and filename search results. Web support is not available yet.
 
 ## Why use .kiroignore?
 
@@ -53,7 +53,7 @@ Kiro skips any files matching your patterns.
     - Use multiple ignore file types simultaneously: `[".gitignore", ".kiroignore"]`
     - Set to `[]` to disable workspace-level ignore files
 
-    In V3, content searches and filename searches apply workspace `.kiroignore` rules before returning results. This support is limited to search results; other CLI tools and global ignore files do not yet enforce `.kiroignore`.
+    In V3, a workspace `.kiroignore` blocks matching files from direct reads and omits them from content and filename search results. Global ignore files are not supported in the CLI.
 
 **💡 Tip:** Start with credentials and secrets - these are the highest priority files to protect. You can always expand your patterns as your project evolves.
 

@@ -1,6 +1,8 @@
 # Spec-to-Dev Playbook
 
-## Phase 1: Discovery (senior-developer — read-only)
+Sections are keyed to the step numbers in `../SKILL.md`.
+
+## Step 1: Discovery (senior-developer — read-only)
 
 ### Slicing Discipline
 
@@ -71,7 +73,7 @@ batch.
 **Open questions for architect**: [list]
 ```
 
-## Phase 2: Design (software-architect)
+## Step 2: Design (software-architect)
 
 ### Design Document Structure
 
@@ -123,7 +125,7 @@ Before approving the design, verify:
 - [ ] Migration path is safe (reversible if possible)
 - [ ] Performance impact is acceptable
 
-## Phase 3: Implementation (senior-developer)
+## Step 5: Implementation (senior-developer)
 
 ### Implementation Order
 
@@ -135,10 +137,8 @@ Before approving the design, verify:
 
 ### Commit Strategy
 
-- One logical change per commit
-- Commit message format: `type(scope): description`
-- Types: feat, fix, refactor, test, docs, chore
-- Each commit should leave the codebase in a working state
+Follow the `commit-message` skill: one logical change per commit, each leaving the
+codebase in a working state.
 
 ### Quality Gates During Implementation
 
@@ -149,7 +149,7 @@ After each major component:
 - [ ] No type errors
 - [ ] Feature works as designed (manual smoke test)
 
-## Phase 4: Verification (code-reviewer + senior-developer)
+## Steps 6–7: Verification (code-reviewer + senior-developer)
 
 ### Review Focus Areas
 
@@ -159,7 +159,7 @@ After each major component:
 - Are tests meaningful (not just coverage padding)?
 - Is the code readable without the design doc?
 
-## Phase 5: Documentation (technical-writer)
+## Step 8: Documentation (technical-writer)
 
 ### What to Document
 

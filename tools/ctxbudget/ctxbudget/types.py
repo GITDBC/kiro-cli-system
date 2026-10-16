@@ -3,9 +3,7 @@ Shared vocabulary for context-budget measurement.
 
 Holds the artifact taxonomy, the resolved-entry record the resolution
 step produces, the per-agent and per-skill measurement records, the
-calibration provenance record and the one documented extension seam
-(``MetricFamily``) through which later metric families attach without
-touching ``resolve.py`` or ``count.py``.
+calibration provenance record.
 
 Every record is frozen: a measurement is a snapshot, and a mutable
 snapshot invites a caller to "adjust" a figure after the fact, which
@@ -16,7 +14,7 @@ would silently detach the reported numbers from the counted ones.
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
 
 class ArtifactKind(Enum):
@@ -335,24 +333,6 @@ class Calibration:
 
 
 @dataclass(frozen=True)
-class MetricRow:
-    """
-    One row contributed by an extension metric family.
-
-    Attributes:
-        subject: What the row is about (agent, file, skill, pair).
-        metric: Name of the measured quantity.
-        value: Rendered value.
-        note: Short qualifier, may be empty.
-    """
-
-    subject: str
-    metric: str
-    value: str
-    note: str
-
-
-@dataclass(frozen=True)
 class Measurement:
     """
     A complete measurement of one repository tree.
@@ -378,40 +358,6 @@ class Measurement:
     files: tuple[FileLoad, ...]
     calibration: Calibration | None
     with_references: bool
-
-
-class MetricFamily(Protocol):
-    """
-    The single extension seam for additional metric families.
-
-    A later wave that wants duplication detection, a directive
-    inventory, or description-overlap signals implements this protocol
-    and appends the instance to ``model.EXTRA_METRICS``. It receives a
-    finished ``Measurement``, so it reaches every resolved artifact and
-    every token count without editing ``resolve.py`` or ``count.py``,
-    and ``report.py`` renders whatever it returns as one extra section.
-
-    Deliberately the only seam: a family that needs more than a finished
-    measurement is a different tool, and a second seam would invite
-    speculative abstraction in a module whose figures are contractual.
-    """
-
-    @property
-    def name(self) -> str:
-        """Return the section title used in the report."""
-        ...
-
-    def rows(self, measurement: Measurement) -> tuple[MetricRow, ...]:
-        """
-        Derive the family's rows from a finished measurement.
-
-        Args:
-            measurement: Completed measurement of one tree.
-
-        Returns:
-            Rows to render, empty when the family has nothing to say.
-        """
-        ...
 
 
 @dataclass(frozen=True)

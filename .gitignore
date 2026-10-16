@@ -10,11 +10,6 @@ notes/
 suggestions/
 tech-debt/
 reports/
-
-# Per-consuming-project runtime state; only the empty state.yaml
-# template is a framework artefact. driftcheck's memory-store check is
-# gated on this rule's presence and goes silent without it, so removing
-# the rule is how a consuming project deliberately opts out of both.
 memory/*
 !memory/state.yaml
 
@@ -51,6 +46,10 @@ node_modules/
 .kiro/ralph-progress.md
 .kiro/ralph-logs/
 .kiro/ralph-test-changes.log
+.kiro/ralph-session.local.md
+.kiro/ralph-session.local.md.*
+.kiro/ralph-session.promise
+.kiro/ralph-session.tmp.*
 
 # ── IDE ──
 .idea/
@@ -68,9 +67,3 @@ Thumbs.db
 *.pkl
 *.pt
 *.zip
-
-# ── Media (downloaded by yt2md, not tracked) ──
-*.mp3
-*.mp4
-*.wav
-*.webm

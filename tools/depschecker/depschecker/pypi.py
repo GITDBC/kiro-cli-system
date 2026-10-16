@@ -16,7 +16,7 @@ reported clean for every package.
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any
+from typing import Any, Final
 
 # 3pps
 import requests
@@ -29,6 +29,9 @@ logger: logging.Logger = logging.getLogger(__name__)
 PYPI_PACKAGE_URL: str = "https://pypi.org/pypi/{name}/json"
 PYPI_VERSION_URL: str = "https://pypi.org/pypi/{name}/{version}/json"
 
+DEFAULT_TIMEOUT: Final[int] = 15
+"""HTTP timeout per PyPI request in seconds."""
+
 _MAX_WORKERS: int = 8
 _PRE_RE: re.Pattern[str] = re.compile(r"[\d.\-](a|b|rc|dev|alpha|beta|preview)\d*")
 
@@ -37,7 +40,7 @@ def check_freshness(
     name: str,
     declared: str,
     resolved: str = "",
-    timeout: int = 15,
+    timeout: int = DEFAULT_TIMEOUT,
 ) -> DepStatus:
     """
     Query PyPI for the latest version of a package.
@@ -73,7 +76,7 @@ def check_vulnerabilities(
     name: str,
     version: str,
     direct: bool = False,
-    timeout: int = 15,
+    timeout: int = DEFAULT_TIMEOUT,
 ) -> VulnStatus:
     """
     Query PyPI for advisories against one exact version.
@@ -116,7 +119,7 @@ def check_vulnerabilities(
 
 def scan_vulnerabilities(
     packages: list[tuple[str, str, bool]],
-    timeout: int = 15,
+    timeout: int = DEFAULT_TIMEOUT,
 ) -> list[VulnStatus]:
     """
     Audit many resolved package versions concurrently.

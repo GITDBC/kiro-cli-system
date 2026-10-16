@@ -33,7 +33,7 @@ def fetch(url: str, retries: int = MAX_RETRIES) -> bytes:
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(request, timeout=TIMEOUT) as resp:  # noqa: S310
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as resp:
                 body: bytes = resp.read()
                 return body
         except OSError as error:

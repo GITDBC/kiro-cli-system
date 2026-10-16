@@ -1,13 +1,13 @@
 ---
 name: security-audit
 description: >
-  Security audit in two parallel dispatches — one security-engineer covering threat
-  model, code vulnerabilities, and configuration/dependencies, plus code-reviewer for
-  quality-adjacent findings. Use when code needs a thorough security review before
-  release or after significant changes. Triggers: 'security audit', 'check for
-  vulnerabilities', 'pen test review'. Not for dependency scanning only (use deps-audit)
-  or operational security (use incident-response).
+  Security audit in two parallel dispatches: security-engineer (threat model, code
+  vulnerabilities, configuration/dependencies) plus code-reviewer. Triggers: 'security
+  audit', 'check for vulnerabilities', 'pen test review'. Not for dependency scanning
+  only (use deps-audit) or operational security (delegate to platform-engineer).
 ---
+
+# Security Audit
 
 ## Workflow
 
@@ -20,11 +20,8 @@ Run both in **parallel**:
 2. **code-reviewer** — input validation, error handling, auth patterns, and other
    quality-adjacent findings with security consequences.
 
-Two dispatches rather than four. The three-perspective fan-out this pattern used to run
-was a remedy for single-pass recall being the binding constraint; Opus 5 "reviews code
-with high precision and recall: it finds real bugs at a high rate per pass, and its
-additional findings are mostly real issues rather than false positives", so the extra
-passes bought duplication over the same input rather than independent coverage.
+Why two dispatches rather than four: "Security audit" section of
+`.kiro/orchestration/orchestration-rationale.md`.
 
 #### Coverage instruction (paste verbatim into the security-engineer dispatch)
 
@@ -48,10 +45,13 @@ The reporting rule is deliberate: a bar applied while findings are being produce
 silently lowers recall, whereas a complete severity-tagged list can be filtered
 afterwards without losing anything.
 
-For threat-modeling technique selection and vulnerability-class checklists shared across
-the three perspectives, load `references/security-engineer-patterns.md`. When the audit
-target is a skill, agent prompt, bundled script, or MCP configuration rather than
-application code, the report contract is in `references/skill-audit-report-format.md`.
+For the STRIDE threat-model template, a secure API endpoint pattern, and the CI/CD
+security scan stages, load `references/security-engineer-patterns.md`; the
+per-perspective checklists (OWASP Top 10, controls, configuration), the finding report
+format, and severity scoring are in `references/three-perspective-audit-checklist.md`.
+When the audit target is a skill, agent prompt, bundled script, or MCP configuration
+rather than application code, the report contract is in
+`references/skill-audit-report-format.md`.
 
 #### When a third dispatch is justified
 
@@ -71,7 +71,7 @@ Consolidate the two reports into a unified security assessment:
   when the report cites the offending code, configuration, or dependency version
   directly; **MEDIUM** when the finding is inferred from surrounding behaviour and needs
   manual confirmation.
-- Sort by severity (critical → low), then confidence.
+- Sort by severity (Critical → Low), then confidence.
 
 ## Success Criteria
 
@@ -79,12 +79,5 @@ Consolidate the two reports into a unified security assessment:
 - The security-engineer report covers perspectives A, B, and C under explicit headings.
 - Every finding carries a severity and a confidence level.
 - Findings sorted by severity with concrete remediation per item.
-- No CRITICAL findings without a remediation recommendation.
+- No Critical finding without a remediation recommendation.
 - Final report includes a summary table with counts by severity and confidence.
-
-## Reference
-
-For the OWASP checklist, finding report format, and severity scoring, see
-`references/three-perspective-audit-checklist.md`. Its three-perspective structure is
-the coverage checklist for the single dispatch above — the perspectives remain the audit
-dimensions, they are simply no longer one dispatch each.

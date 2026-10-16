@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10.7,<0.12.0"]
+requires = ["uv_build==0.11.30"]
 build-backend = "uv_build"
 
 [project]
@@ -7,13 +7,13 @@ name = "work-doc-md-converter"
 version = "0.3.1"
 description = "Convert documents and audio files to Markdown using MarkItDown and faster-whisper."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.13.*"
 authors = [
     {name = "Daniel Bazo Correa", email = "<email>"},
 ]
 dependencies = [
     "faster-whisper==1.2.1",
-    "markitdown[all]==0.1.5",
+    "markitdown[docx,outlook,pdf,pptx,xls,xlsx]==0.1.5",
 ]
 
 [tool.uv.build-backend]
@@ -43,7 +43,7 @@ indent-width = 4
 extend-exclude = [".venv", ".uv-cache"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "PL", "UP", "N", "B"]
+select = ["E", "F", "W", "PL", "UP", "N", "B", "G", "D100", "D104"]
 ignore = [
     "E203", "E402", "E721",
     "B007", "B904", "B905",

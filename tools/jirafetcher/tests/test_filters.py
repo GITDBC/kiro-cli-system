@@ -1,3 +1,5 @@
+"""Tests for the issue filters."""
+
 # Standard libraries
 from unittest.mock import MagicMock
 

@@ -1,5 +1,7 @@
 name: Files and Configuration Validation
-description: Validate files and configurations
+description: >
+  Validate repository files and configuration (VERSION, agent JSON, skills, drift,
+  formatting, hooks). Requires Node.js dependencies installed and uv available.
 
 runs:
   using: composite
@@ -25,3 +27,15 @@ runs:
           test -f "${d}SKILL.md" || { echo "::error::Missing SKILL.md in $d"; exit 1; }
         done
         echo "All $(ls -d .kiro/skills/*/ | wc -l) skills have SKILL.md."
+
+    - name: Drift check
+      shell: bash
+      run: make drift-check
+
+    - name: Format check
+      shell: bash
+      run: make fmt-check
+
+    - name: Hook regression tests
+      shell: bash
+      run: make hook-test

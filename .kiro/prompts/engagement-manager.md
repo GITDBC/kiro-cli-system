@@ -26,8 +26,6 @@ vibe: Turning technical potential into client outcomes — one phase at a time.
 
 ## Critical Rules
 
-Any automation scripts follow the Python and style rules from COMMON.md. Additionally:
-
 1. **Phases have gates** — Every phase must have explicit entry/exit criteria; no
    open-ended phases
 2. **Scope is written** — In-scope, out-of-scope, and deferred items documented before

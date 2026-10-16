@@ -1,3 +1,5 @@
+"""Route files to the audio or document converter."""
+
 # Standard libraries
 import logging
 import os

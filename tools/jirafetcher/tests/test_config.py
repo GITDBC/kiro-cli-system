@@ -1,3 +1,5 @@
+"""Tests for configuration loading."""
+
 # Standard libraries
 from pathlib import Path
 
@@ -94,3 +96,18 @@ def test_default_statuses() -> None:
 
     config = Config(token="x")
     assert config.statuses == ["In Review", "On Hold"]
+
+
+def test_load_global_config_invalid_toml(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Verify _load_global_config raises ValueError for a
+    malformed TOML file.
+    """
+
+    cfg = tmp_path / "config.toml"
+    cfg.write_text("[jirafetcher\n", encoding="utf-8")
+    monkeypatch.setenv("WORK_AGENTS_CONFIG", str(cfg))
+    with pytest.raises(ValueError, match="Invalid TOML"):
+        _load_global_config()

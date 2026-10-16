@@ -138,10 +138,12 @@ Or start a session with a specific agent:
 kiro-cli --agent my-agent
 ```
 
-Agent switching is not available in Kiro Web or Mobile, so the default agent remains the primary session agent. On Web, custom agents committed to your repository (`.kiro/agents/`) are available for sub-agent delegation. Mobile uses built-in sub-agents only.
+Agent switching is not available in Kiro Web or Mobile, so the default agent remains the primary session agent. On Web, custom agents committed to your repository (`.kiro/agents/`) and personal agents uploaded to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) are available for sub-agent delegation. Mobile uses built-in sub-agents only.
 
 ## Creating your own agents
 
 Built-in agents demonstrate how Kiro uses agent configurations for specialized workflows. You can create your own agents with the same capabilities - tailored tools, permissions, prompts, and models for your specific workflows.
 
 See [Creating custom agents](https://kiro.dev/docs/custom-agents/creating.md) to get started.
+
+If you're using CLI 2.x, see [built-in names in the CLI 2.x reference](https://kiro.dev/docs/cli/2x-reference.md#built-in-names).

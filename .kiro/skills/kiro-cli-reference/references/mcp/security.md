@@ -6,36 +6,31 @@
 
 > Security best practices for configuring and using Model Context Protocol (MCP) servers with Kiro, protecting sensitive information and maintaining system security.
 
-This guide outlines security best practices for configuring and using Model Context Protocol (MCP) servers with Kiro, helping you protect sensitive information and maintain system security.
+Use these practices to limit MCP server access, protect credentials, and verify the code you run.
 
 ## Understanding MCP security
 
 MCP servers extend Kiro's capabilities by connecting to external services and APIs. Since MCP servers are third-party code, this introduces security considerations:
 
 - **Access to sensitive information**: MCP servers may require API keys or tokens
-- **External code execution**: MCP servers run code outside of Kiro's sandbox
+- **External code execution**: By default, MCP servers run code outside Kiro's local command sandbox. You can opt stdio servers into it; see [Sandboxing stdio servers](#sandboxing-stdio-servers)
 - **Data transmission**: Information flows between Kiro and external services
 - **Source verification**: Review the source code and verify the server comes from a trusted source before using
 - **Isolation**: Run servers in isolated environments when possible and limit the permissions granted
 
-**⚠️ Security warning:** MCP stdio servers execute arbitrary commands inside your environment with the same privileges and access as the agent itself. This includes access to your source code, environment variables, secrets, and any credentials available in the session.
+**⚠️ Security warning:** A stdio MCP server runs code on your machine. Without local command sandbox wrapping, it can access the files, environment variables, credentials, and network resources available to your user account. Its own actions do not require a separate approval each time, so malicious server code could read or send data after it starts.
 
-Before adding an MCP server, understand that:
-- The `command` and `args` you configure **run as a process in your environment** - treat them with the same caution as any executable you install
-- MCP servers have **full access to your workspace filesystem**, including source code and configuration files
-- MCP servers can **read environment variables and secrets** configured for your session
-- MCP servers run **outside the agent's tool-execution sandbox** - they are not subject to the same restrictions as agent tool calls
-- A compromised or malicious MCP server can **exfiltrate code, credentials, and data** without any additional user confirmation
+Treat the `command` and `args` like any other executable you install. Review the source and grant only the access it needs.
 
-**Only install MCP servers from sources you trust and have reviewed.** You are responsible for evaluating the security of any MCP server you configure. Kiro does not vet, sandbox, or restrict the behavior of third-party MCP servers.
+When you enable `mcpSandboxing`, the local command sandbox applies its file and network limits to stdio server processes. It does not affect remote HTTP or SSE servers. Kiro does not vet third-party MCP servers. The sandbox limits what a stdio server can reach, but it does not make an untrusted server safe.
 
 ## Security principles
 
 The MCP security model is designed with these principles:
 
-1. **Explicit Permission**: Tools require explicit user permission before execution
-2. **Local Execution**: MCP servers run locally on your machine
-3. **Isolation**: Each MCP server runs as a separate process
+1. **Permission Checks**: Kiro's permissions system evaluates each MCP tool call. Depending on workspace trust and active rules, Kiro denies the call, asks for approval, or runs it without a per-call prompt.
+2. **Local Execution**: Stdio MCP servers run locally on your machine. Remote HTTP and SSE servers run on the provider's infrastructure, and Kiro connects to them over the network
+3. **Isolation**: Each stdio MCP server runs as a separate local process
 4. **Transparency**: Users can see what tools are available and what they do
 
 ## Secure configuration
@@ -144,9 +139,15 @@ Only auto-approve tools that:
 }
 ```
 
-## Workspace isolation
+### Sandboxing stdio servers
 
-Use workspace-level configurations for project-specific MCP servers:
+On your own machine, the local command sandbox can start stdio MCP server processes inside the same OS-level sandbox it uses for the agent's shell commands. Set `mcpSandboxing` to `true` in your sandbox configuration; the server then runs under the same network mode and `sandbox_network` host rules as sandboxed commands. Remote HTTP and SSE servers are not affected, and their network access does not follow sandbox rules.
+
+See [Local command sandbox](https://kiro.dev/docs/sandbox.md#wrap-stdio-mcp-servers) for setup, platform requirements, and what happens when wrapping fails.
+
+## Workspace-specific configuration
+
+Use workspace-level configuration to keep each project's MCP server list separate:
 
 ```
 project-a/
@@ -159,10 +160,7 @@ project-b/
 │       └── mcp.json  # Project B specific servers
 ```
 
-This ensures that:
-- MCP servers only run when working in the relevant project
-- Tokens and configurations are isolated between projects
-- Security risks are contained to specific workspaces
+Kiro starts a project's workspace servers only when that project is open. Workspace configuration separates server lists; it does not isolate server access. Without the [local command sandbox](#sandboxing-stdio-servers) or other OS restrictions, a workspace server can still access the files, credentials, environment variables, and network resources available to your user account.
 
 ## Credential management
 

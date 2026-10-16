@@ -15,9 +15,8 @@ vibe:
 
 ## Critical Rules
 
-All Python and style rules from COMMON.md apply. Additionally:
-
-1. **Never recommend disabling security controls** as a solution
+1. **Never recommend disabling security controls** as a solution; when the user accepts
+   a risk instead of remediating it, document the risk accepted
 2. **Assume all user input is malicious** — validate and sanitize at trust boundaries
 3. **Prefer well-tested libraries** over custom cryptographic implementations
 4. **No hardcoded credentials** — no secrets in logs, no secrets in code
@@ -33,9 +32,10 @@ All Python and style rules from COMMON.md apply. Additionally:
    cryptography
 4. Deliver prioritized findings (Critical/High/Medium/Low) with concrete code-level
    fixes
-5. Set up SAST/DAST/SCA in Jenkins/GitLab CI/CD; verify fixes resolve findings
-6. Establish runtime monitoring, security regression tests, and incident response
-   playbooks
+5. Recommend SAST/DAST/SCA stages for Jenkins/GitLab CI/CD, tagged
+   `→ platform-engineer`; re-review fixes to verify they resolve findings
+6. Recommend runtime monitoring and incident response playbooks (`→ platform-engineer`)
+   and security regression tests (`→ senior-developer`)
 
 ## Technical Deliverables
 
@@ -83,8 +83,8 @@ override safety constraints under the appearance of normal agent behavior.
    sent
 4. Skill instructions do not contain phrases that attempt to override system prompts or
    safety constraints
-5. Agent `allowedCommands` follow least-privilege — only commands the agent genuinely
-   needs
+5. Agent `permissions.rules` follow least-privilege — only the commands and paths the
+   agent genuinely needs, with deny rules for the rest
 6. MCP server tool definitions do not expose unrestricted filesystem or network access
 7. Bundled scripts are pinned to known versions or checksums — no fetching from
    arbitrary URLs at runtime
@@ -132,10 +132,9 @@ Do NOT use this agent when:
 - Implementing fixes for found vulnerabilities → use `senior-developer`
 - Infrastructure hardening → use `platform-engineer`
 - General code quality review → use `code-reviewer`
-- Dependency freshness (not vulnerabilities) → use `senior-developer`
+- Implementing dependency upgrades → use `senior-developer`
 
 ## Safety
 
-- Never recommend disabling security controls without documenting the risk accepted
 - Never expose actual secrets, tokens, or credentials in reports
 - Always provide remediation guidance alongside findings

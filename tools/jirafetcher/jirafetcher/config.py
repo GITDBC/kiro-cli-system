@@ -1,3 +1,5 @@
+"""Configuration loading from a local JSON file or the global TOML."""
+
 # Standard libraries
 import json
 import os
@@ -24,6 +26,9 @@ def _load_global_config() -> dict[str, Any]:
         Dictionary with tool settings, or empty dict
         if the variable is unset or the section is
         missing.
+
+    Raises:
+        ValueError: If the config file is not valid TOML.
     """
 
     path_str: str | None = os.environ.get(GLOBAL_CONFIG_ENV)
@@ -32,8 +37,11 @@ def _load_global_config() -> dict[str, Any]:
     path: Path = Path(path_str)
     if not path.is_file():
         return {}
-    with path.open("rb") as fh:
-        data: dict[str, Any] = tomllib.load(fh)
+    try:
+        with path.open("rb") as fh:
+            data: dict[str, Any] = tomllib.load(fh)
+    except tomllib.TOMLDecodeError as exc:
+        raise ValueError(f"Invalid TOML in config file {path}: {exc}") from exc
     result: dict[str, Any] = data.get(TOOL_SECTION, {})
     return result
 
@@ -71,8 +79,9 @@ class Config:
         Raises:
             FileNotFoundError: If no config source is
                 available.
-            ValueError: If required fields are missing or
-                the file contains malformed JSON.
+            ValueError: If required fields are missing, the
+                file contains malformed JSON, or the global
+                config is not valid TOML.
         """
 
         if path.is_file():

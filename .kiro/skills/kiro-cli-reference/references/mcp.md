@@ -93,7 +93,7 @@ In an interactive session, use the `/mcp` slash command to see loaded servers:
         /mcp
         ```
 
-    Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. Use the same JSON structure shown in the IDE and CLI examples, or configure servers from the sandbox settings panel. See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for detailed Web instructions.
+    Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. Use the same JSON structure shown in the IDE and CLI examples, configure servers from the sandbox settings panel, or upload your personal `~/.kiro/settings/mcp.json` to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md). See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for detailed Web instructions.
 
     
       

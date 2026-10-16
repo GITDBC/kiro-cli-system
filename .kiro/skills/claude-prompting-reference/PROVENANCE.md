@@ -23,15 +23,15 @@ there as an orphan.
 
 ## Upstream source
 
-| Property        | Value                                   |
-| --------------- | --------------------------------------- |
-| Documentation   | https://platform.claude.com/docs/       |
-| Catalogue       | https://platform.claude.com/llms.txt    |
-| Page URL prefix | `https://platform.claude.com/docs/en/`  |
-| Fetch date      | 2026-09-22                              |
-| Sync tool       | `tools/docsync` (`make sync-anthropic`) |
-| Sync marker     | `.last-sync.json` at the skill root     |
-| Page count      | 15 at the fetch date                    |
+| Property        | Value                                      |
+| --------------- | ------------------------------------------ |
+| Documentation   | https://platform.claude.com/docs/          |
+| Catalogue       | https://platform.claude.com/llms.txt       |
+| Page URL prefix | `https://platform.claude.com/docs/en/`     |
+| Fetch date      | 2026-10-16                                 |
+| Sync tool       | `tools/docsync` (`make sync-anthropic`)    |
+| Sync marker     | `.last-sync.json` at the skill root        |
+| Page count      | 16 after the scope reduction of 2026-10-16 |
 
 Each mirrored file keeps the upstream YAML frontmatter, whose `url` field records the
 canonical page it was fetched from. That makes every file self-attributing regardless of
@@ -42,13 +42,32 @@ where it is read.
 The mirror is a subset of a much larger documentation set. Two rules, both encoded in
 `tools/docsync/docsync/sources/anthropic.py`, decide what enters it:
 
-- **By prefix**: every page under `build-with-claude/prompt-engineering/`. Anthropic
-  publishes a per-model prompting guide with each model release, and a prefix rule picks
-  the new one up without a code change.
+- **By prefix**: every page under `build-with-claude/prompt-engineering/`, except the
+  slugs listed in `EXCLUDED_PAGES`. Anthropic publishes a per-model prompting guide with
+  each model release, and a prefix rule picks the new one up without a code change.
 - **By exact slug**: the pages listed in `TRACKED_PAGES`. Each is prompting guidance
   whose section siblings are not, so a prefix rule would drag in unrelated material. A
   tracked slug that leaves the catalogue aborts the sync with an error instead of
   disappearing quietly.
+
+The Opus 5.5 and Sonnet 5.5 guides arrive through the prefix rule and need no code
+change. The two release-notes pages below do, because they sit under `models/`, whose
+other pages are not prompting guidance:
+
+| Tracked slug                             | Why it is tracked                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `models/opus-5-5/whats-new-opus-5-5`     | Breaking API changes and the `medium` default effort for Opus 5.5, which the session effort policy and `.kiro/settings/cli.json` depend on |
+| `models/sonnet-5-5/whats-new-sonnet-5-5` | Breaking API changes and the `high` default effort for Sonnet 5.5, which the session effort policy and `.kiro/settings/cli.json` depend on |
+
+They are tracked only for the models the agents run. Their sibling overview and
+migration-guide pages, and the whole Haiku 5.5 release-notes set, are deliberately
+excluded: nothing in this repository consumes them. The same reasoning excludes, through
+`EXCLUDED_PAGES`, the prompting guides for Haiku 5.5, Fable 5 and Fable 5.1, which no
+agent here runs; an excluded page is never fetched, and `--prune` removes a local copy.
+The 5.0 guides and the Opus 4.8 guide remain mirrored because driftcheck's
+`prompt_quality` checks cite them and the 5.5 guides defer to the 5.0 ones as a
+baseline. The evaluation guide `test-and-evaluate/develop-tests` is no longer tracked:
+nothing in this repository cites it.
 
 Deliberately out of scope: the API reference, the SDK and deployment guides, the
 use-case cookbooks, and the released system prompts. None is prompting guidance, and the

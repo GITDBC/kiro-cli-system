@@ -61,7 +61,11 @@
           "**/id_rsa",
           "id_ed25519",
           "./id_ed25519",
-          "**/id_ed25519"
+          "**/id_ed25519",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -95,6 +99,11 @@
           "make *"
         ],
         "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "match": ["uv add*", "uv pip install*", "uv sync*"],
+        "effect": "ask"
       },
       {
         "capability": "shell",
@@ -148,14 +157,7 @@
       }
     ]
   },
-  "resources": [
-    "skill://.kiro/skills/code-standards/SKILL.md",
-    "skill://.kiro/skills/cicd-pipeline-design/SKILL.md",
-    "skill://.kiro/skills/incident-response/SKILL.md",
-    "skill://.kiro/skills/release-readiness/SKILL.md",
-    "skill://.kiro/skills/tech-debt-tracking/SKILL.md",
-    "skill://.kiro/skills/tech-evaluation/SKILL.md"
-  ],
+  "resources": [],
   "welcomeMessage": "Ready for platform work. What needs building or stabilizing?",
-  "model": "claude-sonnet-5"
+  "model": "claude-sonnet-5.5"
 }

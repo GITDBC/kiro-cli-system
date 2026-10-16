@@ -10,7 +10,7 @@ Reasoning effort controls how much thinking the model applies to your prompts. L
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Reasoning effort selection | ✓ | ✓ | — | — |
+| Reasoning effort selection | ✓ | ✓ | ✓ | — |
 
 **Available levels:**
 
@@ -22,40 +22,64 @@ Reasoning effort controls how much thinking the model applies to your prompts. L
 | `xhigh` | Extended reasoning. Useful for multi-file changes and nuanced problems. |
 | `max` | Maximum depth. Best for difficult debugging, security analysis, and intricate logic. |
 
-Not all models support every level. The picker only shows levels available for your current model - see [supported models](#supported-models) below.
+Not all models support every level. The picker only shows levels available for your current model. See [reasoning configuration examples](#reasoning-configuration-examples) for common model schemas.
+
+A model's configuration schema may also declare an internal `default` level. It is never offered as a choice, and a model that declares only `default` shows no picker at all, because there is nothing to choose between.
 
 ## Setting effort level
 
     IDE
     CLI
+    Web
 
-Click the model name in the chat input bar to open the model selector, then choose an effort level from the **Effort** panel on the right side.
+Click the model button in the chat input bar to open the **Model** panel. Use **Filter models** when needed, then select a model or **Auto**.
 
-Your effort selection appears next to the model name (e.g., "Claude Opus 4.6 · max") and applies to all subsequent messages in the conversation.
+When the selected model supports reasoning effort, an **Effort** slider appears below the model list. Choose a level with the slider; the change applies to this conversation beginning with your next message. To restore the model's default level, choose the `Default: <level>` reset action. This action is not another effort level.
 
-Use the `/effort` command to change the reasoning level mid-session:
+You can set **Effort**, and **Thinking** when the selected model supports it, before you send your first message in a local session. Kiro keeps that choice when the session starts.
+
+The model button shows the selected model or **Auto**, without the effort level. Hover over it to see the current model and effort level in the tooltip.
+
+In the IDE, Effort controls appear only for local sessions. New-session drafts in [Agent Focus Mode](https://kiro.dev/docs/ide/experimental/focus-mode.md) and [cloud sessions](https://kiro.dev/docs/cloud-sessions.md) do not show them.
+
+Open `/model`, then choose **Thinking** or **Effort** for the selected model. The panel only shows settings and values that model supports.
+
+- **Thinking** controls whether a supported model uses extended reasoning.
+- **Effort** controls how much reasoning the model applies.
+
+The **Thinking** setting in `/model` changes model behavior. It is separate from **Show thinking** in `/settings display`, which only controls whether reasoning blocks appear in the terminal, and from the experimental [Thinking tool](https://kiro.dev/docs/cli/experimental/thinking.md).
+
+You can also use `/effort` directly:
 
 ```bash
-# Open interactive picker
+# Open effort controls
 /effort
 
-# Set directly
+# Set a level directly
 /effort high
 ```
 
-Or set the initial effort level when you start a session with the `--effort` flag:
+`/model` is the primary reasoning interface. In V2 and V3, bare `/effort` opens the `/model` picker focused on the Effort setting. `/effort <level>` remains supported in both.
+
+To set the initial effort level when you start a session, use the `--effort` flag:
 
 ```bash
 kiro-cli chat --effort high
 ```
 
-The flag accepts the same levels as `/effort` and applies from your first prompt, so quick lookups stay fast and complex work gets deeper reasoning from the start.
+The flag applies from your first prompt, so quick lookups stay fast and complex work gets deeper reasoning from the start.
 
-## Supported models
+In Kiro Web, select a model in the composer. When the model offers reasoning levels, a reasoning effort selector appears beside the model selector. Choose a level before sending your prompt.
 
-Each model defines the values it accepts for the reasoning-related fields in its configuration schema. The `output_config.effort` column lists the effort levels available for that model; `thinking.type` and `thinking.display` control reasoning behavior and visibility; `max_tokens` sets the output length limit.
+Your selection applies to the current session only. It does not persist across sessions or change your IDE or CLI defaults. Only levels supported by the current model are shown.
 
-**Claude models** use `output_config.effort` with `thinking.type` and `thinking.display` controls:
+## Reasoning configuration examples
+
+Each effort-capable model defines the values it accepts for reasoning-related fields in its configuration schema. The tables below show common schemas and are not an exhaustive support list. Use your surface's model and effort pickers to see the models and levels currently available to you.
+
+In these examples, `output_config.effort` lists the available effort levels; `thinking.type` and `thinking.display` control reasoning behavior and visibility; and `max_tokens` sets the output length limit.
+
+**Claude examples** use `output_config.effort` with `thinking.type` and `thinking.display` controls:
 
 | Model | `thinking.type` | `thinking.display` | `output_config.effort` | `max_tokens` |
 |-------|-----------------|--------------------|------------------------|--------------|
@@ -63,6 +87,7 @@ Each model defines the values it accepts for the reasoning-related fields in its
 | Claude Opus 4.8 | `adaptive`, `disabled` | `summarized`, `omitted` | `low`, `medium`, `high`, `xhigh`, `max` | 1024–128000 |
 | Claude Opus 4.7 | `adaptive`, `disabled` | `summarized`, `omitted` | `low`, `medium`, `high`, `xhigh`, `max` | 1024–64000 |
 | Claude Opus 4.6 | `adaptive`, `disabled` | `summarized`, `omitted` | `low`, `medium`, `high`, `max` | 1024–64000 |
+| Claude Sonnet 5.5 | `adaptive`, `between_tools` | `summarized`, `omitted` | `low`, `medium`, `high`, `xhigh`, `max` | 1024–64000 |
 | Claude Sonnet 5 | `adaptive`, `disabled` | `summarized`, `omitted` | `low`, `medium`, `high`, `xhigh`, `max` | 1024–128000 |
 | Claude Sonnet 4.6 | `adaptive`, `disabled` | `summarized`, `omitted` | `low`, `medium`, `high`, `max` | 1024–64000 |
 
@@ -78,7 +103,7 @@ GPT-5.6 models default to `effort: "high"`.
 
 ## Persisting your effort level (CLI)
 
-Your effort choice persists automatically. Set a level with `/effort` or `--effort` and Kiro remembers it for future sessions - there's no extra step to make it the default. Preferences are stored in `~/.kiro/settings/cli.json`. See [In-session settings](https://kiro.dev/docs/cli/chat/settings.md#persistence) for more on how preferences persist.
+Your effort choice in `/model` persists automatically. `/effort <level>` changes the current session only; run `/effort set-current-as-default` to save that level for the current model. In V3, `--effort` and `--model` apply only to the session Kiro starts with and aren't saved as defaults. Preferences are stored in `~/.kiro/settings/cli.json`. See [In-session settings](https://kiro.dev/docs/cli/chat/settings.md#persistence) for more on how preferences persist.
 
 ## Persistent defaults (CLI)
 
@@ -144,7 +169,7 @@ Control whether the model uses extended thinking and how it displays reasoning:
 }
 ```
 
-- `thinking.type` - `adaptive` enables extended thinking when the model determines it's needed; `disabled` turns it off entirely.
+- `thinking.type` - `adaptive` enables extended thinking when the model determines it's needed; `disabled` turns it off entirely on models that support that value. Claude Sonnet 5.5 uses `between_tools` instead of `disabled`; it applies the lowest thinking setting between tool calls and supports `low`, `medium`, and `high` effort.
 - `thinking.display` - `summarized` shows a condensed version of reasoning; `omitted` hides it from output. Only applies when `type` is `adaptive`.
 
 ### Configuring max output tokens
@@ -164,13 +189,14 @@ Set the maximum number of tokens the model can generate per response:
 }
 ```
 
-**`max_tokens` limits per model:**
+**Example `max_tokens` limits:**
 
 | Model | Minimum | Maximum |
 |-------|---------|---------|
 | Claude Opus 4.8 | 1024 | 128000 |
 | Claude Opus 4.7 | 1024 | 64000 |
 | Claude Opus 4.6 | 1024 | 64000 |
+| Claude Sonnet 5.5 | 1024 | 64000 |
 | Claude Sonnet 5 | 1024 | 128000 |
 | Claude Sonnet 4.6 | 1024 | 64000 |
 | GPT-5.6 Terra | 1024 | 128000 |
@@ -227,7 +253,7 @@ Or place a `.kiro/settings/cli.json` in your project root to set workspace-level
 
 When determining the effort level for a session, Kiro applies this priority order:
 
-1. **Session override** - value set via the effort picker, `/effort`, or `--effort` during the current session
+1. **Session override** - value set via the Effort setting in `/model`, `/effort <level>`, or `--effort` during the current session. In V3, `/clear` keeps this value; `/chat new` starts from the saved defaults below
 2. **Workspace defaults** - `chat.modelDefaults` in `.kiro/settings/cli.json`
 3. **User defaults** - `chat.modelDefaults` in `~/.kiro/settings/cli.json`
 4. **Built-in defaults** - the model's standard effort level

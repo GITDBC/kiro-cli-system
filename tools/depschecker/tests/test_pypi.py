@@ -1,3 +1,5 @@
+"""Tests for the PyPI queries."""
+
 # Standard libraries
 import os
 from typing import Any

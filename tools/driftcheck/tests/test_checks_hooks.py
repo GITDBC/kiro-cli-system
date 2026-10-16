@@ -1,10 +1,8 @@
 """
 Tests for the hook-command and hook-coverage checks.
 
-Both resolution branches are covered: a command naming a script file on
-disk, and a command running a console script that must be declared in a
-tool's ``[project.scripts]`` table. The second branch is the one that
-silently passed before hooks became console scripts. The git-safety
+A command naming a script file must find it on disk; any other command,
+including a ``uv run`` console script, is left alone. The git-safety
 coverage check is exercised from both directions: a shell-capable agent
 with no PreToolUse hook wiring the script at all, and a matcher too
 narrow to cover one of the two shell tool ids.
@@ -15,7 +13,6 @@ from pathlib import Path
 
 # Own modules
 from driftcheck.checks.hooks import (
-    _console_script_target,
     check_git_safety_hook,
     check_hook_scripts,
 )
@@ -28,8 +25,6 @@ from tests.helpers import (
     write_git_safety_hook,
     write_hooks_file,
 )
-
-CONSOLE_COMMAND = "uv run --project tools/driftcheck driftcheck-hook-state-yaml"
 
 
 def _hooks_document(command: str, trigger: str = "PostToolUse") -> dict[str, object]:
@@ -73,49 +68,15 @@ def test_hook_scripts_accept_existing_script(valid_root: Path) -> None:
     assert problems(check_hook_scripts(build_context(valid_root))) == []
 
 
-def test_hook_scripts_accept_declared_console_script(valid_root: Path) -> None:
-    """A console script declared in [project.scripts] is clean."""
-    write_hooks_file(valid_root, document=_hooks_document(CONSOLE_COMMAND))
-    assert problems(check_hook_scripts(build_context(valid_root))) == []
-
-
-def test_hook_scripts_detect_undeclared_console_script(valid_root: Path) -> None:
-    """A console script absent from [project.scripts] is an error."""
+def test_hook_scripts_leave_console_scripts_alone(valid_root: Path) -> None:
+    """A uv run console script is not resolved against any manifest."""
     write_hooks_file(
         valid_root,
         document=_hooks_document(
-            "uv run --project tools/driftcheck driftcheck-hook-ghost"
+            "uv run --project tools/absent absent-hook", trigger="SessionStart"
         ),
     )
-    findings = check_hook_scripts(build_context(valid_root))
-    errors = problems(findings)
-    assert severities(errors) == [Severity.ERROR]
-    assert "driftcheck-hook-ghost" in errors[0].message
-    assert "[project.scripts]" in errors[0].message
-
-
-def test_hook_scripts_detect_missing_project_manifest(valid_root: Path) -> None:
-    """A console script from a non-existent tool is an error."""
-    write_hooks_file(
-        valid_root,
-        document=_hooks_document("uv run --project tools/absent absent-hook"),
-    )
-    findings = check_hook_scripts(build_context(valid_root))
-    errors = problems(findings)
-    assert severities(errors) == [Severity.ERROR]
-    assert "does not exist" in errors[0].message
-
-
-def test_hook_scripts_detect_uv_run_without_a_command(valid_root: Path) -> None:
-    """A uv run invocation naming nothing runnable is an error."""
-    write_hooks_file(
-        valid_root,
-        document=_hooks_document("uv run --project tools/driftcheck"),
-    )
-    findings = check_hook_scripts(build_context(valid_root))
-    errors = problems(findings)
-    assert severities(errors) == [Severity.ERROR]
-    assert "neither a script file nor a console script" in errors[0].message
+    assert problems(check_hook_scripts(build_context(valid_root))) == []
 
 
 def test_hook_scripts_report_malformed_json(valid_root: Path) -> None:
@@ -125,6 +86,43 @@ def test_hook_scripts_report_malformed_json(valid_root: Path) -> None:
     errors = problems(findings)
     assert severities(errors) == [Severity.ERROR]
     assert "broken.json is not valid JSON" in errors[0].message
+
+
+def test_hook_scripts_detect_non_executable_direct_script(valid_root: Path) -> None:
+    """A script the hook runs directly must carry the execute bit."""
+    script = write(valid_root / ".kiro" / "hooks" / "stop.sh", "exit 0\n")
+    script.chmod(0o644)
+    write_hooks_file(
+        valid_root,
+        document=_hooks_document(".kiro/hooks/stop.sh", trigger="Stop"),
+    )
+    errors = problems(check_hook_scripts(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "not executable" in errors[0].message
+
+
+def test_hook_scripts_accept_executable_direct_script(valid_root: Path) -> None:
+    """An executable script run directly is clean."""
+    script = write(valid_root / ".kiro" / "hooks" / "stop.sh", "exit 0\n")
+    script.chmod(0o755)
+    write_hooks_file(
+        valid_root,
+        document=_hooks_document(".kiro/hooks/stop.sh", trigger="Stop"),
+    )
+    assert problems(check_hook_scripts(build_context(valid_root))) == []
+
+
+def test_hook_scripts_allow_interpreted_non_executable_script(
+    valid_root: Path,
+) -> None:
+    """A script passed to an interpreter needs no execute bit."""
+    script = write(valid_root / "scripts" / "hook.py", "print('hi')\n")
+    script.chmod(0o644)
+    write_hooks_file(
+        valid_root,
+        document=_hooks_document("python3 scripts/hook.py", trigger="Stop"),
+    )
+    assert problems(check_hook_scripts(build_context(valid_root))) == []
 
 
 def test_hook_scripts_ignore_unrelated_commands(valid_root: Path) -> None:
@@ -323,15 +321,3 @@ def test_git_safety_detects_non_executable_script(valid_root: Path) -> None:
     errors = problems(check_git_safety_hook(build_context(valid_root)))
     assert severities(errors) == [Severity.ERROR]
     assert "not executable" in errors[0].message
-
-
-def test_console_script_target_parses_flag_forms() -> None:
-    """Both --project forms resolve to the same target."""
-    assert _console_script_target(CONSOLE_COMMAND) == (
-        "tools/driftcheck",
-        "driftcheck-hook-state-yaml",
-    )
-    assert _console_script_target(
-        "uv run --project=tools/driftcheck --no-sync driftcheck"
-    ) == ("tools/driftcheck", "driftcheck")
-    assert _console_script_target("uv run driftcheck") == ("", "driftcheck")

@@ -61,7 +61,11 @@
           "**/id_rsa",
           "id_ed25519",
           "./id_ed25519",
-          "**/id_ed25519"
+          "**/id_ed25519",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -90,6 +94,11 @@
       },
       {
         "capability": "shell",
+        "match": ["uv add*", "uv pip install*", "uv sync*"],
+        "effect": "ask"
+      },
+      {
+        "capability": "shell",
         "match": ["*"],
         "exclude": ["git *", "make *", "uv *"],
         "effect": "deny"
@@ -111,12 +120,9 @@
     "skill://.kiro/skills/reviewing-code/SKILL.md",
     "skill://.kiro/skills/agent-creation/SKILL.md",
     "skill://.kiro/skills/security-audit/SKILL.md",
-    "skill://.kiro/skills/self-improvement/SKILL.md",
-    "skill://.kiro/skills/software-design-review/SKILL.md",
     "skill://.kiro/skills/spec-to-dev/SKILL.md",
-    "skill://.kiro/skills/tech-debt-tracking/SKILL.md",
     "skill://.kiro/skills/wireless-optimization/SKILL.md"
   ],
   "welcomeMessage": "Ready to review. Point me at the code.",
-  "model": "claude-sonnet-5"
+  "model": "claude-sonnet-5.5"
 }

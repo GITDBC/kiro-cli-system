@@ -16,13 +16,25 @@ from ctxbudget.windows import MODEL_WINDOWS, agent_windows, window_for_model
 from tests.helpers import write, write_agent
 
 
+def test_five_point_five_models_are_one_million_token_windows() -> None:
+    """
+    Hold the figure the vendored docs state for this project's models.
+
+    ``models.md`` lists Claude Opus 5.5 and Claude Sonnet 5.5 at 1M in its
+    quick comparison, and every agent that runs them would have its
+    observations divided by five if this regressed to the 200K it once
+    defaulted to.
+    """
+    assert window_for_model("claude-opus-5.5") == 1_000_000
+    assert window_for_model("claude-sonnet-5.5") == 1_000_000
+
+
 def test_opus_five_is_a_one_million_token_window() -> None:
     """
-    Hold the figure the vendored docs state for this project's model.
+    Keep the 5.0 windows after the agents moved to 5.5.
 
-    ``models.md`` lists Claude Opus 5 at 1M in its quick comparison, and
-    both agents that run it would have their observations divided by five
-    if this regressed to the 200K it once defaulted to.
+    ``models.md`` still lists Claude Opus 5 and Claude Sonnet 5 at 1M, and
+    a config pinned back to either must not lose its window.
     """
     assert window_for_model("claude-opus-5") == 1_000_000
     assert window_for_model("claude-sonnet-5") == 1_000_000

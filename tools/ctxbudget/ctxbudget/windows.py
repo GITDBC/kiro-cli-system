@@ -11,8 +11,14 @@ The table is transcribed from the vendored Kiro documentation --
 ``.kiro/skills/kiro-cli-reference/references/models.md``, "Quick
 comparison" -- and carries only models whose window that table states
 and whose id spelling is confirmed, either by the same documentation set
-(``claude-opus-4.8``, ``claude-sonnet-4``) or by an agent config in this
-repository (``claude-opus-5``, ``claude-sonnet-5``, ``claude-haiku-4.5``).
+(``claude-opus-4.8``, ``claude-sonnet-4``) or by the ids that
+``kiro-cli chat --list-models`` reports, which the agent configs in this
+repository use (``claude-opus-5.5``, ``claude-sonnet-5.5``,
+``claude-haiku-4.5``). The vendored docs name the 5.x models only by
+display name ("Claude Opus 5.5", 1M), never by id. The 5.0 ids
+(``claude-opus-5``, ``claude-sonnet-5``) stay listed after the agents
+moved to 5.5: both remain selectable, and a config pinned back to one
+must not lose its window.
 The GPT-5.6 tiers and the remaining open-weight models are deliberately
 absent: their windows are documented but their id spelling is not, and a
 guessed key would be a silent trap the moment it matched.
@@ -34,11 +40,13 @@ from ctxbudget.resolve import load_agent_configs
 logger = logging.getLogger(__name__)
 
 MODEL_WINDOWS: Final[dict[str, int]] = {
+    "claude-opus-5.5": 1_000_000,
     "claude-opus-5": 1_000_000,
     "claude-opus-4.8": 1_000_000,
     "claude-opus-4.7": 1_000_000,
     "claude-opus-4.6": 1_000_000,
     "claude-opus-4.5": 200_000,
+    "claude-sonnet-5.5": 1_000_000,
     "claude-sonnet-5": 1_000_000,
     "claude-sonnet-4.6": 1_000_000,
     "claude-sonnet-4.5": 200_000,

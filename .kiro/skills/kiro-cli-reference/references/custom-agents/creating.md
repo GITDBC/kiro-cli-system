@@ -24,7 +24,7 @@ For example, create `.kiro/agents/backend-dev.md`:
 ---
 name: backend-dev
 description: Backend development specialist
-model: claude-sonnet-4
+model: claude-sonnet-4.6
 tools: ["read", "write", "shell"]
 permissions:
   rules:
@@ -108,21 +108,23 @@ This opens your default editor with a basic agent configuration file. You can al
 
 ## Agent configuration file
 
-Custom agents are defined using JSON configuration files. Here's a basic example:
+Custom agents are defined using JSON or Markdown configuration files. Here's a basic JSON example:
 
 ```json
 {
   "name": "my-agent",
   "description": "A custom agent for my workflow",
   "tools": ["read", "write"],
-  "allowedTools": ["read"],
+  "permissions": {
+    "rules": [{ "capability": "fs_read", "effect": "allow" }]
+  },
   "resources": [
     "file://README.md",
     "file://.kiro/steering/**/*.md",
     "skill://.kiro/skills/**/SKILL.md"
   ],
   "prompt": "You are a helpful coding assistant",
-  "model": "claude-sonnet-4"
+  "model": "claude-sonnet-4.6"
 }
 ```
 

@@ -19,6 +19,7 @@ Extend Kiro's capabilities with MCP servers that connect to external services, d
 | **Apify** |  | Connect Kiro with [thousands of tools](https://apify.com/store) for web scraping, data extraction, and automation. Run Actors, access results, and search Apify documentation. |
 | **Atlassian** |  | Plan, track, and collaborate across Jira, Confluence, and Compass with the Atlassian Rovo MCP Server. |
 | **AWS Documentation** |  | Access to AWS documentation, search capabilities, and content recommendations. Requires [UV Installed](https://docs.astral.sh/uv/getting-started/installation/) |
+| **AWS MCP** |  | Interact with AWS services and account resources through a remote, IAM-governed MCP endpoint. |
 | **Azure** |  | Interact with Azure services and resources. Requires [Node installed](https://nodejs.org/en/download) |
 | **BNB Chain** |  | Official BNB Chain MCP: on-chain queries, token/NFT operations, Greenfield storage, and ERC-8004 agent registry for BSC & opBNB. Requires [Node installed](https://nodejs.org/en/download) |
 | **Canva** |  | AI-powered development assistance for building Canva apps and integrations. Access Canva documentation, App UI Kit components, and Apps SDK resources. |

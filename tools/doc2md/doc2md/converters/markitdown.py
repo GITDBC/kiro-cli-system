@@ -1,3 +1,5 @@
+"""Document conversion through MarkItDown in a process pool."""
+
 # Standard libraries
 import logging
 import os

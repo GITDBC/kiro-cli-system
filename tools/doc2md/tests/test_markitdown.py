@@ -1,5 +1,8 @@
+"""Tests for the MarkItDown converter."""
+
 # Standard libraries
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -9,6 +12,7 @@ from doc2md.converters.markitdown import (
     _apply_image_replacements,
     _convert_single,
     _process_shape,
+    convert_documents,
 )
 
 
@@ -169,3 +173,68 @@ def test_apply_image_replacements_duplicates() -> None:
     assert "r1.png" in result
     assert "r2.png" in result
     assert "foo.jpg" not in result
+
+
+def test_convert_documents_counts_successes(tmp_path: Path) -> None:
+    """
+    Verify convert_documents reports every result
+    through the callback and counts the successes.
+    """
+
+    good = tmp_path / "a.pdf"
+    bad = tmp_path / "b.pdf"
+    results = {
+        good: (good, tmp_path / "a_pdf.md", None),
+        bad: (bad, None, "boom"),
+    }
+    seen: list[tuple[Path, Path | None, str | None]] = []
+
+    def _record(src: Path, dest: Path | None, err: str | None) -> bool:
+        seen.append((src, dest, err))
+        return dest is not None
+
+    with (
+        patch(
+            "doc2md.converters.markitdown.ProcessPoolExecutor",
+            ThreadPoolExecutor,
+        ),
+        patch("doc2md.converters.markitdown._init_worker"),
+        patch(
+            "doc2md.converters.markitdown._convert_single",
+            side_effect=lambda f, *_: results[f],
+        ),
+    ):
+        converted = convert_documents([good, bad], tmp_path, None, _record)
+
+    assert converted == 1
+    assert sorted(src.name for src, _, _ in seen) == ["a.pdf", "b.pdf"]
+
+
+def test_convert_documents_worker_exception(tmp_path: Path) -> None:
+    """
+    Verify convert_documents turns a worker exception
+    into a failed result for that file.
+    """
+
+    src = tmp_path / "a.pdf"
+    seen: list[str | None] = []
+
+    def _record(_src: Path, _dest: Path | None, err: str | None) -> bool:
+        seen.append(err)
+        return False
+
+    with (
+        patch(
+            "doc2md.converters.markitdown.ProcessPoolExecutor",
+            ThreadPoolExecutor,
+        ),
+        patch("doc2md.converters.markitdown._init_worker"),
+        patch(
+            "doc2md.converters.markitdown._convert_single",
+            side_effect=RuntimeError("worker died"),
+        ),
+    ):
+        converted = convert_documents([src], tmp_path, None, _record)
+
+    assert converted == 0
+    assert seen == ["worker died"]

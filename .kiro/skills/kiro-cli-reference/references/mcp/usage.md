@@ -116,52 +116,15 @@ This format specifies both the server (`aws-docs`) and the tool (`search_documen
 
     ### Tool Search
 
-    Tool Search loads MCP tools on demand instead of sending every tool definition with each request. This keeps your context window clear when you have many MCP servers configured.
+    Kiro CLI 2.31 and later local V3 sessions load MCP tools on demand automatically. You do not need to enable a setting.
 
-    **When to enable Tool Search:**
-    - You have 5+ MCP servers configured
-    - You see context window overflow errors during long conversations
-    - The `/tools` command shows MCP tools consuming more than 50,000 tokens total
-
-    **Enabling Tool Search:**
+    In V2 sessions, Tool Search remains opt-in:
 
     ```bash
     kiro-cli settings toolSearch.enabled true
     ```
 
-    Once enabled, Tool Search activates automatically when MCP tool specs are large enough to benefit from deferral. To force activation whenever any MCP tools are present:
-
-    ```bash
-    kiro-cli settings toolSearch.minPct 0
-    kiro-cli settings toolSearch.minTokens 0
-    ```
-
-    **Settings:**
-
-    | Setting | Default | Description |
-    |---------|---------|-------------|
-    | `toolSearch.enabled` | `false` | Toggle for Tool Search |
-    | `toolSearch.minPct` | `5` | Activate when MCP tool specs exceed this % of the context window |
-    | `toolSearch.minTokens` | `50000` | Activate when MCP tool specs exceed this token count |
-
-    When both thresholds are set, Tool Search activates if either is exceeded (OR logic).
-
-    **How it works:**
-
-    1. **Indexing**: When MCP servers connect, all tool specs are indexed for keyword search
-    2. **Deferred tool list**: Instead of full JSON schemas, the model receives a compact list of `server_name::tool_name: description` entries
-    3. **On-demand loading**: When the model needs a tool, it calls `tool_search` with either an exact `tool_id` or a keyword `query`
-    4. **Activation**: Matched tools are loaded and their full schemas are included in subsequent requests
-
-    **The `tool_search` built-in tool parameters:**
-
-    | Parameter | Type | Required | Description |
-    |-----------|------|----------|-------------|
-    | `tool_id` | string | One of `tool_id` or `query` | Exact tool identifier in `server_name::tool_name` format |
-    | `query` | string | One of `tool_id` or `query` | Keywords to search for matching tools |
-    | `max_results` | integer | No | Maximum results to return (default: 5) |
-
-    Keyword search uses BM25 relevance scoring. Tool names are split on casing boundaries (e.g., `ReadFile` → `read file`) to improve matching.
+    See [Tool Search](https://kiro.dev/docs/mcp/tool-search.md) for V2 thresholds and how on-demand loading works.
 
 In Kiro Web, MCP tools are managed from the sandbox settings panel. Go to [Settings > Agent](https://app.kiro.dev/settings/agent) to configure which MCP servers are loaded into your sessions.
 
@@ -193,6 +156,8 @@ To avoid repeated approval prompts for tools you trust, add tool names to the `a
   }
 }
 ```
+
+**ℹ️ Info:** In an untrusted workspace, every MCP tool call asks for approval, including tools listed in `autoApprove`, and a call retried after the server asks you to sign in or open a URL asks again. Before any MCP tool runs, Kiro also checks that its approval is still current, so an approval withdrawn or changed while the call was waiting is not applied. See [Workspace trust](https://kiro.dev/docs/permissions.md#workspace-trust).
 
 ## Examples by server type
 

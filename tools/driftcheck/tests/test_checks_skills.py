@@ -263,10 +263,10 @@ def test_stale_skill_mentions_accepts_current_skill_reference(
     write(
         valid_root / ".kiro" / "skills" / "reviewing-code" / "SKILL.md",
         "---\nname: reviewing-code\ndescription: >\n"
-        "  Not for proactive refactoring (use refactoring skill).\n"
+        "  Not for proactive refactoring (use other-skill skill).\n"
         "---\n\n# Reviewing\n",
     )
-    write(valid_root / ".kiro" / "skills" / "refactoring" / "SKILL.md", "# Refactor\n")
+    write(valid_root / ".kiro" / "skills" / "other-skill" / "SKILL.md", "# Other\n")
     assert problems(check_stale_skill_mentions(build_context(valid_root))) == []
 
 

@@ -1,23 +1,17 @@
 # Full Python Code Standards Reference
 
-Exhaustive detail for the `code-standards` skill. Load this file when the SKILL.md
-category summary is insufficient — e.g. verifying a specific deprecated API, checking
-exact isort settings, or needing a full code example for dataclasses/classes. The
-summary lives in `../SKILL.md`; rules that no linter can catch are additionally enforced
-by the checklist in `.kiro/skills/reviewing-code/SKILL.md`.
+Detail for the `code-standards` skill: worked examples, the full prohibited-code list,
+and less-common categories. Rules stated in `../SKILL.md` are not repeated here; numeric
+limits live only in the threshold table of `.kiro/steering/code-standards-summary.md`.
 
-Also add the Ruff categories `G` (logging format) and `D100`/`D104` (module docstrings)
-when creating or refreshing a project lint config: they are the only mechanical coverage
-for two rules this document makes mandatory.
+## Prohibited Code (deprecated or removed) — remainder of the list
 
-## Prohibited Code (deprecated or removed) — full list
+In addition to the items in `../SKILL.md`:
 
-- `datetime.utcnow()` / `datetime.utcfromtimestamp()` → use
-  `datetime.now(tz=datetime.UTC)` / `datetime.fromtimestamp(ts, tz=datetime.UTC)`
-- `distutils` → use `setuptools` or `build`
+- `datetime.utcfromtimestamp()` → use `datetime.fromtimestamp(ts, tz=UTC)`
 - Modules removed in 3.13: `cgi`, `cgitb`, `aifc`, `audioop`, `chunk`, `crypt`,
-  `imghdr`, `mailcap`, `nis`, `nntplib`, `ossaudiodev`, `pipes`, `sndhdr`, `spwd`,
-  `sunau`, `telnetlib`, `uu`, `xdrlib`
+  `imghdr`, `mailcap`, `msilib`, `nis`, `nntplib`, `ossaudiodev`, `pipes`, `sndhdr`,
+  `spwd`, `sunau`, `telnetlib`, `uu`, `xdrlib` (PEP 594), plus `lib2to3` and `2to3`
 - `imp` → use `importlib`
 - `asynchat`, `asyncore` → use `asyncio`
 - `locale.resetlocale()` → use `locale.setlocale(locale.LC_ALL, "")`
@@ -27,39 +21,8 @@ for two rules this document makes mandatory.
   use `TestLoader`
 - `shutil.rmtree(onerror=...)` → use `onexc` instead
 - `calendar.January`/`February` → use `calendar.JANUARY`/`FEBRUARY`
-- `logging.warn()` → use `logging.warning()`
-- Invalid escape sequences (`"\d"`) → use raw strings `r"\d"`
-- `from __future__ import annotations`
 
-## Active Linting Rules (Ruff)
-
-| Code | Category                         |
-| ---- | -------------------------------- |
-| E    | Style errors (pycodestyle)       |
-| F    | Logic errors (pyflakes)          |
-| W    | Style warnings                   |
-| PL   | Pylint                           |
-| UP   | Syntax modernization (pyupgrade) |
-| N    | Naming conventions (pep8-naming) |
-| B    | Common bugs (flake8-bugbear)     |
-| I    | Import ordering (isort)          |
-
-### Ignored Rules
-
-- `PLC0415` — Non-top-level imports (allowed in both layers)
-- `N802` — Non-lowercase function names
-- `PLR0913` — Too many arguments
-- `PLR2004` — Magic values in comparisons
-
-## Mandatory PEPs
-
-- PEP 8: style guide · PEP 257: docstrings · PEP 484/526: type hints on all public
-  functions
-- PEP 585: `list[str]` not `List[str]` · PEP 604: `X | Y` not `Union[X, Y]`
-
-## Import Organization
-
-Strict ordering with mandatory section headers:
+## Import Organization — full example
 
 ```python
 # Standard libraries
@@ -75,31 +38,10 @@ from core.configs import config as cg_proto
 from src.configs import config
 ```
 
-isort: `known-first-party`: `["src"]` · `section-order`: future → standard-library →
-third-party → first-party → local-folder · `combine-as-imports`: true ·
-`split-on-trailing-comma`: true
-
-## Type Hints
-
-- Mandatory on all function signatures (parameters and return type)
-- Modern types: `list[str]`, `dict[str, Any]`, `tuple[...]` · unions: `str | None`
-- `Final` for constants · `Literal` for restricted values: `Literal["DL", "UL"]`
-- mypy enabled with `check_untyped_defs = true`
-
 ## Docstrings — full example
 
-Full guide: `.kiro/skills/reviewing-code/references/python-docstrings.md`.
-
-- Format: **Google Docstring** exclusively
-- Content starts on the line after `"""`· max **73 characters** per line
-- `Returns` section mandatory, even for `None`
-- No types or default values in descriptive text
-- Examples only when usage is not obvious
-- Identical parameters must have identical descriptions across the codebase
-- **Module docstring mandatory** in every `.py` file, `__init__.py` included. Placement:
-  after the copyright header, before the `# Standard libraries` section. Ruff `D100`
-  (modules) and `D104` (packages) enforce it; a copyright header alone does not satisfy
-  the rule, since it is a comment block and not a docstring.
+A copyright header alone does not satisfy the module-docstring rule, since it is a
+comment block and not a docstring.
 
 Before — copyright header, then straight into imports:
 
@@ -146,17 +88,10 @@ def load_cm_data(
     """
 ```
 
-## Logging — full detail
+## Logging — tag/level example
 
-- Levels: `info` main operations · `debug` details · `warning`/`error` problems
-- Messages end with `.` · use lazy `%` formatting, never f-strings in logger calls
-- Logger configured via JSON with `RotatingFileHandler`
-- Each pipeline defines its own `LOGGER_NAME`
-- NEVER remove or modify existing logging statements; new logs may be added
-- Use module tags when applicable: `[INFO][MODULE] Message`
-- The bracketed severity tag MUST match the logger method invoked. A `[WARNING]` string
-  passed to `logger.debug()` is invisible at the default level, so the problem it
-  describes never reaches an operator:
+A `[WARNING]` string passed to `logger.debug()` is invisible at the default level, so
+the problem it describes never reaches an operator:
 
 ```python
 # Before — warning text hidden at debug level
@@ -166,27 +101,10 @@ logger.debug("[WARNING][GF] %s cells lack a growth factor.", n_missing)
 logger.warning("[WARNING][GF] %s cells lack a growth factor.", n_missing)
 ```
 
-- Ruff `G004` (flake8-logging-format) is the only mechanical enforcement of the lazy-`%`
-  rule; the tag/level match needs either a regex pre-commit hook
-  (`logger\.debug\(.*\[(WARNING|ERROR)\]`) or the reviewer checklist.
-
-## Error Handling — full detail
-
-- Assign message to `error_message: str`, log with `logger.error`, then
-  `raise ExceptionType(error_message)`
-- `ValueError` for data and configuration validations
-- Specific exceptions in `except` blocks (never generic `except Exception`)
-- `raise ... from error` to preserve exception chains
-
-## Constants and Configuration
-
-- `Final` with explicit type, `UPPER_SNAKE_CASE`; class constants as `Final` attributes
-- Immutable tuples preferred over lists for constant collections
+The tag/level match needs either a regex pre-commit hook
+(`logger\.debug\(.*\[(WARNING|ERROR)\]`) or the reviewer checklist.
 
 ## Dataclasses — full example
-
-- `@dataclass(frozen=True)` for immutable configurations
-- Docstring with `Attributes` section; validation in `__post_init__` when needed
 
 ```python
 @dataclass(frozen=True)
@@ -211,24 +129,7 @@ class SaveConfig:
 - Explicit relative imports · `__all__: list[str]` mandatory and alphabetically sorted
 - `# Own modules` section header required
 
-## Naming Conventions — full table
-
-| Element       | Convention         | Example                           |
-| ------------- | ------------------ | --------------------------------- |
-| Modules       | `snake_case`       | `etl_orchestrator.py`             |
-| Classes       | `PascalCase`       | `SpectralEfficiencyModel`         |
-| Functions     | `snake_case`       | `load_cm_data`                    |
-| Constants     | `UPPER_SNAKE_CASE` | `LOGGER_NAME`                     |
-| Variables     | `snake_case`       | `df_cm_data`                      |
-| DataFrames    | `df_` prefix       | `df_input`, `df_cm_data`          |
-| Configuration | `Config` suffix    | `SaveConfig`, `ETLPipelineConfig` |
-| Loaders       | `Loader` suffix    | `CMDataLoader`, `NPPConfigLoader` |
-
 ## Classes — full example
-
-Pattern: `ClassConfig` (constants) → `Class(ClassConfig)` (logic);
-`logger: logging.Logger | None = None` as optional parameter; input validation at
-constructor start.
 
 ```python
 class SpectralEfficiencyDataCombinerConfig:
@@ -245,15 +146,6 @@ class SpectralEfficiencyDataCombiner(SpectralEfficiencyDataCombinerConfig):
     ) -> None:
         ...
 ```
-
-## Data Processing and Performance
-
-- **Polars** for all production data processing; Pandas only when strictly necessary as
-  intermediate step
-- `LazyFrame` (`scan_parquet`) for read optimization · NumPy for pure numerical
-  computation
-- Avoid: row-by-row operations, unnecessary format conversions, expensive objects inside
-  loops, unnecessary DataFrame copies
 
 ## Defect-Class Rules — numerical safety, observability, I/O boundaries
 
@@ -430,28 +322,11 @@ entry point calls.
 - Inject config and logger as parameters to high-level functions
 - Minimize caller steps; design for library consumption, not just scripts
 
-## Testing — full detail
-
-- Framework: **pytest** with `pytest-order` and `pytest-cov`
-- Coverage: minimum 80% (SonarQube) · reports in `coverage.xml`
-- Structure: `tests/` mirroring `src/` · `test_*.py` files · `Test*` classes · `test_*`
-  functions
-- pytest fixtures (not `setUp`/`tearDown`) · `unittest.mock` or `pytest-mock`
-- Custom markers: `@pytest.mark.training`, `@pytest.mark.inference`
-- `session` scope for expensive fixtures · `assert_frame_equal` for DataFrame comparison
-- Options: `--strict-markers`, `--tb=short`
-
-## Security — full detail
-
-- **Bandit**: `bandit -r src/ -ll` · **licensecheck** for license verification
-- Credentials never in source code; use external JSON files or secret managers
-- Auth tokens and secrets never logged, even at debug level
-
 ## Quality Gates
 
 - **Complexipy**: cognitive complexity · **Deadcode**: unused code (exclusions in
   `pyproject.toml`)
-- **SonarQube**: 80% minimum coverage
+- **SonarQube**: coverage floor per the threshold table
 
 ## Commit Messages
 
@@ -461,13 +336,6 @@ Follow the `commit-message` skill. One logical change per commit.
 
 - Backticks for filenames and symbols · **MkDocs Material** with `mkdocstrings[python]`
 - Versioning with **mike** · admonitions with 4-space indentation
-
-## Engineering Principles
-
-- **DRY** · **KISS** · **YAGNI** (stdlib/platform/installed dep before custom code)
-- **Single Responsibility** · **Low coupling** (inject dependencies)
-- **Defensive Programming**: validate inputs, handle errors gracefully
-- **Strategic over tactical**: invest 10–20% of development time in design improvements
 
 ## Change Comments
 
@@ -481,7 +349,7 @@ Each modification: `# Changed: [what] - Reason: [why]`
 
 ## Editor Rules
 
-- Visual rulers at columns **72** (docstrings) and **88** (code)
+- Visual rulers at the docstring and source line limits of the threshold table
 - Format on type enabled for Python · Prettier `printWidth: 88` for JSON
 
 ## Reproducibility

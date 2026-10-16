@@ -24,7 +24,6 @@ from ctxbudget.model import (
     META_PREFIX,
     OBSERVATION_PREFIX,
     SKILL_PREFIX,
-    extra_metric_rows,
 )
 from ctxbudget.types import (
     BASELINE_KINDS,
@@ -219,32 +218,6 @@ def _skill_section(measurement: Measurement) -> list[str]:
     ]
 
 
-def _extra_sections(measurement: Measurement) -> list[str]:
-    """
-    Render whatever the registered extension metric families produced.
-
-    Args:
-        measurement: Completed measurement.
-
-    Returns:
-        Section lines, empty when no family is registered.
-    """
-    lines: list[str] = []
-    for title, rows in extra_metric_rows(measurement):
-        lines.extend(
-            [
-                f"## {title}",
-                "",
-                *_table(
-                    ("Subject", "Metric", "Value", "Note"),
-                    [(row.subject, row.metric, row.value, row.note) for row in rows],
-                ),
-                "",
-            ]
-        )
-    return lines
-
-
 def _calibration_lines(measurement: Measurement) -> list[str]:
     """
     Render the calibration part of the footer.
@@ -363,7 +336,6 @@ def render_markdown(measurement: Measurement) -> str:
         "",
         *_skill_section(measurement),
         "",
-        *_extra_sections(measurement),
         *_footer(measurement),
         "",
     ]

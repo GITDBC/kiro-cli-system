@@ -13,8 +13,6 @@
     }
   ],
   "git.enableCommitSigning": true,
-  "prettier.printWidth": 88,
-  "prettier.proseWrap": "always",
   "autoDocstring.docstringFormat": "google-notypes",
   "autoDocstring.startOnNewLine": true,
   "todo-tree.regex.enableMultiLine": true,
@@ -51,6 +49,7 @@
     }
   ],
   "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnType": true
   },
   "[markdown]": {

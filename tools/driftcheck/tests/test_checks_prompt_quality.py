@@ -1,18 +1,10 @@
 """Tests for the prompt-quality checks."""
 
 # Standard libraries
-import re
 from pathlib import Path
 
-# 3pps
-import pytest
-
 # Own modules
-from driftcheck.checks import prompt_quality
 from driftcheck.checks.prompt_quality import (
-    KNOWN_CONTRADICTIONS,
-    ContradictionPair,
-    check_known_contradictions,
     check_prompt_boundaries,
     check_severity_filtering,
 )
@@ -129,7 +121,7 @@ def test_severity_filtering_ignores_only_surface_prose(valid_root: Path) -> None
 def test_severity_filtering_ignores_non_review_skills(valid_root: Path) -> None:
     """A statistics reference may legitimately advise being conservative."""
     write(
-        valid_root / ".kiro" / "skills" / "statistical-analysis" / "SKILL.md",
+        valid_root / ".kiro" / "skills" / "sample-skill" / "SKILL.md",
         "# Stats\n\n- Be conservative with interpretation.\n",
     )
     assert problems(check_severity_filtering(build_context(valid_root))) == []
@@ -201,86 +193,3 @@ def test_prompt_boundaries_fall_back_to_the_conventional_path(
     warnings = problems(check_prompt_boundaries(build_context(valid_root)))
     assert severities(warnings) == [Severity.WARNING]
     assert "prompts/technical-writer.md" in warnings[0].message
-
-
-def _make_pair(
-    left_phrase: str = "left claim", right_phrase: str = "right claim"
-) -> ContradictionPair:
-    """Build a synthetic pair pointed at files that always exist."""
-    return ContradictionPair(
-        label="synthetic",
-        left=".kiro/prompts/orchestrator.md",
-        left_phrase=re.compile(re.escape(left_phrase), re.IGNORECASE),
-        right=".kiro/steering/COMMON.md",
-        right_phrase=re.compile(re.escape(right_phrase), re.IGNORECASE),
-        explanation="both claims cannot hold at once",
-    )
-
-
-def test_known_contradictions_pass_on_an_empty_seed(valid_root: Path) -> None:
-    """KNOWN_CONTRADICTIONS is empty, so the check reports nothing."""
-    assert KNOWN_CONTRADICTIONS == ()
-    assert problems(check_known_contradictions(build_context(valid_root))) == []
-
-
-def test_known_contradictions_report_a_live_pair(
-    valid_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Both phrases present is the contradiction the pair describes."""
-    pair = _make_pair()
-    monkeypatch.setattr(prompt_quality, "KNOWN_CONTRADICTIONS", (pair,))
-    write(valid_root / pair.left, "# Orchestrator\n\nleft claim stated here.\n")
-    write(valid_root / pair.right, "# Common\n\nright claim stated here.\n")
-    warnings = problems(check_known_contradictions(build_context(valid_root)))
-    assert severities(warnings) == [Severity.WARNING]
-    assert "synthetic" in warnings[0].message
-    assert "prompts/orchestrator.md:3" in warnings[0].message
-    assert "steering/COMMON.md:3" in warnings[0].message
-
-
-def test_known_contradictions_flag_a_stale_pair(
-    valid_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A pair naming a deleted file can never fire again."""
-    stale = ContradictionPair(
-        label="gone",
-        left=".kiro/prompts/removed.md",
-        left_phrase=re.compile("never"),
-        right=".kiro/steering/COMMON.md",
-        right_phrase=re.compile("never"),
-        explanation="nothing",
-    )
-    monkeypatch.setattr(prompt_quality, "KNOWN_CONTRADICTIONS", (stale,))
-    warnings = problems(check_known_contradictions(build_context(valid_root)))
-    assert severities(warnings) == [Severity.WARNING]
-    assert "stale pair" in warnings[0].message
-    assert "does not exist" in warnings[0].message
-
-
-def test_known_contradictions_flag_a_resolved_pair(
-    valid_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """One phrase missing, the other present, reads as resolved on purpose."""
-    pair = _make_pair()
-    monkeypatch.setattr(prompt_quality, "KNOWN_CONTRADICTIONS", (pair,))
-    write(valid_root / pair.left, "# Orchestrator\n\nno matching claim here.\n")
-    write(valid_root / pair.right, "# Common\n\nright claim stated here.\n")
-    warnings = problems(check_known_contradictions(build_context(valid_root)))
-    assert severities(warnings) == [Severity.WARNING]
-    assert "stale pair" in warnings[0].message
-    assert "resolved on purpose" in warnings[0].message
-    assert str(pair.left) in warnings[0].message
-
-
-def test_known_contradictions_flag_a_pair_invalidated_by_rewrite(
-    valid_root: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Neither phrase present reads as invalidated, not resolved."""
-    pair = _make_pair()
-    monkeypatch.setattr(prompt_quality, "KNOWN_CONTRADICTIONS", (pair,))
-    write(valid_root / pair.left, "# Orchestrator\n\nunrelated content here.\n")
-    write(valid_root / pair.right, "# Common\n\nalso unrelated content.\n")
-    warnings = problems(check_known_contradictions(build_context(valid_root)))
-    assert severities(warnings) == [Severity.WARNING]
-    assert "stale pair" in warnings[0].message
-    assert "invalidated by an unrelated rewrite" in warnings[0].message

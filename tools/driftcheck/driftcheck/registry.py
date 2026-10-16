@@ -36,6 +36,10 @@ from driftcheck.checks.hooks import (
     check_git_safety_hook,
     check_hook_scripts,
 )
+from driftcheck.checks.mirrors import (
+    SECTION_MIRROR_PAGE_COUNT,
+    check_mirror_page_count,
+)
 from driftcheck.checks.permissions import (
     SECTION_PERMISSION_RULES,
     SECTION_TOOL_TAGS,
@@ -43,10 +47,8 @@ from driftcheck.checks.permissions import (
     check_tool_tags,
 )
 from driftcheck.checks.prompt_quality import (
-    SECTION_CONTRADICTIONS,
     SECTION_PROMPT_BOUNDARIES,
     SECTION_SEVERITY_FILTERING,
-    check_known_contradictions,
     check_prompt_boundaries,
     check_severity_filtering,
 )
@@ -105,6 +107,8 @@ CHECKS: Final[tuple[tuple[str, CheckFunction], ...]] = (
     (SECTION_ORCHESTRATION_REACHABILITY, check_orchestration_reachability),
     (SECTION_ORPHAN_PROMPTS, check_orphan_prompts),
     (SECTION_ORPHAN_REFS, check_orphaned_skill_references),
+    # Vendored mirrors hold as many pages as their marker's pages_total.
+    (SECTION_MIRROR_PAGE_COUNT, check_mirror_page_count),
     (SECTION_MODELS, check_model_governance),
     (SECTION_MODEL_DEFAULTS, check_model_defaults),
     (SECTION_COST_LABELS, check_cost_labels),
@@ -113,7 +117,6 @@ CHECKS: Final[tuple[tuple[str, CheckFunction], ...]] = (
     (SECTION_STALE_SKILL_MENTIONS, check_stale_skill_mentions),
     (SECTION_SEVERITY_FILTERING, check_severity_filtering),
     (SECTION_PROMPT_BOUNDARIES, check_prompt_boundaries),
-    (SECTION_CONTRADICTIONS, check_known_contradictions),
 )
 
 
@@ -134,7 +137,7 @@ def run_check(section: str, check: CheckFunction, ctx: DriftContext) -> list[Fin
     """
     try:
         return check(ctx)
-    except Exception as error:  # noqa: BLE001 - a broken check must not abort the run
+    except Exception as error:  # a broken check must not abort the run
         return [
             Finding(
                 Severity.ERROR,

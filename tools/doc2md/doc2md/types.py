@@ -1,11 +1,15 @@
+"""Shared types, extension sets and size limits."""
+
 # Standard libraries
 from collections.abc import Callable
 from pathlib import Path
-from typing import TypeAlias, TypedDict
+from typing import TypedDict
 
-ConvertResult: TypeAlias = tuple[Path, Path | None, str | None]
+# Changed: TypeAlias annotation -> PEP 695 type statement - Reason: Python 3.13
+# baseline (ruff UP040).
+type ConvertResult = tuple[Path, Path | None, str | None]
 
-ResultCallback: TypeAlias = Callable[[Path, Path | None, str | None], bool]
+type ResultCallback = Callable[[Path, Path | None, str | None], bool]
 
 AUDIO_EXTS: frozenset[str] = frozenset(
     {".wav", ".mp3", ".flac", ".ogg", ".m4a"},

@@ -18,6 +18,13 @@
       },
       "timeout": 15,
       "enabled": true
+    },
+    {
+      "name": "ralph-stop",
+      "trigger": "Stop",
+      "action": { "type": "command", "command": ".kiro/hooks/ralph-stop.sh" },
+      "timeout": 10,
+      "enabled": true
     }
   ]
 }

@@ -1,3 +1,5 @@
+"""Tests for uv.lock parsing."""
+
 # Standard libraries
 import tomllib
 from pathlib import Path

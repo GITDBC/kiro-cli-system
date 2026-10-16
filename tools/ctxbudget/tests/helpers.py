@@ -162,7 +162,7 @@ def write_agent(
         "tools": ["read", "write"],
         "permissions": {"rules": [{"capability": "fs_read", "match": ["./**"]}]},
         "resources": resources if resources is not None else [],
-        "model": "claude-opus-5",
+        "model": "claude-opus-5.5",
         **extra,
     }
     return write(

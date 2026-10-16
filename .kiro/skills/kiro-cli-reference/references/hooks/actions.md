@@ -30,8 +30,8 @@ With this action, you can define a shell command that is executed each time the 
     Hooks receive hook event data in JSON format via STDIN. The output behavior depends on the exit code:
 
     - **Exit code 0**: Hook succeeded. STDOUT is added to context (SessionStart, UserPromptSubmit) or ignored (others).
-    - **Exit code 2**: Block execution (PreToolUse, UserPromptSubmit, PreTaskExec only). STDERR is returned to the agent.
-    - **Other exit codes**: Hook failed. STDERR is shown as warning to user and execution proceeds.
+    - **Exit code 2**: Block execution for `PreToolUse` and `PreTaskExec`. A CLI V3 `UserPromptSubmit` Hook cannot block the prompt; its output and exit code are added to the agent's context.
+    - **Other exit codes**: Hook failed. For `UserPromptSubmit`, the prompt is still sent and the output and exit code are added to the agent's context. Other triggers show a warning and proceed.
 
     Default timeout is 30 seconds (30,000ms). Configure with the `timeout_ms` field in the hook configuration.
 

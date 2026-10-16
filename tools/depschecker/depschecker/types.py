@@ -1,8 +1,12 @@
+"""Result records and PyPI payload types."""
+
 # Standard libraries
 from dataclasses import dataclass, field
-from typing import Any, TypeAlias
+from typing import Any
 
-PyPIResponse: TypeAlias = dict[str, Any]
+# Changed: TypeAlias annotation -> PEP 695 type statement - Reason: Python 3.13
+# baseline (ruff UP040).
+type PyPIResponse = dict[str, Any]
 
 
 @dataclass(frozen=True)

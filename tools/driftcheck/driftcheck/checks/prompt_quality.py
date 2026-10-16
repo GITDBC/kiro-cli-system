@@ -8,13 +8,13 @@ source page is vendored under
 - Severity filtering in a review prompt lowers recall: the model
   investigates just as deeply, then withholds findings below the stated
   bar (``prompting-claude-sonnet-5.md``, ``prompting-claude-opus-5.md``,
-  ``prompting-claude-opus-4-8.md``).
+  ``prompting-claude-opus-4-8.md``). The 5.5 guides
+  (``prompting-claude-opus-5-5.md``, ``prompting-claude-sonnet-5-5.md``)
+  do not restate the claim, so the 5.0 pages remain the citation.
 - An agent prompt with no stated boundary invites out-of-scope work.
   routing.md already publishes a ``never_when`` list per routable agent;
   the prompt is what the agent actually loads, so the boundary has to be
   there too.
-- A prompt contradicting its own steering leaves the model to pick a
-  side silently, and prompt text competes with steering for attention.
 
 These are deterministic checks run by a tool, and that is the point. The
 same guidance says to delete prompt-level instructions that tell a model
@@ -26,7 +26,6 @@ only reads.
 # Standard libraries
 import re
 from collections.abc import Iterator
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
@@ -37,7 +36,6 @@ from driftcheck.types import DriftContext, Finding, Severity
 
 SECTION_SEVERITY_FILTERING: Final[str] = "Review recall suppression"
 SECTION_PROMPT_BOUNDARIES: Final[str] = "Agent prompt scope statements"
-SECTION_CONTRADICTIONS: Final[str] = "Known cross-file contradictions"
 
 # Skills whose body asks an agent to enumerate findings and report them.
 # The recall anti-pattern only bites on that shape, so the surface is an
@@ -51,8 +49,6 @@ REVIEW_ORIENTED_SKILLS: Final[frozenset[str]] = frozenset(
     {
         "reviewing-code",
         "security-audit",
-        "software-design-review",
-        "tech-debt-tracking",
     }
 )
 
@@ -122,63 +118,6 @@ BOUNDARY_HEADING: Final[re.Pattern[str]] = re.compile(
 )
 
 FILE_URI_PREFIX: Final[str] = "file://"
-
-
-@dataclass(frozen=True)
-class ContradictionPair:
-    """
-    One curated contradiction between two instruction files.
-
-    Both phrases have to be present for a finding: the pair describes a
-    disagreement, so if either side has been rewritten there is nothing
-    left to report.
-
-    Attributes:
-        label: Short handle for the contradiction, used in the message.
-        left: Repository-relative path of the first file.
-        left_phrase: Pattern locating the claim inside ``left``.
-        right: Repository-relative path of the second file.
-        right_phrase: Pattern locating the opposing claim in ``right``.
-        explanation: Why the two claims cannot both be followed.
-    """
-
-    label: str
-    left: str
-    left_phrase: re.Pattern[str]
-    right: str
-    right_phrase: re.Pattern[str]
-    explanation: str
-
-
-# Deliberately narrow and curated, in the spirit of
-# DIRECT_INVOKE_SKILLS: a general-purpose contradiction detector over
-# prose would be wrong often enough to get disabled, and a disabled
-# check protects nothing. Entries are added only for contradictions that
-# were actually found and cost something, and each one is phrased so it
-# stops firing once the contradiction is resolved rather than needing to
-# be deleted by hand.
-#
-# Empty on purpose. The seed entry ("unbounded subagent fan-out": the
-# orchestrator prompt used to authorise spawning as many subagents as a
-# task required, contradicting delegation-lifecycle.md's four-subagent
-# cap) was retired once ``_pair_findings`` below started reporting it as
-# resolved rather than live: ``left_phrase`` no longer matches
-# orchestrator.md, which now names the cap and defers to the "Delegation
-# floor" section, while ``right_phrase`` still matches the steering
-# unchanged. That is the one-side-flipped shape ``_pair_findings``
-# classifies as "resolved", and re-adding the old phrase to make the
-# check pass again would reintroduce the contradiction it exists to
-# catch. A future entry should look exactly like the retired one:
-#
-#   ContradictionPair(
-#       label="short handle for the disagreement",
-#       left="path/to/file/a.md",
-#       left_phrase=re.compile(r"claim made in file a", re.IGNORECASE),
-#       right="path/to/file/b.md",
-#       right_phrase=re.compile(r"opposing claim made in file b", re.IGNORECASE),
-#       explanation="why the two claims cannot both be followed",
-#   ),
-KNOWN_CONTRADICTIONS: Final[tuple[ContradictionPair, ...]] = ()
 
 
 def check_severity_filtering(ctx: DriftContext) -> list[Finding]:
@@ -384,132 +323,3 @@ def _prompt_path(ctx: DriftContext, slug: str) -> Path | None:
             return resolved if resolved.is_file() else None
     fallback = ctx.prompts_dir / f"{slug}.md"
     return fallback if fallback.is_file() else None
-
-
-def check_known_contradictions(ctx: DriftContext) -> list[Finding]:
-    """
-    Report curated contradictions between two instruction files.
-
-    Args:
-        ctx: Shared check context.
-
-    Returns:
-        A warning per live contradiction or stale pair, plus a trailing
-        OK finding.
-    """
-    findings: list[Finding] = []
-    for pair in KNOWN_CONTRADICTIONS:
-        findings.extend(_pair_findings(ctx, pair))
-    findings.append(
-        Finding(
-            Severity.OK,
-            SECTION_CONTRADICTIONS,
-            "Known cross-file contradictions checked",
-        )
-    )
-    return findings
-
-
-def _pair_findings(ctx: DriftContext, pair: ContradictionPair) -> list[Finding]:
-    """
-    Evaluate one curated contradiction pair.
-
-    A pair naming a file that no longer exists is dead configuration —
-    it can never fire again — so it is reported the way a stale allowlist
-    entry is, rather than passing silently. The file-existence guard is
-    necessary but not sufficient: a pair whose files both still exist but
-    whose phrases no longer both match is just as dead, and nothing else
-    in this module would surface it (``check_prompt_references`` and
-    ``stale_allowlist_findings`` do not cover contradiction phrases).
-
-    A pair with exactly one phrase missing is reported separately from a
-    pair with neither phrase present. One side missing plausibly means
-    the contradiction was fixed on purpose — a resolved pair is the
-    intended end state described in ``KNOWN_CONTRADICTIONS``' docstring,
-    so it is good news, not a defect. Neither side present is more
-    likely a phrase invalidated by an unrelated rewrite of both files —
-    still dead configuration, but not necessarily evidence the
-    disagreement itself was settled. Both cases stay at ``WARNING``: like
-    a stale allowlist entry, this is a defect in the check's own
-    configuration, never in the repository content it inspects, so
-    failing the build with an ``ERROR`` would be the wrong signal for
-    what is arguably good news in the resolved case.
-
-    Args:
-        ctx: Shared check context.
-        pair: Curated pair to evaluate.
-
-    Returns:
-        The findings the pair produces, empty when it does not fire.
-    """
-    missing = [
-        relative
-        for relative in (pair.left, pair.right)
-        if not (ctx.root / relative).is_file()
-    ]
-    if missing:
-        return [
-            Finding(
-                Severity.WARNING,
-                SECTION_CONTRADICTIONS,
-                f"KNOWN_CONTRADICTIONS pair '{pair.label}' names "
-                f"{', '.join(missing)}, which does not exist — stale pair, it "
-                "can no longer fire",
-            )
-        ]
-    left = _locate(ctx.root / pair.left, pair.left_phrase)
-    right = _locate(ctx.root / pair.right, pair.right_phrase)
-    if left is not None and right is not None:
-        return [
-            Finding(
-                Severity.WARNING,
-                SECTION_CONTRADICTIONS,
-                f"{pair.label}: {pair.left}:{left[0]} says {left[1]!r} while "
-                f"{pair.right}:{right[0]} says {right[1]!r} — {pair.explanation}",
-            )
-        ]
-    if left is None and right is None:
-        return [
-            Finding(
-                Severity.WARNING,
-                SECTION_CONTRADICTIONS,
-                f"KNOWN_CONTRADICTIONS pair '{pair.label}' matches neither "
-                f"phrase in {pair.left} nor {pair.right} — stale pair, likely "
-                "invalidated by an unrelated rewrite rather than resolved on "
-                "purpose",
-            )
-        ]
-    resolved_side = pair.left if left is None else pair.right
-    return [
-        Finding(
-            Severity.WARNING,
-            SECTION_CONTRADICTIONS,
-            f"KNOWN_CONTRADICTIONS pair '{pair.label}' no longer matches its "
-            f"phrase in {resolved_side} — stale pair, likely resolved on "
-            "purpose; remove it or replace it with the next contradiction",
-        )
-    ]
-
-
-def _locate(path: Path, phrase: re.Pattern[str]) -> tuple[int, str] | None:
-    """
-    Find a phrase in a file, tolerating line wrapping.
-
-    Matching runs against the whole text with whitespace-flexible
-    patterns, because prose in this repository is reflowed to a fixed
-    width and a claim can land on either side of a line break.
-
-    Args:
-        path: File to search.
-        phrase: Pattern locating the claim.
-
-    Returns:
-        The 1-based line number and the matched text with whitespace
-        collapsed, or None when the phrase is absent.
-    """
-    text = read_text(path)
-    match = phrase.search(text)
-    if match is None:
-        return None
-    number = text.count("\n", 0, match.start()) + 1
-    return number, " ".join(match.group(0).split())

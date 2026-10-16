@@ -71,7 +71,7 @@ def test_load_agent_configs_without_directory(tmp_path: Path) -> None:
 
 def test_agent_name_falls_back_to_stem(tree: Path) -> None:
     """Use the filename when the config declares no usable name."""
-    write(tree / ".kiro" / "agents" / "gamma.json", '{"model": "claude-opus-5"}')
+    write(tree / ".kiro" / "agents" / "gamma.json", '{"model": "claude-opus-5.5"}')
     assert _config(tree, "gamma").name == "gamma"
 
 

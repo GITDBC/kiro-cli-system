@@ -148,7 +148,7 @@ MCP configuration files use JSON format with the following structure:
 
     Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. You can edit that JSON file in your repository or configure servers from the Kiro Web settings panel. See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for complete Web-specific configuration details.
 
-    1. Add local server definitions to `.kiro/settings/mcp.json` in your repository, or open the sandbox MCP server settings in Kiro Web (**Settings > Profile > Sandbox > MCP server settings**)
+    1. Add local server definitions to `.kiro/settings/mcp.json` in your repository, or open the sandbox MCP server settings in Kiro Web ([Settings](https://app.kiro.dev/settings/agent) > **Agent** tab > **MCP server settings**)
     2. In the settings panel, click **Add server**
     3. Enter the server name, type, and command
 
@@ -304,6 +304,8 @@ IDE
     export YOUR_API_KEY="your-actual-key"
     ```
 
+    Project `.env` files are not loaded automatically. Export required variables before starting Kiro CLI, then reference them in your MCP server configuration as shown above.
+
     Environment variables for MCP servers in Web are configured through the sandbox settings. See [Environment variables](https://kiro.dev/docs/web/sandbox/environment-variables.md) for how to set them.
 
 ## OAuth authentication
@@ -384,11 +386,13 @@ The `redirectUri` field accepts several formats. The host must be `127.0.0.1` or
 | Format | Example | Description |
 |--------|---------|-------------|
 | Full URL | `http://localhost:7778/oauth/callback` | Pin the port and path to match a pre-registered app |
-| Host and port | `127.0.0.1:7778` | Pin the port; path defaults to `/` |
-| Port only | `:7778` | Pin the port on `127.0.0.1` |
-| Omitted | *(not set)* | OS assigns a random available port |
+| Host and port | `127.0.0.1:7778` | Pin the port; path defaults to `/oauth/callback` |
+| Port only | `:7778` | Pin the port on `127.0.0.1`; path defaults to `/oauth/callback` |
+| Omitted | *(not set)* | OS assigns a random available port on `localhost`, with the path `/oauth/callback` |
 
-Use a full URL with a custom path when your OAuth app has a pre-registered redirect URI that includes a specific callback path.
+Use a full URL with a custom path when your OAuth app has a pre-registered redirect URI that includes a specific callback path. Whatever you configure is the exact `redirect_uri` Kiro sends and the only endpoint its local server answers, so register the same value with your provider - including the host spelling, since `localhost` and `127.0.0.1` are not interchangeable to most authorization servers.
+
+A `redirectUri` Kiro cannot serve is reported as a configuration error on the server rather than ignored: the port must be present and between 1 and 65535, the host must be `127.0.0.1` or `localhost`, the scheme must be `http`, and the value cannot carry a query string or fragment.
 
 #### Client ID Metadata Documents (CIMD)
 
@@ -520,7 +524,14 @@ For enterprise teams using IAM Identity Center, MCP server access can be central
    - Fetch the authorization-server metadata for that issuer URL. Per RFC 8414, for an issuer without a path (e.g. `https://auth.example.com`) the metadata endpoint is `https://auth.example.com/.well-known/oauth-authorization-server`; for a path-bearing issuer (e.g. `https://auth.example.com/tenant1`) it is `https://auth.example.com/.well-known/oauth-authorization-server/tenant1`. Compare the returned `issuer` field against `authorization_servers[0]` character-for-character: scheme, host, port, path, and trailing slash must be identical. For example, `https://auth.example.com` and `https://auth.example.com/` are treated as different issuers.
    - Correct whichever metadata source has the wrong value. Do not add client-side normalization or bypasses.
 
-5. **Review configuration loading**
+5. **Pass arguments to Kiro CLI V2 stdio servers on Windows**
+   
+   - In Kiro CLI V2 sessions, arguments pass unchanged when a command resolves on `PATH` to an `.exe`, `.com`, `.bat`, or `.cmd` file.
+   - Other commands, and servers whose `env` sets `PATHEXT`, still launch through `cmd.exe`.
+   - Directly resolved servers do not run the `cmd.exe` AutoRun hook. If AutoRun sets `PATH`, add that value to the server's `env` configuration instead.
+   - An argument containing a line break causes a `.bat` or `.cmd` launch to fail instead of truncating the argument.
+
+6. **Review configuration loading**
    - Check which configuration files are being loaded and their priority:
 
     ```bash

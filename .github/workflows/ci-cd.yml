@@ -6,61 +6,73 @@ on:
   pull_request:
     branches: [main, dev]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
 jobs:
-  tools-matrix:
+  repo-checks:
+    name: Repository checks
     runs-on: ubuntu-latest
-    outputs:
-      tools: ${{ steps.list.outputs.tools }}
+    timeout-minutes: 15
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v7
-
-      - name: Derive tool list from Makefile
-        id: list
-        run: |
-          TOOLS=$(make print-tools)
-          python3 -c "import json,sys; print('tools=' + json.dumps(sys.argv[1].split()))" "$TOOLS" >> "$GITHUB_OUTPUT"
-
-  ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version: "20"
+          cache: npm
 
-      - name: Setup Python Environment
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Set up Python and uv
         uses: ./.github/actions/setup-python-env
 
-      - name: Validate Files and Configuration
+      - name: Validate files and configuration
         uses: ./.github/actions/files-configs-validation
 
-      - name: Cache tiktoken BPE data
-        uses: actions/cache@v6
-        with:
-          path: ${{ github.workspace }}/.cache/tiktoken
-          key: tiktoken-o200k_base
-
-      - name: Files Checker
-        uses: ./.github/actions/files-checker
-        env:
-          TIKTOKEN_CACHE_DIR: ${{ github.workspace }}/.cache/tiktoken
-
-  test-tools:
-    needs: [tools-matrix]
+  list-tools:
+    name: List tools
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        tool: ${{ fromJson(needs.tools-matrix.outputs.tools) }}
+    timeout-minutes: 5
+    outputs:
+      tools: ${{ steps.list.outputs.tools }}
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Python Environment
+      - name: Derive tool list from Makefile
+        id: list
+        run: |
+          tools=$(make -s print-tools | jq -R -c 'split(" ") | map(select(length > 0))')
+          echo "tools=$tools" >> "$GITHUB_OUTPUT"
+
+  test-tools:
+    name: Test ${{ matrix.tool }}
+    needs: list-tools
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: ${{ fromJson(needs.list-tools.outputs.tools) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python and uv
         uses: ./.github/actions/setup-python-env
+        with:
+          cache-dependency-glob: |
+            tools/${{ matrix.tool }}/pyproject.toml
+            tools/${{ matrix.tool }}/uv.lock
+          cache-suffix: ${{ matrix.tool }}
 
       - name: Lint
         run: make lint-${{ matrix.tool }}
@@ -69,49 +81,44 @@ jobs:
         run: make test-${{ matrix.tool }}
 
   release:
-    needs: [ci, test-tools]
+    name: Release
+    needs: [repo-checks, test-tools]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Read version
+      - name: Resolve version and check tag
+        id: version
         run: |
-          VERSION=$(tr -d '[:space:]' < VERSION)
-          echo "TAG=v${VERSION}" >> "$GITHUB_ENV"
-
-      - name: Check tag exists
-        id: check_tag
-        run: |
-          if git ls-remote --tags origin "refs/tags/${{ env.TAG }}" | grep -q .; then
-            echo "::notice::Tag ${{ env.TAG }} already exists — skipping release"
+          tag="v$(tr -d '[:space:]' < VERSION)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git ls-remote --tags origin "refs/tags/$tag" | grep -q .; then
+            echo "::notice::Tag $tag already exists, skipping release"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Create and push tag
-        if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" -m "Release $TAG"
-          git push origin "$TAG"
-
       - name: Build zip
-        if: steps.check_tag.outputs.exists == 'false'
+        id: zip
+        if: steps.version.outputs.exists == 'false'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          find . -mindepth 2 -type d -name .git -exec rm -rf {} +
-          ZIP_NAME="work-agents-${TAG}.zip"
-          zip -r "$ZIP_NAME" . -x ".git/*" -x ".github/*"
-          echo "ZIP_NAME=$ZIP_NAME" >> "$GITHUB_ENV"
+          zip_name="work-agents-${TAG}.zip"
+          zip -r "$zip_name" . -x ".git/*" -x ".github/*"
+          echo "name=$zip_name" >> "$GITHUB_OUTPUT"
 
       - name: Create release
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.version.outputs.exists == 'false'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ env.TAG }}
-          files: ${{ env.ZIP_NAME }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: ${{ steps.zip.outputs.name }}
           generate_release_notes: true

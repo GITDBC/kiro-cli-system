@@ -13,7 +13,7 @@ Kiro uses a capability-based permissions system that gives you fine-grained, dec
 | Permissions YAML configuration | ✓ | ✓ | N/A | — |
 | Interactive approval prompts | ✓ | ✓ | N/A | — |
 | Global + workspace scopes | ✓ | ✓ | N/A | — |
-| Sandbox execution without per-action prompts | — | — | ✓ | — |
+| Managed cloud sandbox instead of permission prompts | N/A | N/A | ✓ | — |
 
 On Web, the `permissions.yaml` model and interactive approvals do not apply: the agent runs inside an isolated [cloud sandbox](https://kiro.dev/docs/web/sandbox.md) instead of prompting per action, so those rows are marked N/A rather than unsupported.
 
@@ -23,9 +23,9 @@ The permissions system is built around three core concepts:
 
 | Concept | Description |
 |---------|-------------|
-| **Capabilities** | `fs_read`, `fs_write`, `shell`, `web_fetch`, `web_search`, `mcp`, `subagent`, `skill`, `power`, `context`, `diagnostics`, `sandbox_network`. Meta-capabilities expand: `all` (everything), `builtin` (all built-in tools), `filesystem` (`fs_read` + `fs_write`) |
+| **Capabilities** | `fs_read`, `fs_write`, `shell`, `web_fetch`, `web_search`, `mcp`, `subagent`, `skill`, `power`, `context`, `diagnostics`, `sandbox_network`. Meta-capabilities expand: `all` (every capability except `sandbox_network`), `builtin` (all built-in tools), `filesystem` (`fs_read` + `fs_write`) |
 | **Effects** | `deny` (block always), `ask` (prompt you), `allow` (proceed silently) |
-| **Priority** | deny > ask > allow - a deny rule always wins regardless of scope |
+| **Priority** | deny > ask > allow - a deny rule always wins regardless of scope. `sandbox_network` host rules are the exception; see [Sandbox network rules](#sandbox-network-rules) |
 
 Additional rule properties:
 
@@ -33,6 +33,12 @@ Additional rule properties:
 |----------|-------------|
 | **Match patterns** | Glob patterns scoping the rule (file paths for fs, command prefixes for shell, server/tool names for MCP) |
 | **Exclude** | Optional glob patterns that must NOT match - enables "allow everything except X" |
+
+### Sandbox network rules
+
+The `sandbox_network` capability applies only when the [local command sandbox](https://kiro.dev/docs/sandbox.md) is active. Its `allow` and `deny` rules name the hosts that sandboxed shell commands can reach, and your `fs_read` and `fs_write` rules shape which paths those commands can see and write. It is excluded from the `all` meta-capability.
+
+Host filtering does not use deny-overrides. `sandbox_network` rules are applied in order and the first rule that matches the host decides, so a specific `deny` must come before a broader wildcard `allow` that also matches. Deny-overrides still governs whether the agent may run a tool action. See [Local command sandbox](https://kiro.dev/docs/sandbox.md) for host patterns and network modes.
 
 ## Defining rules
 
@@ -127,6 +133,8 @@ rules:
 
 Shell commands are parsed before pattern matching. Compound commands (using `;`, `&&`, `||`, `|`) are split and each sub-command is evaluated independently. This prevents a rule for `npm test *` from accidentally matching `npm test ; curl attacker.com`.
 
+The parser evaluates flags inside combined short options, so a command such as `grep -iP` still prompts when one of its flags requires approval. Options that can launch another program are never treated as read-only: `tar --use-compress-program` and `tar --to-command` require approval even when the base `tar` command is trusted.
+
 ## Scopes
 
 Permissions are evaluated across multiple scopes.
@@ -140,13 +148,13 @@ Permissions are evaluated across multiple scopes.
 | agent | Embedded in agent profile (`permissions` field) | deny, ask, allow |
 | session | In-memory rules from consent decisions during the session | deny, ask, allow |
 
-Rules are evaluated using a deny-overrides algorithm: deny > ask > allow. There is no precedence between scopes - the most restrictive effect wins regardless of which scope it came from.
+Rules are evaluated using a deny-overrides algorithm: deny > ask > allow. There is no precedence between scopes - the most restrictive effect wins regardless of which scope it came from. `sandbox_network` host filtering is the exception: it applies rules first-match, as described in [Sandbox network rules](#sandbox-network-rules).
 
-**⚠️ Warning:** A `deny` rule in any scope blocks the action regardless of `allow` rules elsewhere. Be deliberate with deny rules, since no `allow` rule can override them.
+**⚠️ Warning:** A `deny` rule in any scope blocks the action regardless of `allow` rules elsewhere. Be deliberate with deny rules, since no `allow` rule can override them. For `sandbox_network` host rules, order decides instead; see [Sandbox network rules](#sandbox-network-rules).
 
 ## Policy presets
 
-Policy presets are named, composable sets of session-scope `allow` rules. Clients that create agent sessions over the [Agent Client Protocol (ACP)](https://kiro.dev/docs/cli/acp.md), such as editor integrations, review bots, and CI harnesses, use them to seed a session with a well-defined capability profile without writing individual rules from scratch.
+Policy presets are named, composable sets of session-scope `allow` rules. Any ACP client, including Kiro's own surfaces and compatible third-party integrations such as editor integrations, review bots, and CI harnesses, can use them to seed a session with a well-defined capability profile without writing individual rules from scratch.
 
 ### How presets are applied
 
@@ -239,8 +247,8 @@ The same profiles map onto common integration patterns. An editor integration th
 
 Presets extend what a session is allowed to do, but they cannot override higher-precedence rules. The deny-overrides algorithm described in the Scopes section above still applies in full:
 
-- Kiro-scope hard denies (writes to `~/.kiro/settings/`, `.kiro/settings/`, `~/.kiro/workspace-roots/`) block the action regardless of any preset.
-- Kiro-scope ask rules (`.git/**`, `.kiro/agents/**`, `.kiro/hooks/**`, `.kiroignore`) still prompt, even when a preset grants broad write access.
+- Kiro-scope hard denies (writes to `~/.kiro/settings/`, `.kiro/settings/`, `~/.kiro/workspace-roots/`, and the other stores listed under [Default behavior](#default-behavior)) block the action regardless of any preset.
+- Kiro-scope ask rules (`.git/**`, `.vscode/**`, `**/*.code-workspace`, `.kiroignore`, and the `agents`, `hooks`, `workflows`, and `powers` directories under `.kiro` and `~/.kiro`) still prompt, even when a preset grants broad write access.
 - Any `deny` rule you have configured at the user, workspace, or administration scope wins over a preset `allow`.
 - The `sandbox_network` capability is not part of the `all` meta-capability, so no preset, including `allow-all`, changes sandbox network gating.
 
@@ -257,10 +265,29 @@ Without any `permissions.yaml` configured, the default agent policy allows:
 
 The Kiro scope (hardcoded, not changeable by configuration) enforces:
 
-- **Always denied:** writes to `~/.kiro/settings/`, `.kiro/settings/`, and `~/.kiro/workspace-roots/` (prevents the agent from modifying its own permission files)
-- **Always asks:** writes to `.git/**`, `.kiro/agents/**`, `.kiro/hooks/**`, `.kiroignore`
+- **Always denied:** writes to `~/.kiro/settings/`, `.kiro/settings/`, and `~/.kiro/workspace-roots/` (prevents the agent from modifying its own permission files), to the MCP configuration of an installed Power (`~/.kiro/powers/installed/<name>/mcp.json`), and to Kiro's own state stores (`~/.kiro/sandbox-state/`, `~/.kiro/web-session/`, `~/.kiro/cloud-cache/`, `~/.kiro/sandbox-curl/`)
+- **Always asks:** writes to `.git/**`, `.vscode/**`, `**/*.code-workspace`, `.kiroignore`, and the `agents`, `hooks`, `workflows`, and `powers` directories of both the workspace `.kiro` and `~/.kiro`. These ask in trusted and untrusted workspaces alike, and no `allow` rule from any scope removes the prompt.
+- **Asks while the workspace is untrusted:** writes to `.kiro/steering`, `.kiro/skills`, `.kiro/extensions`, and any `.kiro` directory Kiro does not declare. See [Workspace trust](#workspace-trust).
 
 Everything else prompts for approval. Creating a `permissions.yaml` adds to these defaults; it does not replace them.
+
+## Workspace trust
+
+Some agent inputs live inside the repository you open: custom agent profiles in `.kiro/agents/`, Steering files in `.kiro/steering/`, workspace MCP server configuration, Skills, and Workflow files. A cloned repository could use them to change how the agent behaves, so Kiro treats a workspace as untrusted until you trust it. Your decision is stored outside the workspace, so a repository cannot change its own trust status.
+
+Until you trust a workspace, Kiro:
+
+- Does not load the workspace's custom agents, Steering files, MCP server configuration, or Skills.
+- Does not load Workflow files from the workspace, including files reached through a link from your home or cloud recipe directories. Your own home, cloud, bundled, and generated Workflows stay available.
+- Asks before every shell command starts, including background processes, even when a saved or broad rule allows the command. The prompt shows the full command. A matching `deny` rule still refuses.
+- Asks before every MCP tool call and before every Power activation, content read, or tool call, even when a saved rule or `autoApprove` allows it, and asks again when a call is retried after MCP authentication or a URL prompt. A matching `deny` rule still refuses.
+- Asks before writing to `.kiro/steering`, `.kiro/skills`, `.kiro/extensions`, or any `.kiro` directory Kiro does not declare, in both the workspace and `~/.kiro`. Writes to the `agents`, `hooks`, `workflows`, and `powers` directories ask in every workspace.
+- Refuses writes to the memory database under `~/.kiro/memories/` and to the agent's session store (`~/.kiro/sessions/` by default) without prompting, so an untrusted session cannot rewrite another session's state.
+- Does not let the agent add, change, or delete memories, knowledge bases, or remote learnings. Reading them still works.
+
+Your user, administration, agent, and session rules still apply, and so does the per-workspace store under `~/.kiro/workspace-roots/`: it lives outside the repository, so it loads regardless of trust.
+
+One rule lifts the untrusted-only asks for `.kiro` directories: an `fs_write` `allow` rule in your own `~/.kiro/settings/permissions.yaml` with no `match` restriction and no `exclude`. It does not remove the always-ask paths, does not override a matching `ask` or `deny`, and does not load the untrusted workspace inputs listed above.
 
 ## Managing permissions by surface
 
@@ -304,75 +331,51 @@ For chained commands (e.g., `cd /path && cargo build`), each sub-command in the 
 
 ### Interactive tool management
 
-Use the `/tools` command during a chat session to manage permissions interactively:
+In CLI V3, run `/tools` to inspect the tools available in the current session. The V3 slash command supports one trust subcommand:
 
 | Command | Description |
 | --- | --- |
-| `/tools` | Shows current permission status for all tools |
-| `/tools help` | Shows help related to tools |
-| `/tools trust <tool>` | Trusts a specific tool for the session |
-| `/tools untrust <tool>` | Reverts a tool to per-request confirmation |
-| `/tools trust-all` | Trusts all tools for the session |
-| `/tools reset` | Resets all runtime permissions to defaults |
-
-To view the current permission settings:
+| `/tools` | Show the tools available in the current session |
+| `/tools trust-all` | Trust every tool for the rest of the current session |
 
 ```bash
-$ kiro-cli chat
 Kiro> /tools
-```
-
-Tool permissions have two possible states during a session:
-
-- **Trusted** - Kiro can use the tool without asking for confirmation each time
-- **Per-request** - Kiro must ask for your confirmation before using the tool
-
-Example usage:
-
-```bash
-Kiro> /tools trust read
-Kiro> /tools untrust shell
 Kiro> /tools trust-all
 ```
+
+Use the approval picker for a specific operation or tool, and use `permissions.yaml` for rules that should apply beyond the current session. The per-tool `/tools trust`, `/tools untrust`, and `/tools reset` commands belong to CLI 2.x and are not available in V3.
 
 **⚠️ Warning:** Using `/tools trust-all` carries risks. In the terminal UI, both `--trust-all-tools` and `/tools trust-all` show a confirmation warning before granting access. You must acknowledge the risk before proceeding.
 
 ### Available built-in tools
 
-| Tool | Description |
-| --- | --- |
-| `read` | Reads files and directories on your system |
-| `write` | Creates and modifies files on your system |
-| `shell` | Executes bash commands on your system |
-| `aws` | Makes AWS CLI calls to interact with AWS services |
-| `report` | Opens a browser to report an issue with the chat to AWS |
+Kiro CLI V3 exposes the tools listed in the [built-in tools reference](https://kiro.dev/docs/tools.md). The `/tools` panel shows the exact set available in your current session, including MCP tools and the subset selected by the active agent.
+
+The CLI 2.x structured AWS tool (`use_aws`, preferred alias `aws`) is not a V3 built-in. Configure an [AWS MCP server](https://kiro.dev/docs/mcp/configuration.md) for AWS access. To report a Kiro CLI issue, run `kiro-cli issue`.
 
 When Kiro attempts to use a tool that doesn't have explicit permission, it asks for your approval. A panel-based dropdown appears with Yes, Trust, and No options. When multiple tools need permission simultaneously, approvals are queued and presented one at a time. Choosing **Trust** also auto-approves any other pending invocations of that same tool in the current batch.
 
-### Shell command trust levels
+### Approval scopes in CLI V3
 
-When Kiro asks to run a shell command, you can choose how broadly to trust it with a tiered interactive picker:
+When Kiro asks to run a shell command and you choose **Trust**, the V3 picker can offer these match scopes, depending on the command:
 
 ```text
-Press (↑↓) to navigate (⏎) to select scope
-> Full command          → git pull --rebase
-  Partial command       → git pull *
-  Base command          → git *
-  Entire Tool           → *
+> Trust "git pull --rebase"   → exact command
+  Trust "git *"               → base command with any arguments
+  Trust entire tool           → every shell command
 ```
 
-| Tier | What it trusts | Example pattern |
+| Match | What it trusts | Example pattern |
 | --- | --- | --- |
-| Full command | The exact command as written | `git pull --rebase` |
-| Partial command | The command and subcommand, with any arguments | `git pull *` |
-| Base command | The base command with any arguments | `git *` |
-| Entire Tool | All shell commands | `*` |
+| Exact command | Only the command as written | `git pull --rebase` |
+| Base command | The executable with any arguments | `git *` |
+| Entire tool | All shell commands | `*` |
 
-After you select a tier, Kiro confirms the trusted pattern (for example, `✓ Trusted: git pull --rebase`). The picker only shows tiers that are meaningfully different - if the command has no subcommand, the partial tier is skipped. For chained commands (pipes, `&&`), Kiro generates trust patterns for each command in the chain and deduplicates them.
+The picker defaults to the current session. Press `s` to cycle the persistence scope among **session**, **workspace**, and **always** before saving the choice. Session approvals stay in memory until the session ends; workspace and always approvals persist through the V3 permission store. For chained commands such as pipes or `&&`, Kiro evaluates each command separately.
 
-Trusted patterns persist for the session and are stored as regex in the agent's `allowedCommands` setting. For more on how `allowedCommands` works, see [Shell tool settings](https://kiro.dev/docs/reference/built-in-tools.md#execute-shell-commands).
+For how shell commands are split and matched before these rules are evaluated, see [Shell command parsing](#shell-command-parsing).
 
-**⚠️ Warning:** If a command matches a `deniedCommands` pattern, granular trust options are not available. You can only allow the action once or trust the entire tool.
+**⚠️ Warning:** A `deny` rule from any scope blocks the command without an approval prompt. Neither session trust nor an `allow` rule from another scope can override it. An explicit `ask` rule prompts every time and does not offer a persistent **Always** allow.
 
 ### Read and write path trust levels
 
@@ -421,7 +424,7 @@ Here are common patterns for configuring permissions:
 | Block sensitive files | `capability: fs_write`, `match: ["*.env", "*.pem", "*.key"]`, `effect: deny` |
 | Block dangerous commands | `capability: shell`, `match: ["rm -rf *", "sudo *"]`, `effect: deny` |
 | Trust specific MCP server | `capability: mcp`, `match: ["my-server/*"]`, `effect: allow` |
-| Untrust shell in production | `capability: shell`, `effect: ask` (or use `/tools untrust shell` in CLI) |
+| Require approval for shell in production | `capability: shell`, `effect: ask` |
 
 ## Migrating from older versions
 
@@ -429,4 +432,4 @@ If you're upgrading from CLI 2.x or IDE 0.x, see the reference pages for how per
 
 - [CLI 2.x reference - Permissions](https://kiro.dev/docs/cli/2x-reference.md#permissions-and-tool-trust)
 - [IDE 0.x reference - Permissions](https://kiro.dev/docs/ide/0x-reference.md#permissions-autopilot--supervised-toggle)
-- [What's new in CLI 3.0 - Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md)
+- [What's new in CLI V3 - Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md)

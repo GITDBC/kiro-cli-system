@@ -1,33 +1,16 @@
-# .kiroignore — workspace ignore file for the Kiro CLI (V3 agent harness).
-#
-# Scope: in CLI V3, this file only filters content-search and
-# filename-search results (fuzzy file lookup, grep-style search). It does
-# NOT reduce the startup context/token baseline, and it does NOT affect any
-# other CLI tool. It has no effect on the IDE (`kiroAgent.agentIgnoreFiles`
-# is a separate, IDE-only setting).
-#
-# `driftcheck`, `docsync`, `ctxbudget`, and the other Python tools under
-# tools/ read the filesystem directly and are UNAFFECTED by this file. Do
-# not assume an entry here hides anything from governance tooling, CI, or
-# git — it only trims noise from interactive search results.
-#
-# Deliberately NOT ignored (do not add these — see task context):
-#   - .kiro/skills/kiro-cli-reference/references/
-#   - .kiro/skills/claude-prompting-reference/references/
-#   - .kiro/skills/agent-creation/references/agentskills/
-#     Vendored doc mirrors — specialist agents grep these as their only
-#     route to Kiro/Claude documentation.
-#   - tmp/
-#     Holds generated reports (e.g. tmp/context-budget-report.md) agents
-#     read as part of their work.
-
 # --- Build and environment noise ---
+
 .venv/
-__pycache__/
+**pycache**/
 *.pyc
 node_modules/
+.ruff_cache/
+.complexipy_cache/
+.pytest_cache/
+.mypy_cache/
 
-# --- Secrets (defense in depth; mirrors agent fs_read deny rules) ---
+# --- Secrets ---
+
 .env
 .env.*
 *.pem

@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, TypeAlias
+from typing import Any
 
 
 class Severity(Enum):
@@ -183,7 +183,9 @@ class DriftContext:
                 yield path
 
 
-CheckFunction: TypeAlias = Callable[[DriftContext], list[Finding]]
+# Changed: TypeAlias annotation -> PEP 695 type statement - Reason: Python 3.13
+# baseline (ruff UP040).
+type CheckFunction = Callable[[DriftContext], list[Finding]]
 
 
 def load_agent_configs(agents_dir: Path) -> tuple[AgentConfig, ...]:

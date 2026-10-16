@@ -125,14 +125,18 @@ If your organization uses an external identity provider (IdP) with IAM Identity 
 
 Check with your identity team for the exact domain if you are unsure which IdP is configured.
 
-### AWS GovCloud
+### AWS GovCloud (US)
 
-If you use AWS GovCloud (US), allowlist these FIPS-compliant endpoints instead of the commercial Kiro service endpoints in the [Core URLs](#core-urls) table:
+If you use Kiro in AWS GovCloud (US), allowlist these FIPS endpoints for each Region your organization uses:
 
-- `q-fips.us-gov-east-1.amazonaws.com`
-- `q-fips.us-gov-west-1.amazonaws.com`
+| URL | Purpose |
+|-----|---------|
+| `runtime-fips.us-gov-east-1.kiro.dev` | Kiro service, AWS GovCloud (US-East) |
+| `runtime-fips.us-gov-west-1.kiro.dev` | Kiro service, AWS GovCloud (US-West) |
+| `management-fips.us-gov-east-1.kiro.dev` | Configuration and access management, AWS GovCloud (US-East) |
+| `management-fips.us-gov-west-1.kiro.dev` | Configuration and access management, AWS GovCloud (US-West) |
 
-**ℹ️ Info:** GovCloud regions do not support `kiro.dev` DNS names. Only the `q-fips.*.amazonaws.com` endpoints are available.
+**⚠️ Keep existing Q endpoint rules:** Add these FIPS endpoints alongside your existing `q` or `q-fips` rules. Older Kiro client versions may still require those Q endpoints.
 
 ## Subscription management
 

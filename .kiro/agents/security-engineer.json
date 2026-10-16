@@ -54,7 +54,11 @@
           "**/*.py",
           "*.toml",
           "**/*.toml",
-          "package.json"
+          "package.json",
+          "**/.env*",
+          "secrets/**",
+          "**/credentials",
+          "**/.netrc"
         ],
         "effect": "deny"
       },
@@ -107,6 +111,11 @@
       },
       {
         "capability": "shell",
+        "match": ["uv add*", "uv pip install*", "uv sync*"],
+        "effect": "ask"
+      },
+      {
+        "capability": "shell",
         "match": ["*"],
         "exclude": ["uv *", "git *"],
         "effect": "deny"
@@ -134,13 +143,11 @@
     ]
   },
   "resources": [
-    "skill://.kiro/skills/code-standards/SKILL.md",
     "skill://.kiro/skills/security-audit/SKILL.md",
     "skill://.kiro/skills/concise-communication/SKILL.md",
     "skill://.kiro/skills/agent-creation/SKILL.md",
-    "skill://.kiro/skills/deps-audit/SKILL.md",
-    "skill://.kiro/skills/release-readiness/SKILL.md"
+    "skill://.kiro/skills/deps-audit/SKILL.md"
   ],
   "welcomeMessage": "Ready for security analysis. What should I assess?",
-  "model": "claude-opus-5"
+  "model": "claude-opus-5.5"
 }

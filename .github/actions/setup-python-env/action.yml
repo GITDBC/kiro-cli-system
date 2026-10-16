@@ -5,7 +5,24 @@ inputs:
   src-python-version:
     description: "Python version to set up for the project"
     required: false
-    default: "3.11"
+    default: "3.13"
+  cache-dependency-glob:
+    description:
+      "Glob of files whose hash keys the uv cache; the default mirrors setup-uv's own
+      default, so callers that pass nothing keep the repository-wide key"
+    required: false
+    default: |
+      **/*requirements*.txt
+      **/*requirements*.in
+      **/*constraints*.txt
+      **/*constraints*.in
+      **/pyproject.toml
+      **/uv.lock
+      **/*.py.lock
+  cache-suffix:
+    description: "Suffix appended to the uv cache key, e.g. the tool name"
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -16,3 +33,5 @@ runs:
         version: "0.11.30"
         python-version: ${{ inputs.src-python-version }}
         enable-cache: true
+        cache-dependency-glob: ${{ inputs.cache-dependency-glob }}
+        cache-suffix: ${{ inputs.cache-suffix }}
