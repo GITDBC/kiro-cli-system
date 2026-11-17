@@ -8,7 +8,7 @@
 
 Need to ask something unrelated mid-task, like looking up an API limit, debugging a side error, or exploring an alternative, without polluting your main thread? `/tangent` lets you branch into a side-conversation that inherits everything discussed so far, explore freely, then jump back to exactly where you left off.
 
-**ℹ️ Info:** This page covers `/tangent` in a V3 session.
+**ℹ️ Info:** This page covers `/tangent` in a V3 session. On the V2 harness, the experimental tangent mode behaves differently: a single checkpoint toggled with `/tangent` or `Ctrl+T`, with no naming or nesting. See [Tangent mode (experimental)](https://kiro.dev/docs/cli/experimental/tangent-mode.md) for that behavior, and [Choose an agent harness](https://kiro.dev/docs/cli/agent-harness.md) for which harness your session runs.
 
 ## Commands
 
@@ -76,3 +76,4 @@ Merge never creates a session. An unresolvable named destination is an error.
 
 - [`/tangent`](https://kiro.dev/docs/reference/slash-commands.md#tangent) for the command syntax
 - [Session management](https://kiro.dev/docs/cli/chat/session-management.md) for resuming and browsing sessions, including tangents
+- [Tangent mode (experimental)](https://kiro.dev/docs/cli/experimental/tangent-mode.md) for the V2 single-checkpoint behavior

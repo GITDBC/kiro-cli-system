@@ -231,7 +231,7 @@ kiro-cli chat
 ### Common issues
 
 - **Home directory fills during startup:** In storage-constrained environments such as CloudShell, set `KIRO_SKIP_BINARY_PINNING=1` only when the installed Kiro binary remains at a fixed, stable path. This avoids creating a session-specific binary copy. Do not use it if an installer can replace or delete the binary during the session.
-- **Bundled runtime fills the home directory:** Set `KIRO_RUNTIME_DIR` to an absolute path to extract Kiro's bundled runtime there instead of your home directory. A relative or empty value is ignored. To confirm, start `kiro-cli chat` and check that the directory now holds the runtime.
+- **Bundled runtime fills the home directory:** In Kiro CLI 2.37 or later, set `KIRO_RUNTIME_DIR` to an absolute path to extract Kiro's bundled runtime there instead of your home directory. A relative or empty value is ignored. To confirm, start `kiro-cli chat` and check that the directory now holds the runtime.
 - **Authentication failures** — Run `kiro-cli login` to re-authenticate.
 
 ### Troubleshooting steps

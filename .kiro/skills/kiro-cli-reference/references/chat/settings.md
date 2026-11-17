@@ -117,7 +117,7 @@ The menu has these rows:
 
 - **Density preset** — choose `collapsed` (one line per tool call: title, time, and status), `lean` (inline arguments, no reasoning), `default`, or `full` (everything the agent sees, with all output filters on and no truncation), or **custom** to set the rows below one by one
 - **Tool calls** — tool arguments off, in the title, inline, or as a block, with the agent's reasoning and elapsed time on or off
-- **Subagent** — subagent steps, step instructions, step role labels, and full output.
+- **Subagent** — subagent steps, step instructions, step role labels, and full output. In a V2 session, a **Show response summary** toggle appears too; a V3 session always shows the response
 - **Thinking** — `expanded`, `collapsed`, or `off` for the agent's reasoning blocks. The choice is also saved to `chat.showThinking`
 - **Task list** — show or hide the task list
 - **Show output** — which tool categories keep their output in the transcript
@@ -163,7 +163,7 @@ Enable account-available agent features for future Kiro CLI processes.
 
 Enable **Workflows** to expose declarative workflow commands and controls. The choice is stored as `chat.enableWorkflows`. Exit and restart Kiro CLI after changing it; the current process does not add or remove workflow commands dynamically.
 
-When Workflows are enabled, **Workflow use** appears below the Workflows toggle. Choose how often Kiro starts a workflow from the main chat:
+When Workflows are enabled in Kiro CLI 2.34 or later, **Workflow use** appears below the Workflows toggle. Choose how often Kiro starts a workflow from the main chat:
 
 - **Only when asked** (default) — Kiro starts a workflow only when you request one.
 - **Only for large tasks** — Kiro can start one for multi-step work or work needing more context.
@@ -194,7 +194,7 @@ The change is written to `chat.historyMode` and takes effect on your next sessio
 
 ## Thinking display
 
-When the agent reasons through a complex request, it can stream those reasoning ("thinking") blocks inline above its response. This is controlled by the `chat.showThinking` setting, which is **enabled by default**.
+When the agent reasons through a complex request, it can stream those reasoning ("thinking") blocks inline above its response. This is controlled by the `chat.showThinking` setting, which is **enabled by default** in Kiro CLI 2.5.0 and later.
 
 In Kiro CLI 3.2.1 or later, set it from [Output details](#settings-output-details):
 

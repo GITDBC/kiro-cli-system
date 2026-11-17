@@ -110,7 +110,7 @@ Select an AI model for the current session and configure its reasoning settings.
 # Explicitly write the current model as the default
 > /model set-current-as-default
 
-# Show the current model's fallback or open the fallback picker (V3)
+# Show the current model's fallback (V1 and V2) or open the fallback picker (V3)
 > /model fallback
 
 # Set one fallback for the current model
@@ -140,21 +140,15 @@ Select an AI model for the current session and configure its reasoning settings.
 - **Thinking** in `/settings output-details` (Kiro CLI 3.2.1 or later; **Show thinking** in `/settings display` before that) controls only whether reasoning blocks appear in the terminal
 
 **Model fallback:**
-- If the current model refuses a turn, Kiro can try your configured fallback or a service-provided fallback.
-- When the backend marks the current model unavailable, Kiro can try only your configured fallback.
-- When no target is configured, the fallback row names the vendor default that can answer a refusal.
-- A model cannot use itself as its fallback.
-- A turn changes models at most three times. Kiro skips targets already tried or unavailable and explains when no usable target remains.
-
-**ℹ️ Info:** API-key sessions cannot configure model fallbacks. Kiro prints `This session's credentials cannot configure model fallbacks. Sign in to Kiro to configure one.` Kiro may also print `Fallback configuration is not enabled for this account.` If a save outcome is unknown, run `/model fallback` to check the stored value.
-
-**Model fallback (V3):**
-- A V3 session saves fallback configuration: the **Fallback** row in the `/model` settings pane and the `/model fallback` commands write the choice through the agent when the agent supports it.
-- A saved choice applies to the current session and persists for later sessions.
-- Bare `/model fallback` opens the fallback picker for the current model. Choose **None** to switch fallback off so a refusal stays on the current model. Clearing the choice leaves the vendor default to answer a refusal.
+- In a V3 session (Kiro CLI 3.2.1 or later), `/model fallback` opens the fallback picker for the current model. Choose a model, or **Use default** to clear your choice. Kiro saves the choice in your settings.
+- In a V2 session, `/model fallback` is available from Kiro CLI 2.27.1.
+- The **Fallback** row in the `/model` settings pane shows the saved choice.
 - A model cannot fall back to itself.
-- If the agent does not support fallback configuration, Kiro prints `This agent does not support configuring a model fallback`. If this session's credentials cannot store a preference, the **Fallback** row shows `read-only`.
-- To confirm the saved choice, run `/model` and read the **Fallback** row for the current model. When a turn moves to another model, the transcript reports it. See [Model fallback notices](https://kiro.dev/docs/cli/terminal-ui.md#model-fallback-notices).
+- Subagents use the fallback settings for their own model. A subagent's switch does not change the parent session's model. Fallback support for V2 subagents requires Kiro CLI 2.32.0 or later.
+- If you have not set a fallback, Kiro can use a vendor-recommended fallback for refusals only. Model unavailability then ends the turn with an error.
+- Setting a fallback is not supported for API-key sessions.
+
+See [Model fallback](https://kiro.dev/docs/models.md#model-fallback-notices) for what happens on an unavailable model or a refusal.
 
 **Note:** Your `/model` selection applies to the current session only. To save the current model as the default for future sessions, run `/model set-current-as-default`. The saved default is stored in `~/.kiro/settings/cli.json`. See [Persistence](https://kiro.dev/docs/cli/chat/settings.md#persistence) for details. V3 terminal UI sessions also check whether saved and session models remain available. See [Model availability notices](https://kiro.dev/docs/cli/terminal-ui.md#model-availability-notices).
 
@@ -224,6 +218,30 @@ When you edit an agent, changes are made in a **temporary file** first. If valid
 
 See [Custom Agents](https://kiro.dev/docs/custom-agents.md) for detailed documentation.
 
+### `/upgrade-agent`
+
+Migrate older agent configurations to the [current agent configuration format](https://kiro.dev/docs/custom-agents/configuration-reference.md).
+
+```bash
+# Scan agents and open the selection menu
+> /upgrade-agent
+
+# Review upgraded agents and conversion warnings
+> /upgrade-agent diagnostics
+```
+
+**Available subcommands:**
+- `run` - Scan agents and open the selection menu (default)
+- `diagnostics` - Review upgraded agents and their conversion warnings
+
+**Notes:**
+- Scans `.kiro/agents/` in the workspace and `~/.kiro/agents/` globally. If those directories don't exist, Kiro checks `.amazonq/cli-agents/` in the workspace and `~/.aws/amazonq/cli-agents/` globally. When `KIRO_AGENT_CONFIG_DIR` is set, Kiro uses that directory for the global scan and skips the workspace scan.
+- Original files are backed up to `.json.bak` before any changes
+- A symlinked config is updated through its target without replacing the symlink
+- Only agents that need upgrading appear in the selection menu
+
+See [Upgrading agent configs](https://kiro.dev/docs/cli/v3/upgrade-agent.md) for detailed documentation.
+
 ### `/spawn`
 
 Spawn a new agent session that runs a task in parallel with your current conversation.
@@ -271,8 +289,8 @@ Manage chat sessions, including saving, loading, and switching between sessions.
 **Available subcommands:**
 - `new` - Start a fresh conversation without restarting the CLI. Optionally pass an initial prompt (e.g., `/chat new how do I set up a React project`). Use `/chat resume` to return to previous sessions. In V3, the new conversation keeps the current model while it remains available and uses that model's saved effort level. When the model list is available and the current model is unavailable, Kiro follows the [model availability rules](https://kiro.dev/docs/cli/terminal-ui.md#model-availability-notices).
 - `resume` - Open interactive session picker to choose a session to resume
-- `save` - Save the current session. V3 writes a zip archive. Pass `--force` or its short alias `-f` to overwrite an existing archive at that path. A `-f`-shaped token inside a quoted path (e.g. `"a -f b".zip`) is treated as part of the path, not parsed as the flag.
-- `load` - Load a saved session. V3 reads zip archives.
+- `save` - Save the current session. V3 writes a zip archive; CLI 2.x writes JSON. In V3, pass `--force` or its short alias `-f` to overwrite an existing archive at that path. A `-f`-shaped token inside a quoted path (e.g. `"a -f b".zip`) is treated as part of the path, not parsed as the flag.
+- `load` - Load a saved session. V3 reads zip archives; CLI 2.x accepts JSON files and can infer an omitted `.json` extension.
 - `save-via-script` - Save session using a custom script (receives JSON via stdin)
 - `load-via-script` - Load session using a custom script (outputs JSON to stdout)
 
@@ -292,7 +310,7 @@ Toggle the current interactive session between inline and fullscreen mode.
 > /fullscreen
 ```
 
-Fullscreen gives the conversation a dedicated terminal screen with mouse, touchpad, and keyboard scrolling. Run `/fullscreen` again to return inline. The command works in V3 and is available in both TUI and Lite; it is not available in non-interactive sessions.
+Fullscreen gives the conversation a dedicated terminal screen with mouse, touchpad, and keyboard scrolling. Run `/fullscreen` again to return inline. The command works with V2 and V3 and is available in both TUI and Lite; it is not available in non-interactive sessions.
 
 To start future interactive TUI sessions in fullscreen, open `/settings`, choose **Display** → **Full Screen**, and turn on **Start fullscreen**. See [Fullscreen mode](https://kiro.dev/docs/cli/fullscreen.md) for navigation, selection, and troubleshooting details.
 
@@ -566,7 +584,7 @@ Manage your knowledge base for semantic search across files and directories.
 - `--exclude` - Exclude patterns (can specify multiple)
 - `--index-type` - Fast or Best (default from settings)
 
-**Note:** V3 enables knowledge by default. Set `chat.enableKnowledge false` to turn it off.
+**Note:** V3 enables knowledge by default. Set `chat.enableKnowledge false` to turn it off. In V1 and V2, knowledge is experimental; enable it with `kiro-cli settings chat.enableKnowledge true`.
 
 See [Knowledge Management](https://kiro.dev/docs/cli/experimental/knowledge-management.md) for detailed documentation.
 
@@ -630,7 +648,7 @@ View tools and permissions. By default, Kiro will ask for your permission to use
 
 ### `/permissions`
 
-Choose how Kiro handles actions your permission rules do not settle in the current workspace. An interactive V3 session offers the **Policies** page, where you choose between **ask for approval** and **approve for me**.
+Choose how Kiro handles actions your permission rules do not settle in the current workspace. In Kiro CLI 2.36 or later, an interactive V3 session offers the **Policies** page, where you choose between **ask for approval** and **approve for me**.
 
 ```bash
 # Open the permissions menu
@@ -848,7 +866,7 @@ Set, clear, or show the terminal window title for the current session. This help
 
 A title you set manually is sticky — it persists through session updates until you clear it with `--clear`.
 
-Requires the terminal title feature to be enabled. Turn it on from `/settings display` → **Terminal title**, or run `kiro-cli settings chat.terminalTitle true`; when it's off, `/title` tells you how to enable it. When you have not set a title, the terminal shows the session's title, or the workspace folder name when the session has none.
+Requires the terminal title feature to be enabled. Turn it on from `/settings display` → **Terminal title**, or run `kiro-cli settings chat.terminalTitle true`; when it's off, `/title` tells you how to enable it. When you have not set a title, the terminal shows the session's title, or the workspace folder name when the session has none. In Kiro CLI 2.33 or later, a V3 session shows its session title; before 2.33, a V3 session fell back to the workspace folder name.
 
 **ℹ️ Info:** Titles are truncated to 60 characters. Some terminals ignore the OSC 0 escape sequence used to set the title, and under tmux you need `set-titles on` for the outer terminal to update. The title resets on exit, with exact behavior varying by terminal.
 
@@ -1111,7 +1129,7 @@ See [Local command sandbox](https://kiro.dev/docs/sandbox.md#use-local-autonomou
 
 ### `/sandbox`
 
-Manage the [local command sandbox](https://kiro.dev/docs/sandbox.md#cli) in local V3 sessions. The command is not available in cloud sessions.
+Manage the [local command sandbox](https://kiro.dev/docs/sandbox.md#cli) in Kiro CLI 2.31 and later local V3 sessions. The command is not available in cloud sessions.
 
 ```bash
 # Open sandbox settings
@@ -1138,7 +1156,7 @@ Changes save to `sandbox.json` and apply to the running session. See [Local comm
 
 ### `/effort`
 
-`/model` is the primary reasoning interface. In V3, bare `/effort` opens the `/model` picker focused on the Effort setting. `/effort <level>` remains supported.
+`/model` is the primary reasoning interface. In V2 and V3, bare `/effort` opens the `/model` picker focused on the Effort setting. `/effort <level>` remains supported in both.
 
 ```bash
 # Open effort controls

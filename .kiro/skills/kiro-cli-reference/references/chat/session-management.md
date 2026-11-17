@@ -66,7 +66,7 @@ In the terminal UI, if `--resume-id` doesn't match a local session, Kiro no long
 
 **ℹ️ Resume hint on exit:** When you exit a session, Kiro CLI prints the session ID along with the command to resume it (`kiro-cli chat --resume-id <ID>`). Use `/session-id` mid-session to print the same ID on demand.
 
-**ℹ️ Session archive format:** In V3, `/chat save` writes a zip session archive. Use a `.zip` name. If you omit that extension, Kiro still identifies the saved file as a zip archive. `/chat load` checks the archive and explains when it was altered after saving.
+**ℹ️ Session archive format:** In V3, `/chat save` writes a zip session archive. Use a `.zip` name. If you omit that extension, Kiro still identifies the saved file as a zip archive. `/chat load` checks the archive and explains when it was altered after saving. CLI 2.x uses JSON session files, where the `.json` extension is optional when loading.
 
 ### Workflow step sessions
 
@@ -96,7 +96,7 @@ Use the **Filter** control to combine the `current workspace only`, `main sessio
 
 ### Search sessions
 
-Start typing anywhere in the dashboard to search. The immediate filter matches session titles, workspace names and paths, session IDs, and tags; prefix a tag with `#` to narrow by tag. Queries of three or more characters also search indexed session content from local V3 transcripts.
+Start typing anywhere in the dashboard to search. The immediate filter matches session titles, workspace names and paths, session IDs, and tags; prefix a tag with `#` to narrow by tag. Queries of three or more characters also search indexed session content from local V2 and V3 transcripts.
 
 By default, the content index covers your prompts and the agent's responses. Run `/settings` in a V3 session and choose **Session search** to switch between **Prompts only** and **Prompts and agent responses**; the choice is stored as `chat.sessionDashboard.indexResponses`. Tool output is not indexed in either mode. If your local index currently covers prompts only, `/sessions` asks once before rebuilding it to include responses. Classic sessions and cloud sessions still match listing metadata (titles, workspace, session ID, and tags), but their transcript content is not part of the local content index.
 
@@ -120,7 +120,7 @@ Cleanup cannot be undone. Kiro scans again before deletion, so a session that is
 
 ### V3 launch behavior
 
-The dashboard is a V3-only surface. `/sessions` is not available in V1. `kiro-cli chat --sessions` selects V3 when you have not chosen an agent harness. If you explicitly pass a non-V3 harness, Kiro reports the conflict instead of silently switching. Run `kiro-cli chat --v3 --sessions` for that launch, or change your saved setting.
+The dashboard is a V3-only surface. `/sessions` is not available in V1 or V2. `kiro-cli chat --sessions` selects V3 when you have not chosen an agent harness. If you explicitly pass a non-V3 harness or save `chat.agentEngine` as `v1` or `v2`, Kiro reports the conflict instead of silently switching. Run `kiro-cli chat --v3 --sessions` for that launch, or change your saved setting. To run a single session on the V2 harness regardless of that saved value, pass `--v2`.
 
 ## Cloud sessions
 
@@ -175,7 +175,7 @@ git notes --ref=kiro/notes show "$COMMIT"
 ## Session storage
 
 - **Database:** Sessions auto-saved per-directory
-- **Files:** V3 zip archives via `/chat save`
+- **Files:** V3 zip archives (2.x: JSON) via `/chat save`
 - **Custom:** Script-based integration
 
 **Session ID**: UUID format (e.g., `f2946a26-3735-4b08-8d05-c928010302d5`)
@@ -253,7 +253,7 @@ Saves the current V3 session as a zip archive.
 - Auto-save to database only (not files)
 - Session IDs are UUIDs (not human-readable)
 - Local sessions don't sync across machines (use scripts for custom storage); [cloud sessions](https://kiro.dev/docs/cloud-sessions.md) are stored in the cloud and resume from anywhere
-- Content search covers local V3 sessions. Your prompts and the agent's responses are both indexed by default; choose **Session search** in `/settings` to index prompts only. Tool output, classic-session transcripts, and cloud-session transcripts are not indexed; use title, workspace, session ID, or tag matching for those sessions
+- Content search covers local V2 and V3 sessions. Your prompts and the agent's responses are both indexed by default; choose **Session search** in `/settings` to index prompts only. Tool output, classic-session transcripts, and cloud-session transcripts are not indexed; use title, workspace, session ID, or tag matching for those sessions
 
 ## Technical details
 

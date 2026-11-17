@@ -316,7 +316,13 @@ Create specialized agents for common background tasks:
 {
   "name": "test-runner",
   "description": "Runs test suites in background",
-  "tools": ["shell", "read"]
+  "tools": ["shell", "read"],
+  "allowedTools": ["shell"],
+  "toolsSettings": {
+    "shell": {
+      "allowedCommands": ["npm test", "pytest", "cargo test"]
+    }
+  }
 }
 ```
 

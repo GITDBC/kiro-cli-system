@@ -37,7 +37,7 @@ In a local or cloud V3 session, run `/config` to review the configuration used b
 /config steering
 ```
 
-The summary covers agents, MCP servers, Powers, Steering, Skills, and Hooks. It shows the number or status of configured items and lets you open each category. `/config` is not available in V1.
+The summary covers agents, MCP servers, Powers, Steering, Skills, and Hooks. It shows the number or status of configured items and lets you open each category. `/config` is not available in V1 or V2.
 
 ### Source labels
 

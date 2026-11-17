@@ -59,7 +59,7 @@ You can also use `/effort` directly:
 /effort high
 ```
 
-`/model` is the primary reasoning interface. In V3, bare `/effort` opens the `/model` picker focused on the Effort setting. `/effort <level>` remains supported.
+`/model` is the primary reasoning interface. In V2 and V3, bare `/effort` opens the `/model` picker focused on the Effort setting. `/effort <level>` remains supported in both.
 
 To set the initial effort level when you start a session, use the `--effort` flag:
 

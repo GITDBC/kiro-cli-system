@@ -117,9 +117,10 @@ To use personal custom agents in cloud sessions, upload them from **Agent Config
 
 ## Previous versions
 
-If you're upgrading from IDE 0.x, existing JSON profiles continue to work. Current optional fields include `permissions`, `excludedTools`, `includeMcpJson`, `resources` with `skill://`, and Markdown format.
+If you're upgrading from IDE 0.x, existing JSON profiles continue to work. For CLI 2.x, profiles that still use `allowedTools` or `toolsSettings` without a `permissions` block must be converted with `/upgrade-agent` before CLI V3 can load them; other supported fields carry over. Current optional fields include `permissions`, `excludedTools`, `includeMcpJson`, `resources` with `skill://`, and Markdown format.
 
 - [IDE 0.x reference - Custom agent config](https://kiro.dev/docs/ide/0x-reference.md#custom-agent-config)
+- [CLI 2.x reference - Custom agent config](https://kiro.dev/docs/cli/2x-reference.md#custom-agent-config)
 - [Agent configuration reference - Markdown format](https://kiro.dev/docs/custom-agents/configuration-reference.md#markdown-format)
 - [What's new in IDE 1.0 - Agent config changes](https://kiro.dev/docs/ide/whats-new-v1/agent-config.md)
 

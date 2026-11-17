@@ -169,7 +169,7 @@ A call that the sub-agent's rules don't mention follows the parent session's pol
 Policy presets are named, composable sets of rules. Every preset except `approve-for-me` consists only of `allow` rules. A preset reaches a session by one of two paths, and the path decides its scope:
 
 - **Requested by a client.** Any ACP client, including Kiro's own surfaces and compatible third-party integrations such as editor integrations, review bots, and CI harnesses, can request the allow-only presets when it opens a session. Their rules are seeded at session scope and held in memory only.
-- **Listed in a permissions file.** A preset named under `policies:` in a user or workspace `permissions.yaml` is expanded at that file's scope and persists with the file. This is how the **approve for me** option under `/permissions` turns on `approve-for-me`: it writes the preset to the workspace permissions file.
+- **Listed in a permissions file.** A preset named under `policies:` in a user or workspace `permissions.yaml` is expanded at that file's scope and persists with the file. In Kiro CLI 2.36 or later, this is how the **approve for me** option under `/permissions` turns on `approve-for-me`: it writes the preset to the workspace permissions file.
 
 `approve-for-me` is the exception to allow-only. It adds an `evaluate` rule for every capability on top of a bounded set of `allow` rules, and it depends on Kiro's trust classifier: when the classifier is unavailable, the preset contributes no rules and the session keeps asking. Turn it on with the **approve for me** option under `/permissions` in a Kiro CLI V3 session, where that option appears, or with the **Approve for me** switch in Kiro Web; see [Approve for me](#approve-for-me).
 
@@ -203,7 +203,7 @@ Requesting an unknown preset ID rejects the session request. There is no silent 
 | `read-all` | `fs_read` anywhere, plus `web_fetch` and `web_search` |
 | `read-only-shell` | Read-only shell commands: system info plus `git`, `cargo`, `npm`, `docker`, `kubectl`, and `rustup` queries |
 | `dev-shell` | Read-only shell commands (the `read-only-shell` set) plus git write commands; build tools `cargo`, `npm`, `bun`, `yarn`; workspace ops `mkdir`, `touch`, `mv`, `cp`; inspection commands `ls`, `cat`, `grep`, `echo` |
-| `approve-for-me` | The `edit-workspace` and `read-only-shell` sets, plus an `evaluate` rule for every capability, so Kiro judges each action that no deny, ask, or allow rule settles. Requires the trust classifier; when it is unavailable, this preset contributes no rules. Choosing **approve for me** under `/permissions` in a V3 session lists this preset under `policies:` in the workspace permissions file, so its rules apply at workspace scope. In Kiro Web, the **Approve for me** switch applies it to new sessions; see [Approve for me](#approve-for-me) |
+| `approve-for-me` | The `edit-workspace` and `read-only-shell` sets, plus an `evaluate` rule for every capability, so Kiro judges each action that no deny, ask, or allow rule settles. Requires the trust classifier; when it is unavailable, this preset contributes no rules. In Kiro CLI 2.36 or later, choosing **approve for me** under `/permissions` in a V3 session lists this preset under `policies:` in the workspace permissions file, so its rules apply at workspace scope. In Kiro Web, the **Approve for me** switch applies it to new sessions; see [Approve for me](#approve-for-me) |
 
 ### Choosing presets for a session
 
@@ -317,7 +317,7 @@ One rule lifts the untrusted-only asks for `.kiro` directories: an `fs_write` `a
 
 ### Trust a workspace in Kiro CLI
 
-An interactive V3 session shows a **Trust this workspace?** screen the first time you start Kiro CLI in a folder, before it loads the folder's hooks, agents, MCP servers, steering, workflows, or language server configuration. Non-interactive runs (`--no-interactive`) and V1 sessions are not gated: they load workspace configuration without asking. The screen is specific to Kiro CLI.
+In Kiro CLI 2.33 or later, an interactive V3 session shows a **Trust this workspace?** screen the first time you start Kiro CLI in a folder, before it loads the folder's hooks, agents, MCP servers, steering, workflows, or language server configuration. Non-interactive runs (`--no-interactive`) and V1 and V2 sessions are not gated: they load workspace configuration without asking, as before. The screen is specific to Kiro CLI.
 
 1. Start Kiro CLI in the project folder. The screen shows the folder path and warns that the folder can contain hooks, agents, MCP servers, and workflows that run commands on your machine.
 2. Choose **Trust, continue** to load the folder's configuration and start the session, or **Don't trust, exit** to leave. Declining exits Kiro CLI without loading anything from the folder and prints `Not trusted: <folder>. Kiro exited without loading this folder.`
@@ -325,7 +325,7 @@ An interactive V3 session shows a **Trust this workspace?** screen the first tim
 
 When the folder is your home directory, the screen notes that its `.kiro` configuration is your user-level configuration, and the answer lasts for that session only. Trust for your home directory is never saved, so Kiro asks at every launch there.
 
-Pass `--trust-workspace` to trust the current folder for one V3 launch. The flag skips the prompt and does not save `workspaceTrusted`, so a later launch asks again unless you previously saved trust for that folder.
+In Kiro CLI 2.34 or later, pass `--trust-workspace` to trust the current folder for one V3 launch. The flag skips the prompt and does not save `workspaceTrusted`, so a later launch asks again unless you previously saved trust for that folder.
 
 To revoke trust, remove the `workspaceTrusted` line from the file the screen named; the next launch in that folder shows the screen again. To confirm a folder is trusted, start Kiro CLI in it again: the screen does not appear and the session starts with the folder's configuration loaded.
 
@@ -380,17 +380,17 @@ Kiro> /tools
 Kiro> /tools trust-all
 ```
 
-Use the approval picker for a specific operation or tool, and use `permissions.yaml` for rules that should apply beyond the current session.
+Use the approval picker for a specific operation or tool, and use `permissions.yaml` for rules that should apply beyond the current session. The per-tool `/tools trust`, `/tools untrust`, and `/tools reset` commands belong to CLI 2.x and are not available in V3.
 
 **⚠️ Warning:** Using `/tools trust-all` carries risks. In the terminal UI, both `--trust-all-tools` and `/tools trust-all` show a confirmation warning before granting access. You must acknowledge the risk before proceeding.
 
-With trust-all on, a workflow plan approval is answered with its one-time Allow option and saves no rule; see [Start from the agent](https://kiro.dev/docs/workflows.md#start-from-the-agent).
+In Kiro CLI 2.33 or later, with trust-all on, a workflow plan approval is answered with its one-time Allow option and saves no rule; see [Start from the agent](https://kiro.dev/docs/workflows.md#start-from-the-agent).
 
 ### Available built-in tools
 
 Kiro CLI V3 exposes the tools listed in the [built-in tools reference](https://kiro.dev/docs/tools.md). The `/tools` panel shows the exact set available in your current session, including MCP tools and the subset selected by the active agent.
 
-Configure an [AWS MCP server](https://kiro.dev/docs/mcp/configuration.md) for AWS access. To report a Kiro CLI issue, run `kiro-cli issue`.
+The CLI 2.x structured AWS tool (`use_aws`, preferred alias `aws`) is not a V3 built-in. Configure an [AWS MCP server](https://kiro.dev/docs/mcp/configuration.md) for AWS access. To report a Kiro CLI issue, run `kiro-cli issue`.
 
 When Kiro attempts to use a tool that doesn't have explicit permission, it asks for your approval. A panel-based dropdown appears with Yes, Trust, and No options. When multiple tools need permission simultaneously, approvals are queued and presented one at a time. Choosing **Trust** also auto-approves any other pending invocations of that same tool in the current batch.
 
@@ -412,7 +412,7 @@ When Kiro asks to run a shell command and you choose **Trust**, the V3 picker ca
 | Base command | The executable with any arguments | `git *` |
 | Entire tool | All shell commands | `*` |
 
-The picker offers the subcommand match when the command's second word is a plain word, such as `pull` or `stash`, and differs from the command itself. It offers neither the subcommand nor the base command match for a command that starts with a privilege or environment wrapper such as `sudo` or `env`, or with an environment assignment. For which tier to pick, see [Approval rule tiers](#approval-rule-tiers).
+In Kiro CLI 2.36 or later, the picker offers the subcommand match when the command's second word is a plain word, such as `pull` or `stash`, and differs from the command itself. It offers neither the subcommand nor the base command match for a command that starts with a privilege or environment wrapper such as `sudo` or `env`, or with an environment assignment. For which tier to pick, see [Approval rule tiers](#approval-rule-tiers).
 
 The picker defaults to the current session. Press `s` to cycle the persistence scope among **session**, **workspace**, and **user** before saving the choice. Session approvals stay in memory until the session ends. Workspace and user approvals persist through the V3 permission store. For chained commands such as pipes or `&&`, Kiro evaluates each command separately.
 
@@ -464,7 +464,7 @@ A headless run denies sub-agent tool calls that the parent session's policy does
 
 ## Approve for me
 
-Approve for me lets Kiro approve routine actions for you instead of asking at every prompt. Kiro approves actions it judges safe, blocks ones it judges unsafe, and asks you when it is unsure. Each action it approves is marked **Approved for you** on the tool card. It is available in Kiro IDE chats, interactive local V3 sessions of Kiro CLI, and Kiro Web, in sessions where Kiro offers it; where it is not offered, Kiro keeps asking.
+Approve for me lets Kiro approve routine actions for you instead of asking at every prompt. Kiro approves actions it judges safe, blocks ones it judges unsafe, and asks you when it is unsure. Each action it approves is marked **Approved for you** on the tool card. It is available in Kiro IDE chats, interactive local V3 sessions of Kiro CLI 2.36 or later, and Kiro Web, in sessions where Kiro offers it; where it is not offered, Kiro keeps asking.
 
     IDE
     CLI
@@ -489,7 +489,7 @@ A new chat covered by that choice starts in Approve for me. A chat where you alr
 
 To turn it off for new chats, run **Kiro: Approve For Me (User)...** or **Kiro: Approve For Me (Workspace)...** and choose **Turn off (currently on)**, or **Turn off for all folders (currently mixed)** if the open folders have different settings. You can also turn off the switch in **What's new**. In Kiro IDE 1.4.154, run **Kiro: Disable Approve For Me (User)** or **Kiro: Disable Approve For Me (Workspace)**. These commands do not appear in a window connected to a cloud session.
 
-An interactive local V3 session can let Kiro approve routine actions for you instead of asking at every prompt, when the **approve for me** option appears on the `/permissions` **Policies** page. The option appears only in sessions where Approve for me is available; otherwise the **Policies** page says so and Kiro keeps asking. The status line shows **Approve for me** while the mode is on. `/permissions` is not available in cloud sessions.
+In Kiro CLI 2.36 or later, an interactive local V3 session can let Kiro approve routine actions for you instead of asking at every prompt, when the **approve for me** option appears on the `/permissions` **Policies** page. The option appears only in sessions where Approve for me is available; otherwise the **Policies** page says so and Kiro keeps asking. The status line shows **Approve for me** while the mode is on. `/permissions` is not available in cloud sessions.
 
 To turn it on:
 
@@ -531,7 +531,7 @@ Approve for me works through the `evaluate` effect, the weakest effect in the ru
 
 ## Approval rule tiers
 
-When a V3 session asks about a shell command, the rule picker offers up to three match tiers for the rule it saves:
+In Kiro CLI 2.36 or later, when a V3 session asks about a shell command, the rule picker offers up to three match tiers for the rule it saves:
 
 | Tier | Example for `git stash pop` | What it covers |
 | --- | --- | --- |
@@ -558,6 +558,8 @@ Here are common patterns for configuring permissions:
 
 ## Migrating from older versions
 
-If you're upgrading from IDE 0.x, see the reference page for how permissions worked previously and what changed:
+If you're upgrading from CLI 2.x or IDE 0.x, see the reference pages for how permissions worked previously and what changed:
 
+- [CLI 2.x reference - Permissions](https://kiro.dev/docs/cli/2x-reference.md#permissions-and-tool-trust)
 - [IDE 0.x reference - Permissions](https://kiro.dev/docs/ide/0x-reference.md#permissions-autopilot--supervised-toggle)
+- [What's new in CLI V3 - Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md)

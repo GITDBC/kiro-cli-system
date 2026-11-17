@@ -116,7 +116,7 @@ Starting the validation sub-agent does not prompt you. Its own file edits and sh
 
 ### Availability
 
-Kiro is rolling the validation sub-agent out gradually to Kiro CLI V3 and the Kiro IDE. You do not need to change any setting. When the rollout reaches your account, the default agent can start using it. Until then, Kiro does not offer it, and asking for it has no effect. Kiro Web is not part of this rollout.
+Kiro is rolling the validation sub-agent out gradually to Kiro CLI V3 and the Kiro IDE. You do not need to change any setting. When the rollout reaches your account, the default agent can start using it. Until then, Kiro does not offer it, and asking for it has no effect. Kiro CLI 2.x sessions and Kiro Web are not part of this rollout.
 
 ## Guide agent (CLI only)
 
@@ -178,3 +178,5 @@ Agent switching is not available in Kiro Web or Mobile, so the default agent rem
 Built-in agents demonstrate how Kiro uses agent configurations for specialized workflows. You can create your own agents with the same capabilities - tailored tools, permissions, prompts, and models for your specific workflows.
 
 See [Creating custom agents](https://kiro.dev/docs/custom-agents/creating.md) to get started.
+
+If you're using CLI 2.x, see [built-in names in the CLI 2.x reference](https://kiro.dev/docs/cli/2x-reference.md#built-in-names).

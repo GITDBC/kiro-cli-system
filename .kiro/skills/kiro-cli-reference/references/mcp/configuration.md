@@ -61,10 +61,12 @@ MCP configuration files use JSON format with the following structure:
 | `headers` | Object | No | Headers to pass to the MCP server during connection |
 | `env` | Object | No | Environment variables for the server process |
 | `oauth` | Object | No | OAuth configuration for servers that require authentication (see [OAuth configuration](#oauth-configuration)) |
-| `oauthScopes` | Array | No | OAuth scopes to request (fallback; overridden by `oauth.oauthScopes` if both are set) |
+| `oauthScopes` | Array | No | OAuth scopes to request. See [Scopes](#scopes) for which value Kiro uses when `oauth.oauthScopes` is also set |
 | `disabled` | Boolean | No | Whether the server is disabled (default: false) |
 | `autoApprove` | Array | No | Tool names to auto-approve without prompting (use `"*"` to auto-approve all tools) |
 | `disabledTools` | Array | No | Tool names to omit when calling the Agent |
+
+In Kiro CLI, both server types also accept `timeout`, the connection timeout in milliseconds; see the [agent configuration reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#mcpservers-field). Kiro CLI V2 sessions also accept the spelling `timeoutMs`. In Kiro CLI 3.4.0 or later, V3 sessions accept `timeoutMs` too; when both are set, `timeout` wins and `timeoutMs` has no effect. To confirm the value applies, set `"timeoutMs": 1` on a slow local server in a V3 session; `/mcp` shows that it failed to start within the timeout.
 
 ## Configuration locations
 
@@ -185,11 +187,11 @@ When multiple configurations define the same MCP server, they are loaded based o
 
 **Complete override:**
 ```
-Agent config:     { "fetch": { command: "fetch-agent" } }
-Workspace config: { "fetch": { command: "fetch-workspace" } }
-Global config:    { "fetch": { command: "fetch-global" } }
+Agent config:     { "fetch": { command: "fetch-v2" } }
+Workspace config: { "fetch": { command: "fetch-v1" } }
+Global config:    { "fetch": { command: "fetch-old" } }
 
-Result: Only "fetch-agent" from agent config is used
+Result: Only "fetch-v2" from agent config is used
 ```
 
 **Additive (different names):**
@@ -373,7 +375,7 @@ To use this configuration, register an OAuth app in the Figma Developer Console.
 | `oauth.clientSecret` | String | No | Client secret for servers that require one. Only meaningful alongside `clientId`. |
 | `oauth.redirectUri` | String | No | Custom loopback redirect URI for the OAuth callback. See [redirect URI formats](#redirect-uri-formats) below. |
 | `oauth.clientMetadataUrl` | String | No | HTTPS URL of a hosted Client ID Metadata Document. When set, Kiro authenticates as that URL instead of registering a client. See [Client ID Metadata Documents](#client-id-metadata-documents-cimd) below. |
-| `oauth.oauthScopes` | Array | No | OAuth scopes to request from the authorization server. Takes priority over top-level `oauthScopes`. |
+| `oauth.oauthScopes` | Array | No | OAuth scopes to request from the authorization server. See [Scopes](#scopes) for which value Kiro uses when top-level `oauthScopes` is also set. |
 
 #### How it works
 
@@ -442,7 +444,7 @@ You can specify OAuth scopes in two places:
 }
 ```
 
-When both are set, `oauth.oauthScopes` takes priority. When neither is specified, Kiro requests a default set of scopes (`openid`, `email`, `profile`, `offline_access`).
+Which value Kiro uses when both are set depends on the harness. In Kiro CLI V2 sessions, `oauth.oauthScopes` takes priority. In Kiro CLI V3 sessions, in Kiro CLI 3.4.0 or later, top-level `oauthScopes` takes priority, and Kiro reads `oauth.oauthScopes`, then `oauth.scopes`, only when top-level `oauthScopes` is not set; before 3.4.0, V3 ignored the nested value. To request the same scopes on both harnesses, set only one of the two. To confirm which value applied, connect the server and check the `scope` parameter in the authorization URL Kiro opens. When neither is specified, Kiro requests a default set of scopes (`openid`, `email`, `profile`, `offline_access`).
 
 ### Mid-session token refresh
 
@@ -531,7 +533,14 @@ For enterprise teams using IAM Identity Center, MCP server access can be central
    - Fetch the authorization-server metadata for that issuer URL. Per RFC 8414, for an issuer without a path (e.g. `https://auth.example.com`) the metadata endpoint is `https://auth.example.com/.well-known/oauth-authorization-server`; for a path-bearing issuer (e.g. `https://auth.example.com/tenant1`) it is `https://auth.example.com/.well-known/oauth-authorization-server/tenant1`. Compare the returned `issuer` field against `authorization_servers[0]` character-for-character: scheme, host, port, path, and trailing slash must be identical. For example, `https://auth.example.com` and `https://auth.example.com/` are treated as different issuers.
    - Correct whichever metadata source has the wrong value. Do not add client-side normalization or bypasses.
 
-5. **Review configuration loading**
+5. **Pass arguments to Kiro CLI V2 stdio servers on Windows**
+   
+   - In Kiro CLI V2 sessions, arguments pass unchanged when a command resolves on `PATH` to an `.exe`, `.com`, `.bat`, or `.cmd` file.
+   - Other commands, and servers whose `env` sets `PATHEXT`, still launch through `cmd.exe`.
+   - Directly resolved servers do not run the `cmd.exe` AutoRun hook. If AutoRun sets `PATH`, add that value to the server's `env` configuration instead.
+   - An argument containing a line break causes a `.bat` or `.cmd` launch to fail instead of truncating the argument.
+
+6. **Review configuration loading**
    - Check which configuration files are being loaded and their priority:
 
     ```bash

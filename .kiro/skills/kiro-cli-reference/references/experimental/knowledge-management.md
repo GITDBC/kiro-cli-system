@@ -18,6 +18,12 @@ V3 enables knowledge by default. To turn it off, set `chat.enableKnowledge` to `
 kiro-cli settings chat.enableKnowledge false
 ```
 
+In the V1 and V2 agent harnesses, knowledge is experimental and must be enabled before use:
+
+```bash
+kiro-cli settings chat.enableKnowledge true
+```
+
 ### Basic usage
 
 Once enabled, use `/knowledge` commands within your chat session:

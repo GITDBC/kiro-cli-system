@@ -17,9 +17,12 @@ These arguments work with any Kiro CLI command:
 | `--verbose` | `-v` | Increase logging verbosity (can be repeated: `-v`, `-vv`, `-vvv`) |
 | `--agent` | | Start a conversation using a specific custom agent configuration |
 | `--v3` | | Start with the V3 agent harness for this invocation |
+| `--v2` | | Start with the V2 agent harness for this invocation. In Kiro CLI 3.0.0 or later, an interactive launch that names no harness starts V3 on a machine that can run it; see [Choose an agent harness](https://kiro.dev/docs/cli/agent-harness.md) |
 | `--help` | `-h` | Show help information |
 | `--version` | `-V` | Show version information |
 | `--help-all` | | Print help for all subcommands |
+
+`--v2` and `--v3` cannot be combined, and at the root `--v2` also conflicts with `--legacy-ui`. `--v2` takes precedence over a saved `chat.agentEngine` value for that invocation without changing it. Both flags are also accepted on `kiro-cli chat`; an explicit harness on `chat` wins over a root shorthand.
 
 ## Commands
 
@@ -107,11 +110,12 @@ kiro-cli chat [OPTIONS] [INPUT]
 | `--list-models` | Display available models |
 | `--delete-session <ID>` | Delete a saved chat session by ID |
 | `--agent` | Specify which agent to use |
-| `--v3` | Use the V3 agent harness for this session. Conflicts with `--agent-engine` |
-| `--agent-engine <ENGINE>` | Agent harness for this session: `v3` or `v1`. Accepted on `kiro-cli chat` only, not at the root. In Kiro CLI 3.0.0 or later, `v1` selects the retired Classic interface and opens the Classic upgrade prompt |
+| `--v3` | Use the V3 agent harness for this session. Conflicts with `--v2` and `--agent-engine` |
+| `--v2` | Use the V2 agent harness for this session. Takes precedence over a saved `chat.agentEngine` value without changing it. Conflicts with `--v3` and `--agent-engine` |
+| `--agent-engine <ENGINE>` | Agent harness for this session: `v3`, `v2`, or `v1`. Accepted on `kiro-cli chat` only, not at the root. Conflicts with `--v2` and `--v3`. In Kiro CLI 3.0.0 or later, `v1` selects the retired Classic interface and opens the Classic upgrade prompt; see [Choose an agent harness](https://kiro.dev/docs/cli/agent-harness.md) |
 | `--model <MODEL>` | Model for this session. Overrides the agent configuration's `model` value and `chat.defaultModel` |
 | `--trust-all-tools` | Allow the model to use any tool without confirmation |
-| `--trust-tools` | Pre-approve listed tools. Non-interactive V3 matches tool IDs and, in Kiro CLI 3.3.0 or later, `@server` references and `*`/`?` patterns; interactive V3 ignores the flag. See [Headless mode](https://kiro.dev/docs/cli/headless.md) |
+| `--trust-tools` | Pre-approve listed tools. Non-interactive V3 matches tool IDs and, in Kiro CLI 3.3.0 or later, V2 tool names, `@server` references, and `*`/`?` patterns; interactive V3 ignores the flag; CLI 2.x accepts its own tool names. See [Headless mode](https://kiro.dev/docs/cli/headless.md) |
 | `--sandbox` | Require the local command sandbox for a V3 headless run. Use with `--no-interactive` or `--output-format stream-json` |
 | `--require-mcp-startup` | Exit with code 3 if any MCP server fails to start |
 | `--wrap` | Line wrapping mode: `always`, `never`, or `auto` (default) |
@@ -153,6 +157,9 @@ kiro-cli chat --agent my-agent "Help me with AWS CLI"
 # Use the V3 harness for this session
 kiro-cli chat --v3
 
+# Use the V2 harness for this session, leaving your saved default unchanged
+kiro-cli chat --v2
+
 # Set the initial reasoning effort level at launch
 kiro-cli chat --effort high "Refactor this module for testability"
 ```
@@ -170,9 +177,17 @@ kiro-cli acp [OPTIONS]
 
 | Argument | Description |
 |----------|-------------|
-| `--agent-engine <ENGINE>` | Agent harness for the server: `v3` or `v1`. Overrides the `acp.agentEngine` setting. In Kiro CLI 3.0.0 or later, when no harness is named the server starts V3 on a machine that can run it |
+| `--agent-engine <ENGINE>` | Agent harness for the server: `v3`, `v2`, or `v1`. Overrides the `acp.agentEngine` setting. In Kiro CLI 3.0.0 or later, when neither names a harness the server starts V3 on a machine that can run it, unless the launch line carries a V2-only flag or Kiro recognizes the client as one that still needs V2; see [ACP clients](https://kiro.dev/docs/cli/agent-harness.md#acp-clients) |
 | `--auth-method <METHOD>` | Who answers access-token requests: `cli` (the default, your Kiro CLI login) or `client` (the client answers `_kiro/auth/getAccessToken`). Alias: `--authMethod`. V3 only; see [Start the CLI V3 server](https://kiro.dev/docs/cli/v3/acp-migration.md#1-start-the-cli-v3-server) |
 | `--login` | Run the Kiro sign-in in the terminal, then exit without starting the server. Reconnect the ACP client after you sign in |
+| `--agent <NAME>` | Start with a specific custom agent. V2 only |
+| `--model <MODEL>` | Model for the session. V2 only |
+| `--effort <LEVEL>` | Initial reasoning effort level. V2 only |
+| `--trust-all-tools` / `-a` | Allow every tool without confirmation. V2 only |
+| `--trust-tools <TOOLS>` | Pre-approve the listed tools. V2 only |
+
+A V2-only flag keeps the server on V2 when no harness is named. With `--agent-engine v3`, the V2-only flags are rejected.
+
 **Examples:**
 ```bash
 # Serve an ACP client on the saved or default harness
@@ -731,7 +746,7 @@ Use the `/chat` command to manage sessions:
 /chat load <FILE_PATH>.zip
 ```
 
-In V3, `/chat save` writes a zip session archive and `/chat load` reads that archive.
+In V3, `/chat save` writes a zip session archive and `/chat load` reads that archive. CLI 2.x uses JSON session files and can infer an omitted `.json` extension.
 
 ### Custom session storage
 
@@ -765,7 +780,7 @@ Control logging, the Kiro home directory, and the runtime directory with these e
 | Variable | Values | Description |
 |----------|--------|-------------|
 | `KIRO_HOME` | path | Override the global Kiro directory used for MCP configuration and sign-ins, permissions, sessions, Powers, settings, custom agents, Skills, Steering, Workflows, and other V3 agent state |
-| `KIRO_RUNTIME_DIR` | absolute path | Extract the bundled runtime to this directory instead of the home directory. A relative value is ignored |
+| `KIRO_RUNTIME_DIR` | absolute path | Extract the bundled runtime to this directory instead of the home directory (Kiro CLI 2.37 or later). A relative value is ignored |
 | `KIRO_LOG_LEVEL` | `error`, `warn`, `info`, `debug`, `trace` | Set logging verbosity (default: `error`) |
 | `KIRO_LOG_NO_COLOR` | `1`, `true`, `yes` | Disable colored log output (v1.26.0+) |
 

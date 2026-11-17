@@ -31,7 +31,7 @@ flowchart TD
     style HARNESS stroke:#4A90E2,stroke-width:3px
 ```
 
-The harness is a standalone process, not a library compiled into each app. It runs alongside your codebase, owns everything on the agent side, and the client owns how you interact with it. Because it's a separate process, the same harness can start on your laptop or inside a cloud sandbox, and it behaves identically in both. In Kiro CLI, this harness is called V3.
+The harness is a standalone process, not a library compiled into each app. It runs alongside your codebase, owns everything on the agent side, and the client owns how you interact with it. Because it's a separate process, the same harness can start on your laptop or inside a cloud sandbox, and it behaves identically in both. In Kiro CLI, this harness is called V3; the CLI can also run its earlier V2 harness, and [Choose an agent harness](https://kiro.dev/docs/cli/agent-harness.md) explains which one a launch starts.
 
 Because the harness is shared, a capability behaves the same wherever it's available. A permission rule denies the same operations in the CLI as in the IDE. A steering file shapes the agent's behavior identically on every surface. Compaction preserves the same information. The surfaces differ in how you drive the agent, not in what the agent can do. Where a capability hasn't reached a surface yet, its feature page says so up front in an availability table.
 

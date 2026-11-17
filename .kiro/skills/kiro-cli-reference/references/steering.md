@@ -16,7 +16,7 @@ Steering gives Kiro persistent knowledge about your project through markdown fil
 | Global steering (`~/.kiro/steering/`) | ✓ | ✓ | — | — |
 | Upload local steering to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | — |
 | Generate foundation files via UI | ✓ | — | — | — |
-| Inclusion modes | ✓ | ✓ | ✓ | ✓ |
+| Inclusion modes | ✓ | V3: full; V1/V2: partial | ✓ | ✓ |
 | AGENTS.md support | ✓ | ✓ | ✓ | ✓ |
 
 On Web, "Global steering" refers to your local `~/.kiro/steering/` directory, which the cloud sandbox cannot read. To reuse personal steering across cloud sessions, upload it through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md); the cloud copy then applies to every cloud session.
@@ -223,7 +223,7 @@ Auto-inclusion steering files also appear as slash commands in chat. Type `/` fo
 
 **Best for**: Context-heavy guidance that should only load when relevant - like specialized domain knowledge, complex workflows, or detailed reference material that would overwhelm always-on steering.
 
-**ℹ️ Info:** Kiro CLI V3 supports all four inclusion modes: `always`, `fileMatch`, `manual`, and `auto`.
+**ℹ️ Info:** Kiro CLI V3 supports all four inclusion modes: `always`, `fileMatch`, `manual`, and `auto`. In V1/V2, files marked `always` load automatically. Files marked `fileMatch` or `manual` are excluded from automatic loading, and those engines do not provide V3's complete matching and activation behavior.
 
 ## File references
 

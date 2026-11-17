@@ -148,11 +148,14 @@ When a model is unavailable or refuses a request, Kiro can move the turn to a fa
 
 Some models come with a vendor-recommended fallback, which Kiro uses for refusals only. A fallback you set yourself replaces it and also covers the model being unavailable. A model that is unavailable and has no fallback set ends the turn with an error.
 
+A fallback for an unavailable model applies only to that turn; Kiro returns to your selected model on the next one. After a refusal, the conversation stays on the fallback model.
+
 Set it once and it applies in every Kiro client:
 
-- Web: [app.kiro.dev/settings/model](https://app.kiro.dev/settings/model)
+- Web: [app.kiro.dev/settings/model](https://app.kiro.dev/settings/model). See [Choose a fallback model](https://kiro.dev/docs/web/using-the-agent.md#choose-a-fallback-model).
+- Kiro CLI: run `/model fallback`. See [`/model`](https://kiro.dev/docs/reference/slash-commands.md#model).
 
-A fallback for an unavailable model applies only to that turn; Kiro returns to your selected model on the next one. After a refusal, the conversation stays on the fallback model.
+API-key sessions cannot read or save your fallback settings. A vendor-recommended fallback, if available, applies only to refusals, not model unavailability.
 
 ## Which model should you use?
 

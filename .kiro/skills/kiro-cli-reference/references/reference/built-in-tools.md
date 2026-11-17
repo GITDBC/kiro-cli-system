@@ -8,10 +8,12 @@
 
 Kiro CLI includes a collection of built-in tools that enhance your terminal experience with AI-powered assistance for common development tasks.
 
-**ℹ️ Info:** For the CLI V3 tool catalog and tag-based configuration, see [Tools](https://kiro.dev/docs/tools.md). The structured AWS tool is not a V3 built-in; connect an AWS MCP server instead.
+**ℹ️ Info:** This page documents the CLI 2.x tool identifiers and `toolsSettings` configuration. For the CLI V3 tool catalog and tag-based configuration, see [Tools](https://kiro.dev/docs/tools.md). The CLI 2.x structured AWS tool used the internal name `use_aws` and preferred alias `aws`; it is not a V3 built-in. Connect an AWS MCP server instead.
 
 ## File read
 **Tool name**: `read`
+
+**Aliases**: `fs_read`, `fsRead`
 
 **Description**: Reads files, folders and images
 
@@ -35,6 +37,28 @@ Dev Dependencies:
 
 No external game libraries or frameworks.
 ```
+
+You can also configure the `read` tool in the agent configuration to have specific access to the files and folders in your project, giving you granular control over what the Kiro can read. 
+
+```json
+{
+  "toolsSettings": {
+    "read": {
+      "allowedPaths": ["~/projects", "./src/**"],
+      "deniedPaths": ["d1/denied/path/", "d2/denied/path/**/file.txt"]
+    }
+  }
+}
+```
+
+### Configuration options
+
+| Option | Type | Required | Description |
+|--------|------|---------|-------------|
+| `allowedPaths` | array of paths | No | Paths that can read without prompting. |
+| `deniedPaths` | array of paths | No | Paths that are denied. |
+
+Path values can be glob patterns similar to the behavior as gitignore. For example, `~/temp` would match `~/temp/child` and `~/temp/child/grandchild` 
 
 ## Glob
 
@@ -61,6 +85,28 @@ src/services/api.test.ts
 src/hooks/useAuth.test.ts
 src/hooks/useForm.test.ts
 ```
+
+You can configure the `glob` tool in the agent configuration to control which paths can be searched.
+
+```json
+{
+  "toolsSettings": {
+    "glob": {
+      "allowedPaths": ["~/projects", "./src/**"],
+      "deniedPaths": ["/etc", "/var"],
+      "allowReadOnly": true
+    }
+  }
+}
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `allowedPaths` | array of strings | `[]` | List of paths that can be searched without prompting. Supports glob patterns |
+| `deniedPaths` | array of strings | `[]` | List of paths that are denied. Deny rules are evaluated before allow rules |
+| `allowReadOnly` | boolean | `false` | Whether to allow searches anywhere without prompting |
 
 ## Grep
 
@@ -94,9 +140,33 @@ src/services/auth.ts:78
 ...
 ```
 
+You can configure the `grep` tool in the agent configuration to control which paths can be searched.
+
+```json
+{
+  "toolsSettings": {
+    "grep": {
+      "allowedPaths": ["~/projects", "./src/**"],
+      "deniedPaths": ["/etc", "/var"],
+      "allowReadOnly": true
+    }
+  }
+}
+```
+
+### Configuration options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `allowedPaths` | array of strings | `[]` | List of paths that can be searched without prompting. Supports glob patterns |
+| `deniedPaths` | array of strings | `[]` | List of paths that are denied. Deny rules are evaluated before allow rules |
+| `allowReadOnly` | boolean | `false` | Whether to allow searches anywhere without prompting |
+
 ## File write
 
 **Tool name**: `write`
+
+**Aliases**: `fs_write`, `fsWrite`
 
 **Description**: Tool for creating and editing files
 
@@ -124,15 +194,72 @@ Purpose: Create TypeScript coding best practices document
 +    16: - Separate business logic from presentation logic
 ```
 
+You can also configure the `write` tool in the agent configuration to have specific access to the files and folders in your project, giving you granular control over what the Kiro can write to. 
+
+```json
+{
+  "toolsSettings": {
+    "write": {
+      "allowedPaths": ["~/projects/output.txt", "./src/**"],
+      "deniedPaths": ["/d1/denied/path/", "/d2/denied/path/**/file.txt"]
+    }
+  }
+}
+```
+
 ### Custom diff tools
 
 By default, the write tool displays code changes using a built-in inline diff. You can configure an external diff tool to view changes instead. See [Custom diff tools](https://kiro.dev/docs/cli/chat/diff-tools.md) for setup instructions and supported tools.
+
+### Configuration options
+
+| Option | Type | Required | Description |
+|--------|------|---------|-------------|
+| `allowedPaths` | array of paths | No | Paths that can be written to without prompting. |
+| `deniedPaths` | array of paths | No | Paths that are denied. |
+
+Path values can be glob patterns similar to the behavior as gitignore. For example, `~/temp` would match `~/temp/child` and `~/temp/child/grandchild` 
 
 ## Execute shell commands
 
 **Tool name**: `shell`
 
+**Aliases**: `execute_bash`, `execute_cmd`
+
 **Description**: Tool for executing a specified bash command.
+
+You can also configure the `shell` tool in the agent configuration to control what commands Kiro can execute. 
+
+``` json
+{
+  "toolsSettings": {
+    "shell": {
+      "allowedCommands": ["git status", "git fetch"],
+      "deniedCommands": ["git commit .*", "git push .*"],
+      "autoAllowReadonly": true
+    }
+  }
+}
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| allowedCommands | 	array of strings | [] | List of commands that are allowed without prompting  |
+| deniedCommands |	array of strings | [] |	 List of commands that are denied. Deny rules are evaluated before allow rules |
+| autoAllowReadonly |	boolean | 	false | When enabled, read-only commands are allowed without prompting. This parameter does not restrict write actions. |
+| denyByDefault |	boolean | 	false |	When true, deny any command outside allowedCommands and not auto-approved by `autoAllowReadonly`, instead of prompting for approval |
+
+**Note**: `allowedCommands` and `deniedCommands` support regex formatting. regex entered are anchored with \A and \z, and does NOT support look-around, including look-ahead and look-behind.
+
+**⚠️ Environment variables can change what a command runs:** Kiro CLI does not control the environment variables that a command sets. A variable assignment in front of a command can make a read-only program run another program.
+
+Kiro CLI asks for approval when a command sets a variable from its list of known dangerous variables. That list cannot include every variable that every tool reads. An `allowedCommands` pattern that matches text before the program name, such as `.*git diff`, also matches commands with variable assignments.
+
+You are responsible for the commands that you let Kiro CLI run without approval. If the agent works in a repository that you do not trust, keep `autoAllowReadonly` off and review each command before you approve it.
+
+This note applies to the `shell` settings on this page. It does not apply to V3, which uses permission rules instead of `toolsSettings`. For details, see [Permissions](https://kiro.dev/docs/permissions.md) and, for converting 2.x rules, [Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md).
 
 ### Side channels for wrapper scripts
 
@@ -156,6 +283,40 @@ echo "ok"  # plain stdout — captured normally
 ```
 
 Both variables are only set when the agent is driving the command; wrappers should fall back gracefully if the variable is empty (for example, test with `[ -n "$" ]`).
+
+## Execute AWS commands (CLI 2.x legacy)
+
+**Internal tool name**: `use_aws`
+
+**Preferred alias**: `aws`
+
+**Description**: Tool for making AWS CLI calls with the specified service, operation, and parameters
+
+``` bash
+ list my s3 buckets
+
+Running aws cli command (using tool: aws):
+
+Service name: s3api
+Operation name: list-buckets
+Parameters: 
+Region: us-east-1
+Label: List all S3 buckets
+```
+
+You can also configure the `aws` tool in the agent configuration to only perform specific AWS operations.  
+
+```json
+{
+  "toolsSettings": {
+    "aws": {
+      "allowedServices": ["s3", "lambda", "ec2"],
+      "deniedServices": ["eks", "rds"],
+      "autoAllowReadonly": true
+    }
+  }
+}
+```
 
 ## Web search and fetch
 
@@ -319,6 +480,34 @@ In this case, since the prompt was specific, the tool only retrieves selected co
 | `truncated` | First 8000 characters | Quick preview |
 | `full` | Complete content (up to 10MB) | Comprehensive analysis |
 
+### Configuration
+
+Configure URL-based permissions using `toolsSettings`:
+
+```json
+{
+  "toolsSettings": {
+    "web_fetch": {
+      "trusted": [".*docs\\.aws\\.amazon\\.com.*", ".*github\\.com.*"],
+      "blocked": [".*pastebin\\.com.*"]
+    }
+  }
+}
+```
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `trusted` | array of regex | URL patterns to auto-allow without prompting |
+| `blocked` | array of regex | URL patterns to deny (takes precedence over trusted) |
+
+**Pattern behavior:**
+- Patterns are regex, automatically anchored with `^` and `$`
+- `blocked` takes precedence over `trusted`
+- Invalid regex in `blocked` denies all URLs (fail-safe)
+- Invalid regex in `trusted` are skipped
+
+**ℹ️ Info:** `trusted` and `blocked` patterns are enforced in the terminal UI (the default) as well as the classic interface. A blocked URL is denied and a trusted URL is auto-allowed regardless of which interface you run.
+
 ### Limitations
 
 - **Size**: 10MB maximum per page fetch
@@ -333,8 +522,8 @@ In this case, since the prompt was specific, the tool only retrieves selected co
 |-------|-------|----------|
 | Fetch failed | Page >10MB, timeout, too many redirects, or binary content | Try different URL or check page accessibility |
 | Empty content | Search terms don't match page content | Use different search terms or `truncated`/`full` mode |
-| URL blocked | URL matches a blocked pattern | Check the URL permission configuration |
-| Tool requires approval | URL is not auto-allowed by permission rules | Add a `web_fetch` allow rule in [Permissions](https://kiro.dev/docs/permissions.md) |
+| URL blocked | URL matches `blocked` pattern | Remove pattern from `toolsSettings` |
+| Tool requires approval | URL not in `trusted` patterns and `web_fetch` not in `allowedTools` | Add URL pattern to `trusted` or add `web_fetch` to `allowedTools` |
 | `web_search` and `web_fetch` not available | Web tools disabled by enterprise administrator | Contact your administrator to enable web tools |
 
 ## Introspect Kiro CLI capabilities
@@ -427,7 +616,48 @@ This tool has no configuration options.
 
 Symbol lookups and code edits inside your current workspace run without prompting. Anything targeting files **outside the workspace** requires your approval first, which prevents accidental reads or writes against credentials, system configs, or other projects on disk.
 
-## Introspect Kiro CLI capabilities
+## Tool Search (V2)
+
+**Tool name**: `tool_search`
+
+**Description**: Find and load MCP tools on demand instead of sending every tool definition with each request.
+
+This legacy tool is available in V2 sessions when Tool Search is enabled. Kiro CLI 2.31 and later local V3 sessions load MCP tools automatically through `tool_load` and `tool_call`. See [Tool Search](https://kiro.dev/docs/mcp/tool-search.md) for availability and settings.
+
+### Parameters
+
+The V2 `tool_search` tool accepts these parameters:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `tool_id` | string | One of `tool_id` or `query` | Exact tool identifier in `server_name::tool_name` format |
+| `query` | string | One of `tool_id` or `query` | Keywords to search for matching tools |
+| `max_results` | integer | No | Maximum results to return (default: 5) |
+
+Provide exactly one of `tool_id` or `query`, not both. Matched tools become available to the agent.
+
+## Delegate tasks
+
+**Tool name**: `delegate`
+
+**Description**: Delegate tasks to background agents that run asynchronously. Useful for long-running tasks that don't need immediate results.
+
+```bash
+> Analyze all TypeScript files for potential bugs and create a report
+
+Delegating task to background agent (using tool: delegate)
+
+ ✓ Task delegated successfully
+ - Agent ID: agent-abc123
+ - Check status with /delegate status
+
+> I've started analyzing your TypeScript files in the background. 
+  Use /delegate status to check progress.
+```
+
+This tool has no configuration options.
+
+## Submit an issue or feature request
 
 **Tool name**: `report`
 
@@ -443,9 +673,75 @@ This tool has no configuration options.
 
 This tool has no configuration options.
 
-## Submit an issue or feature request
+## Thinking tool (experimental)
+
+**Tool name**: `thinking`
+
+**Description**: An internal reasoning mechanism that improves the quality of complex tasks by breaking them down into atomic actions.
+
+This tool has no configuration options.
+
+## ToDo list tool (experimental)
+
+**Tool name**: `todo`
+
+**Description**: 
+
+Create and manage ToDo lists for tracking multi-step tasks. 
+
+This tool has no configuration options.
+
+## Goal tool
+
+**Tool name**: `goal`
+
+**Description**: Lets the agent report that the goal you set with `/goal` is complete. Only you create or clear a goal: `/goal <description> [--max <N>]` starts the loop (default 5 iterations, ceiling 50) and `/goal clear` cancels it. The agent cannot set a goal with this tool.
+
+The tool has one command, `complete`, which takes a `summary` of what was accomplished and how it was verified. Until the agent calls it, the goal loop re-prompts the agent at the start of each iteration. See [Goal](https://kiro.dev/docs/cli/chat/goal.md) for usage documentation.
+
+```bash
+> /goal refactor the auth module to use JWT tokens and ensure all tests pass
+goal set: "refactor the auth module to use JWT tokens and ensure all tests pass" (max 5)
+
+[Agent implements changes, runs the tests, then calls goal complete with a summary]
+
+ ✓ Goal complete
+```
+
+In CLI V3, `/goal` is a command behind the Workflows opt-in and does not use this tool.
+
+This tool has no configuration options.
+
+## Session settings tool
+
+**Tool name**: `session`
+
+**Description**: Temporarily override CLI settings for the current session without modifying your config files. All session overrides are stored in memory and reset when the session ends.
+
+You can ask the agent to adjust settings conversationally:
+
+- "Disable markdown rendering for this session"
+- "Switch to compact UI mode"
+- "Turn on the thinking tool"
+
+The agent can perform four operations:
+
+| Operation | Description |
+|-----------|-------------|
+| `list` | Show all settings with non-default values |
+| `get` | Read the current value of a specific setting |
+| `set` | Override a setting for the current session |
+| `reset` | Reset a single setting or all session overrides |
+
+Only settings marked as session-safe can be modified through this tool. The `set` and `reset` operations always require your confirmation before applying.
+
+This tool has no configuration options.
+
+## Subagent tool
 
 **Tool name**: `subagent`
+
+**Aliases**: `use_subagent`
 
 **Description**: Delegate complex tasks to specialized subagents that run in parallel with isolated context. Useful for breaking down multi-step tasks into parallel subtasks, preventing context window bloat, running independent research simultaneously, or delegating to different agent configurations.
 
@@ -457,6 +753,26 @@ This tool has no configuration options.
 - Real-time visual indicator showing status of all running subagents
 - Support for different agent configurations per subagent
 - Automatic execution summary with tool usage and duration metrics
+
+### Configuration
+
+The `subagent` tool supports the following `toolsSettings`:
+
+| Setting | Type | Description |
+|---------|------|-------------|
+| `availableAgents` | `string[]` | Restrict which agents can be spawned as subagents. Supports glob patterns (e.g., `docs-*`). |
+| `trustedAgents` | `string[]` | Allow specific agents to run without permission prompts. Supports glob patterns. |
+
+```json
+{
+  "toolsSettings": {
+    "subagent": {
+      "availableAgents": ["reviewer", "tester", "analyzer", "docs-*"],
+      "trustedAgents": ["reviewer", "tester"]
+    }
+  }
+}
+```
 
 Subagents can also use different agent configurations:
 
@@ -484,6 +800,46 @@ The subagent inherits its tool access, permissions, and behavior from whichever 
 ```
 
 For details on how subagents work and best practices, see [Subagents](https://kiro.dev/docs/custom-agents/subagents.md).
+
+## Using tool settings in agent configuration
+
+Tool settings are specified in the `toolsSettings` section of the agent configuration file. Each tool's settings are specified using the tool's name as the key.
+
+For MCP server tools, use the format `@server_name/tool_name` as the key:
+
+```json
+{
+  "toolsSettings": {
+    "write": {
+      "allowedPaths": ["~/projects"]
+    },
+    "@git/git_status": {
+      "git_user": "$GIT_USER"
+    }
+  }
+}
+```
+
+## Tool permissions
+
+Tools can be explicitly allowed in the `allowedTools` section of the agent configuration:
+
+```json
+{
+  "allowedTools": [
+    "read",
+    "knowledge",
+    "@git/git_status"
+  ]
+}
+```
+
+If a tool is not in the `allowedTools` list, the user will be prompted for permission when the tool is used unless an allowed `toolsSettings` configuration is set.
+
+Some tools have default permission behaviors:
+- `report` is trusted by default
+- `read`, `grep`, and `glob` are trusted in the current working directory
+- `shell`, `write`, and `aws` prompt for permission by default, but can be configured to allow specific commands/paths/services
 
 ## Next steps
 

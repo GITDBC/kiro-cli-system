@@ -19,11 +19,12 @@ File and task triggers are available in the IDE and CLI V3. Kiro Web sessions ru
 | [Prompt Submit](#prompt-submit) | ✓ | ✓ | ✓ | — |
 | [Agent Stop](#agent-stop) | ✓ | ✓ | ✓ | — |
 | [Session Start](#session-start) | ✓ | V3 | ✓ | — |
-| [Agent Spawn](#agent-spawn-compatibility-alias) | — | Alias | — | — |
+| [Agent Spawn](#agent-spawn-cli-2x-and-v3-alias) | — | 2.x / V3 alias | — | — |
 | [Session End](#session-end-cli-v3-only) | — | V3 | — | — |
 | [Pre Compaction](#pre-compaction) | ✓ | V3 (3.1.0+) | — | — |
 | [Post Compaction](#post-compaction) | ✓ | V3 (3.1.0+) | — | — |
 | [Pre Tool Use](#pre-tool-use) | ✓ | ✓ | ✓ | — |
+| [Permission Request](#permission-request-cli-v3) | — | V3 (3.4.0+) | — | — |
 | [Post Tool Use](#post-tool-use) | ✓ | ✓ | ✓ | — |
 | [File Create](#file-create) | ✓ | V3 | — | — |
 | [File Save](#file-save) | ✓ | V3 | — | — |
@@ -101,16 +102,16 @@ Triggers when the agent has completed its turn and finished responding to the us
 
 Triggers when a new chat session starts in the IDE or CLI V3.
 
-**ℹ️ Info:** CLI V3 uses `SessionStart` as the canonical trigger and accepts `AgentSpawn` and `agentSpawn` as compatibility spellings.
+**ℹ️ Info:** CLI 2.x embedded Hooks used `agentSpawn`. CLI V3 uses `SessionStart` as the canonical trigger and accepts `AgentSpawn` and `agentSpawn` as compatibility spellings. See [Hooks migration](https://kiro.dev/docs/cli/v3/hooks-migration.md) for the complete mapping.
 
 **Use Cases:**
 - Inject workspace-specific instructions into the agent's context
 - Run environment checks (verify dependencies, validate credentials)
 - Load project-specific configuration at session start
 
-## Agent Spawn (compatibility alias)
+## Agent Spawn (CLI 2.x and V3 alias)
 
-CLI V3 uses `SessionStart` as the canonical trigger and accepts `AgentSpawn` and `agentSpawn` for compatibility. The event provides no tool context.
+CLI 2.x used `agentSpawn` when the agent was first activated. CLI V3 uses `SessionStart` as the canonical trigger but accepts `AgentSpawn` and `agentSpawn` for compatibility. The event provides no tool context.
 
 ```json
 {
@@ -207,7 +208,7 @@ Triggers when the agent is about to invoke a tool. Can validate and block tool u
     - No matcher - Apply to all tools
 
     
-**ℹ️ Match V3 tool IDs or tags:** Use the category tag (`read`) or the V3 ID (`read_file`, `grep_search`).
+**ℹ️ Match V3 tool IDs or tags:** V3 does not expand CLI 2.x tool names. `fs_read` and `grep` are not V3 IDs or tags; use the category tag (`read`) or the V3 ID (`read_file`, `grep_search`). The [Hooks migration](https://kiro.dev/docs/cli/v3/hooks-migration.md#migrate-tool-matchers) page lists the group each CLI 2.x name maps to.
 
     **Hook Event:**
 
@@ -221,10 +222,90 @@ Triggers when the agent is about to invoke a tool. Can validate and block tool u
     - **2**: Block tool execution, return STDERR to LLM
     - **Other**: Show STDERR warning to user, allow tool execution
 
+    **Structured decision (Kiro CLI 3.4.0 or later):**
+
+    In Kiro CLI 3.4.0 or later, a V3 Hook that exits 0 can also print a JSON decision on STDOUT. Before 3.4.0, the exit code was the only decision a CLI Hook could make.
+
+    ```json
+    
+      }
+    }
+    ```
+
+    - `permissionDecision` is `allow`, `ask`, or `deny`. `allow` skips the permission prompt this one call would otherwise show, `ask` keeps the prompt, and `deny` blocks the call and returns `permissionDecisionReason` to the agent.
+    - `updatedInput` replaces the whole `tool_input` object. It is not merged, and later Pre Tool Use Hooks receive the replacement.
+    - When several Hooks run, `deny` or exit code 2 from any Hook wins over `allow`, and `ask` wins over `allow`. A rewrite cancels an earlier Hook's `allow` unless that Hook or a later one allows the new input.
+    - `allow` covers only permissions that would ordinarily prompt, and only for this call. It cannot override a policy `deny`, a protected-path or organization prompt, or save a rule.
+    - An `updatedInput` that is not an object, or any other replacement that does not fit the shape above, denies the call.
+    - Plain text, empty STDOUT, malformed JSON, a `hookSpecificOutput` that is null or not an object, or an unrecognized `permissionDecision` value is not a decision, and the exit code alone applies.
+
+    To confirm a rewrite, save a `PreToolUse` Hook with the matcher `^read_file$` whose command prints the JSON above, then ask Kiro in a V3 session to read a different file. The tool call shows the replaced path.
+
 **Use Cases:**
 - Block certain tool invocations
 - Validate tool inputs before execution
+- Rewrite a tool call's inputs before it runs (CLI V3, Kiro CLI 3.4.0 or later)
 - Provide additional instructions to the agent before it invokes a tool
+
+## Permission Request (CLI V3)
+
+In Kiro CLI 3.4.0 or later, the `PermissionRequest` trigger runs in a V3 session after Kiro has evaluated its permission policy, immediately before a tool call would prompt you. A script can then answer routine prompts in a session nobody is watching. The trigger does not run when policy already allows or denies the call, or when a Pre Tool Use Hook already allowed it. CLI 2.x has no equivalent. The camelCase alias `permissionRequest` is also accepted.
+
+Only command actions run on this trigger. The `matcher` field works as it does for [Pre Tool Use](#pre-tool-use).
+
+**Hook Event:**
+
+```json
+{
+  "hook_event_name": "PermissionRequest",
+  "cwd": "/current/working/directory",
+  "session_id": "abc123-def456-789",
+  "tool_name": "read_file",
+  "tool_input": {
+    "path": "/home/user/notes/todo.md"
+  },
+  "permission": {
+    "capability": "fs_read",
+    "paths": ["/home/user/notes/todo.md"]
+  }
+}
+```
+
+`tool_input` is the effective input, after any Pre Tool Use rewrite. The `permission` object carries whichever of `capability`, `resource`, `command`, and `paths` apply to the call.
+
+Return the answer as JSON on STDOUT, in one of two shapes:
+
+```json
+{"hookSpecificOutput": {"decision": {"behavior": "allow"}}}
+```
+
+
+```json
+{"hookSpecificOutput": {"decision": {"behavior": "deny", "message": "Reads outside the workspace need a person."}}}
+```
+
+**Exit Code Behavior:**
+- **0** with an `allow` decision: The tool call runs without a prompt.
+- **0** with a `deny` decision: The tool call is blocked and `message` is returned to the agent.
+- **2**: Deny the tool call.
+- **0** without a valid decision, or **Other**: Kiro shows the prompt as usual.
+
+`decision.behavior` accepts only `allow` and `deny`. Any other `hookSpecificOutput`, including the Pre Tool Use fields `permissionDecision` and `permissionDecisionReason`, is not a decision and keeps the prompt. When several Hooks run, `deny` or exit code 2 from any Hook wins over `allow`.
+
+To confirm the Hook answers, save a `PermissionRequest` Hook with the matcher `^read_file$` whose command prints the `allow` shape, then ask Kiro in a V3 session with no `read_file` allow rule to read a file outside the workspace. The read runs without a prompt and the Hook card shows the decision.
+
+**Use Cases:**
+- Approve routine prompts from a script in unattended sessions
+- Deny a call that fails a team check, with a message the agent can act on
+- Log every prompt a session would have shown
+
+### Security and trust
+
+A `PermissionRequest` Hook can allow or deny, from a script, the ordinary prompt a tool call would otherwise show, so the call proceeds in a session nobody is watching. Each answer applies to that one tool call only. Kiro does not save it as a rule.
+
+The Hook cannot override a policy `deny`, change the tool's input, or answer a protected-path, organization, or administration prompt, or any other prompt that requires a person. Those prompts still wait for you.
+
+To stop a Hook from answering, disable or remove its definition. To limit which calls it answers, narrow its `matcher`. Policy `allow`, `ask`, and `deny` rules are described under [Permissions](https://kiro.dev/docs/permissions.md).
 
 ## Post Tool Use
 
@@ -331,4 +412,4 @@ For MCP tools, V3 Hook events use the sanitized internal tool ID `mcp_<server>_<
 }
 ```
 
-This applies to both Pre Tool Use and Post Tool Use Hooks when targeting MCP server tools. In the Hook's `matcher`, use either the `@<server>` or `@<server>/<tool>` selector or a regex against the internal ID.
+This applies to Pre Tool Use, Permission Request, and Post Tool Use Hooks when targeting MCP server tools. In the Hook's `matcher`, use either the `@<server>` or `@<server>/<tool>` selector or a regex against the internal ID.

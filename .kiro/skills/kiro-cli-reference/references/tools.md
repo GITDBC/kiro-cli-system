@@ -17,6 +17,7 @@ Kiro's agent includes built-in tools for development tasks. These are provided b
 | **IDE only** | Background process control and output, dev-server orchestration, and editor code analysis (`read_code`, semantic rename) |
 | **IDE and Web** | Powers (`kiro_powers`) |
 | **CLI only** | Code intelligence (`code`) and knowledge (experimental) |
+| **CLI 2.x legacy** | `session`, `tool_search` (V2), `thinking` (experimental), `use_aws` (preferred alias `aws`), `delegate`, `task` (aliases `todo`, `todo_list`), `goal`; not V3 built-ins |
 | **Configuration** | Use [custom agents](https://kiro.dev/docs/custom-agents.md) `tools` field + [permissions](https://kiro.dev/docs/permissions.md) |
 
 ## Tool catalog
@@ -52,8 +53,15 @@ Some tools aren't available on every surface or agent engine yet. CLI V3 has no 
 | `kiro_powers` | ✓ | — | ✓ | ✓ | GA |
 | `createHook` | ✓ | ✓ | — | — | GA |
 | `code` | — | ✓ | — | — | GA |
+| `session` | — | 2.x | — | — | CLI 2.x only |
+| `tool_search` | — | V2 | — | — | CLI V2 only |
 | `knowledge` | — | ✓ | — | — | Experimental |
-| `thinking` |
+| `thinking` | — | 2.x | — | — | CLI 2.x only |
+| `use_aws` / `aws` | — | 2.x | — | — | CLI 2.x only → use MCP servers |
+| `delegate` | — | 2.x | — | — | CLI 2.x only → use sub-agents |
+| `task` (aliases `todo`, `todo_list`) | — | 2.x | — | — | CLI 2.x only |
+| `goal` | — | 2.x | — | — | CLI 2.x only; reports verified completion of a `/goal` you set |
+
 The background-process tools (`control_bash_process` or `control_pwsh_process`, `get_process_output`, and `list_processes`) are available in the IDE, where they support [dev servers](https://kiro.dev/docs/ide/chat/dev-servers.md). CLI V3 can start a command in the background through `execute_bash` (`execute_pwsh` on Windows) with `run_in_background`, but it does not register these process-control tools. The `code` tool (tree-sitter and LSP-based [code intelligence](https://kiro.dev/docs/tools/code-intelligence.md)) is provided to non-IDE clients; in the IDE, equivalent capabilities are built in as editor-native tools - `read_code` for AST analysis and semantic rename - riding the language servers the editor already runs.
 
 ## Configuring tool access
@@ -70,7 +78,7 @@ Common category mappings include:
 
 | Category | Commonly includes |
 |----------|-------------------|
-| `read` | read_file, list_directory, file_search, grep_search, code, introspect |
+| `read` | read_file, list_directory, file_search, grep_search, code, `tool_search` (V2), introspect |
 | `write` | fs_write, fs_append, str_replace, delete_file, code |
 | `shell` | execute_bash or execute_pwsh; IDE clients may also expose control_bash_process or control_pwsh_process, get_process_output, and list_processes |
 | `web` | web_fetch, remote_web_search |
@@ -96,10 +104,10 @@ Control what tools can *do* (not just which are visible) with [permissions](http
 
 | Tool | Description |
 |------|-------------|
-| `read_file` | Read a single file (text or image). Call it once per file to read several files. |
+| `read_file` | Read a single file (text or image). Call it once per file to read several files. The CLI 2.x alias `fs_read` maps to the `read` tag during migration; it is not a Hook or runtime ID |
 | `list_directory` | List directory contents in long format |
-| `file_search` | Fuzzy file path search (glob patterns). |
-| `grep_search` | Regex content search across files. |
+| `file_search` | Fuzzy file path search (glob patterns). CLI 2.x name: `glob` |
+| `grep_search` | Regex content search across files. CLI 2.x name: `grep` |
 | `code` | AST-based code analysis - signatures, symbols, fuzzy search |
 
 All read tools apply [permissions](https://kiro.dev/docs/permissions.md) `fs_read` capability rules. `.kiroignore` support [varies by surface](https://kiro.dev/docs/kiroignore.md); in CLI V3, matching direct reads are blocked, while `file_search` and `grep_search` filter ignored paths from results.
@@ -108,7 +116,7 @@ All read tools apply [permissions](https://kiro.dev/docs/permissions.md) `fs_rea
 
 | Tool | Description |
 |------|-------------|
-| `fs_write` | Create or overwrite a file. |
+| `fs_write` | Create or overwrite a file. CLI 2.x name: `write` |
 | `fs_append` | Append content to the end of an existing file |
 | `str_replace` | Replace exact text in a file (targeted edits) |
 | `delete_file` | Delete a file |
@@ -119,7 +127,7 @@ Write tools respect [permissions](https://kiro.dev/docs/permissions.md) `fs_writ
 
 | Tool | Description | Surfaces |
 |------|-------------|----------|
-| `execute_bash` | Run a shell command. | IDE · CLI · Web |
+| `execute_bash` | Run a shell command. CLI 2.x names: `shell`, `execute_cmd` | IDE · CLI · Web |
 | `control_bash_process` / `control_pwsh_process` | Start/stop long-running background processes | IDE |
 | `get_process_output` | Read output from a background process | IDE |
 | `list_processes` | List running background processes | IDE |
@@ -177,9 +185,9 @@ See [Invoking as sub-agents](https://kiro.dev/docs/custom-agents/subagents.md) f
 
 [Detailed guide →](https://kiro.dev/docs/mcp/tool-search.md)
 
-Kiro IDE 1.3 and later load MCP tools on demand. Local V3 sessions in Kiro CLI do too. Kiro receives a compact tool list, loads the definitions it needs, then calls those tools through normal permission and Hook checks.
+Kiro IDE 1.3 and later load MCP tools on demand. Local V3 sessions in Kiro CLI 2.31 and later do too. Kiro receives a compact tool list, loads the definitions it needs, then calls those tools through normal permission and Hook checks.
 
-V3 activity can show `tool_load` before `tool_call`. See the [Tool Search guide](https://kiro.dev/docs/mcp/tool-search.md).
+V3 activity can show `tool_load` before `tool_call`. V2 sessions can enable the legacy `tool_search` path. See the [Tool Search guide](https://kiro.dev/docs/mcp/tool-search.md#enable-tool-search-in-v2-sessions).
 
 ## Session tools
 
