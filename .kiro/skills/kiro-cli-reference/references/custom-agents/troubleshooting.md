@@ -39,7 +39,7 @@ This guide helps you diagnose and resolve common issues when creating and using 
 
 **Solutions:**
 - Compare your configuration against the schema using `/agent schema`
-- Check field names for typos (e.g., `allowedTools` vs `allowedTool`)
+- Check field names for typos (e.g., `tools` vs `tool`)
 - Verify data types match schema requirements (arrays vs strings, booleans vs strings)
 
 ## Agent loading issues
@@ -83,7 +83,7 @@ This guide helps you diagnose and resolve common issues when creating and using 
 
 **Symptoms:**
 - Error messages about unknown or unavailable tools
-- Custom agent asking for permission for tools in `allowedTools`
+- Custom agent asking for permission for tools it should already have access to
 - MCP server tools not working
 
 **Solutions:**
@@ -120,14 +120,12 @@ This guide helps you diagnose and resolve common issues when creating and using 
 **Problem**: Custom agent prompts for permission for tools you thought were pre-approved.
 
 **Symptoms:**
-- Permission prompts for tools listed in `allowedTools`
 - Workflow interruptions despite custom agent configuration
 
 **Solutions:**
-- Ensure tools are listed in both `tools` and `allowedTools` arrays
-- Check for typos in tool names between the two arrays
-- For MCP tools, use the full server-prefixed name in `allowedTools`
-- Verify that `toolAliases` are correctly applied
+- Check the agent's `permissions` block and your `permissions.yaml` rules for the tool
+- Verify tool names in the `tools` array match the tool IDs you expect
+- For MCP tools, use the full server-prefixed name in permission rules
 
 ## Debugging agent behavior
 

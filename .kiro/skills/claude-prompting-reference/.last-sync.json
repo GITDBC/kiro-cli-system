@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-10-16T07:18:45.035596+00:00",
+  "timestamp": "2026-11-17T10:16:37.513898+00:00",
   "source": "llms.txt",
   "catalogue_url": "https://platform.claude.com/llms.txt",
   "docs_base_url": "https://platform.claude.com/docs/en/",
-  "pages_total": 16,
-  "new": 2,
+  "pages_total": 15,
+  "new": 0,
   "updated": 0
 }

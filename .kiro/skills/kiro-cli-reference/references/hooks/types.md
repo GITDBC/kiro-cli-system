@@ -12,24 +12,26 @@ Agent hooks support various trigger types, each designed for specific automation
 
 This page describes standalone Hook definitions stored in `.kiro/hooks/*.json`. Inline profile Hooks have separate current and legacy forms; see the [agent configuration reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#hooks-field).
 
-File and task triggers are available in the IDE and CLI V3. Web can store Hook configuration for later local use, but Web sessions do not run these triggers. The table below shows what's supported where.
+File and task triggers are available in the IDE and CLI V3. Kiro Web sessions run the Prompt Submit, Agent Stop, Session Start, Pre Tool Use, and Post Tool Use triggers. The table below shows what's supported where.
 
-| Trigger | IDE | CLI | Web |
-|---------|:---:|:---:|:---:|
-| [Prompt Submit](#prompt-submit) | ✓ | ✓ | — |
-| [Agent Stop](#agent-stop) | ✓ | ✓ | — |
-| [Session Start](#session-start) | ✓ | V3 | — |
-| [Agent Spawn](#agent-spawn-cli-2x-and-v3-alias) | — | 2.x / V3 alias | — |
-| [Session End](#session-end-cli-v3-only) | — | V3 | — |
-| [Pre Tool Use](#pre-tool-use) | ✓ | ✓ | — |
-| [Post Tool Use](#post-tool-use) | ✓ | ✓ | — |
-| [File Create](#file-create) | ✓ | V3 | — |
-| [File Save](#file-save) | ✓ | V3 | — |
-| [File Delete](#file-delete) | ✓ | V3 | — |
-| [Pre Task Execution](#pre-task-execution) | ✓ | V3 | — |
-| [Post Task Execution](#post-task-execution) | ✓ | V3 | — |
-| [Manual](#manual-cli-v3) | — | Listed in V3 | — |
-| [Legacy Manual Hook](#legacy-manual-hooks-ide-only) | Legacy only | — | — |
+| Trigger | IDE | CLI | Web | Mobile |
+|---------|:---:|:---:|:---:|:------:|
+| [Prompt Submit](#prompt-submit) | ✓ | ✓ | ✓ | — |
+| [Agent Stop](#agent-stop) | ✓ | ✓ | ✓ | — |
+| [Session Start](#session-start) | ✓ | V3 | ✓ | — |
+| [Agent Spawn](#agent-spawn-compatibility-alias) | — | Alias | — | — |
+| [Session End](#session-end-cli-v3-only) | — | V3 | — | — |
+| [Pre Compaction](#pre-compaction) | ✓ | V3 (3.1.0+) | — | — |
+| [Post Compaction](#post-compaction) | ✓ | V3 (3.1.0+) | — | — |
+| [Pre Tool Use](#pre-tool-use) | ✓ | ✓ | ✓ | — |
+| [Post Tool Use](#post-tool-use) | ✓ | ✓ | ✓ | — |
+| [File Create](#file-create) | ✓ | V3 | — | — |
+| [File Save](#file-save) | ✓ | V3 | — | — |
+| [File Delete](#file-delete) | ✓ | V3 | — | — |
+| [Pre Task Execution](#pre-task-execution) | ✓ | V3 | — | — |
+| [Post Task Execution](#post-task-execution) | ✓ | V3 | — | — |
+| [Manual](#manual-cli-v3) | — | Listed in V3 | Can be created | — |
+| [Legacy Manual Hook](#legacy-manual-hooks-ide-only) | Legacy only | — | — | — |
 
 ## Prompt Submit
 
@@ -99,16 +101,16 @@ Triggers when the agent has completed its turn and finished responding to the us
 
 Triggers when a new chat session starts in the IDE or CLI V3.
 
-**ℹ️ Info:** CLI 2.x embedded Hooks used `agentSpawn`. CLI V3 uses `SessionStart` as the canonical trigger and accepts `AgentSpawn` and `agentSpawn` as compatibility spellings. See [Hooks migration](https://kiro.dev/docs/cli/v3/hooks-migration.md) for the complete mapping.
+**ℹ️ Info:** CLI V3 uses `SessionStart` as the canonical trigger and accepts `AgentSpawn` and `agentSpawn` as compatibility spellings.
 
 **Use Cases:**
 - Inject workspace-specific instructions into the agent's context
 - Run environment checks (verify dependencies, validate credentials)
 - Load project-specific configuration at session start
 
-## Agent Spawn (CLI 2.x and V3 alias)
+## Agent Spawn (compatibility alias)
 
-CLI 2.x used `agentSpawn` when the agent was first activated. CLI V3 uses `SessionStart` as the canonical trigger but accepts `AgentSpawn` and `agentSpawn` for compatibility. The event provides no tool context.
+CLI V3 uses `SessionStart` as the canonical trigger and accepts `AgentSpawn` and `agentSpawn` for compatibility. The event provides no tool context.
 
 ```json
 {
@@ -130,6 +132,35 @@ CLI 2.x used `agentSpawn` when the agent was first activated. CLI V3 uses `Sessi
 ## Session End (CLI V3 only)
 
 The `SessionEnd` trigger fires when a CLI V3 session is torn down.
+
+## Pre Compaction
+
+Triggers before Kiro compacts a conversation. In Kiro IDE, compaction is automatic, so the Hook runs when the session approaches the model's context limit; see [Compaction](https://kiro.dev/docs/compaction.md). This trigger takes no matcher.
+
+In Kiro IDE 1.4.121 or later, choose **Pre Compaction** from the **Compaction Hooks** group in the Hook editor's trigger list.
+
+In Kiro CLI 3.1.0 or later, the `PreCompact` trigger fires before a CLI V3 session compacts its conversation. Compaction runs when you run `/compact`, when automatic summarization starts, when Kiro recovers from a context overflow, and when Kiro hands the session to another model.
+
+**Exit Code Behavior:**
+- **0**: Compaction continues. In the IDE, Kiro gives the command's standard output to the summarizer as guidance. In CLI V3, STDOUT is added to the agent's context, up to 3,000 characters.
+- **2**: Cancel the compaction. In the IDE, Kiro reports STDERR as the reason, and the turn continues without compacting unless the context is nearly full. In CLI V3, the conversation stays as it is.
+
+**Use Cases:**
+- Save a snapshot of current work before older history is summarized
+- Refuse compaction while a task you track outside Kiro is still open
+
+## Post Compaction
+
+Triggers after Kiro has compacted a conversation and the summary has replaced the older history. The Hook's output is added to the conversation, so the agent keeps details the summary left out. This trigger takes no matcher.
+
+In Kiro IDE 1.4.121 or later, choose **Post Compaction** from the **Compaction Hooks** group in the Hook editor's trigger list.
+
+In Kiro CLI 3.1.0 or later, the `PostCompact` trigger fires after a CLI V3 session compacts its conversation. The event JSON on STDIN includes `summary`, up to 3,000 characters of the summary text, and `summary_path`, the file containing the full summary. The Hook cannot undo the compaction or change the summary.
+
+**Use Cases:**
+- Restore task-specific guidance after compaction
+- Archive each summary for review
+- Record when a long session was compacted and what the summary kept
 
 ## Pre Tool Use
 
@@ -176,7 +207,7 @@ Triggers when the agent is about to invoke a tool. Can validate and block tool u
     - No matcher - Apply to all tools
 
     
-**ℹ️ Match V3 tool IDs or tags:** V3 does not expand CLI 2.x tool names. `fs_read` and `grep` are not V3 IDs or tags; use the category tag (`read`) or the V3 ID (`read_file`, `grep_search`). The [Hooks migration](https://kiro.dev/docs/cli/v3/hooks-migration.md#migrate-tool-matchers) page lists the group each CLI 2.x name maps to.
+**ℹ️ Match V3 tool IDs or tags:** Use the category tag (`read`) or the V3 ID (`read_file`, `grep_search`).
 
     **Hook Event:**
 
@@ -275,6 +306,8 @@ Triggers after a spec task completes execution.
 ## Manual (CLI V3)
 
 CLI V3 recognizes and lists `Manual` Hook definitions, but `/hooks` doesn't provide an action to invoke them.
+
+In Kiro Web, you can choose **Manual** as the trigger when you create a Hook under **Agent Config > Hooks**.
 
 ## Legacy manual Hooks (IDE only)
 

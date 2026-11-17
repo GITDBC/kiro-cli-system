@@ -114,9 +114,8 @@ By default, Kiro collects usage data, errors, crash reports, and other metrics a
 
     To opt out of sharing in Kiro Web:
 
-    1. Sign in and go to [Settings](https://app.kiro.dev/settings/agent).
-    2. Select "Agent" settings.
-    3. To opt out of content collection, toggle off the **Allow AWS to use your Kiro Web content for service improvement**.
+    1. Sign in and go to [Settings > Privacy & data](https://app.kiro.dev/settings/privacy).
+    2. To opt out of content collection, toggle off the **Allow AWS to use your Kiro Web content for service improvement**.
 
 ## Types of telemetry collected
 
@@ -141,7 +140,7 @@ The abuse detection mechanisms implemented through Amazon Bedrock apply to all K
 
 - For all Kiro users across all models, we may use automated abuse detection mechanisms to detect activity that violates our, or third-party model providers', terms of service or use policies.
 - For OpenAI GPT models, classifier-flagged traffic will be retained for up to 30 days (unless otherwise required by law) for automated offline abuse detection.
-- For Anthropic Claude Fable 5.1 (Preview), all traffic will be retained for up to 30 days (unless otherwise required by law) for automated offline abuse detection. Classifier-flagged traffic will be subject to potential human review performed by AWS, and we may review flagged traffic for abuse.
+- For Anthropic Claude Fable 5.1, all traffic will be retained for up to 30 days (unless otherwise required by law) for automated offline abuse detection. Classifier-flagged traffic will be subject to potential human review performed by AWS, and we may review flagged traffic for abuse.
 
 In addition to the abuse detection mechanisms implemented through Amazon Bedrock, only with respect to Kiro Free Tier users, we may use additional abuse detection mechanisms designed to detect activity that violates our terms of service or use policies. Accordingly, for Free Tier users we may store your inputs for up to 60 days (unless otherwise required by law) for the purposes of detecting activity that violates the Agreement and improving our ability to detect this activity. We will not use such inputs to improve Kiro's underlying generative AI models, but we may use your inputs to develop and improve classifier tools designed to detect abuse.
 

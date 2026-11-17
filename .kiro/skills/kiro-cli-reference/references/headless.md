@@ -20,7 +20,7 @@ For details on authentication precedence and checking your active credentials, s
 
 ## Running headless commands
 
-Pass `--no-interactive` with your initial instruction. The instruction can be a positional argument or supplied through piped stdin. When stdin is piped and no positional argument is given, Kiro reads the full stream as the instruction:
+Pass `--no-interactive` with your initial instruction. The instruction can be a positional argument or supplied through piped stdin. When stdin is piped and no positional argument is given, Kiro reads the full stream as the instruction. Name the harness with `--v3` so the run does not depend on the default.
 
 ```bash
 # Positional argument
@@ -30,7 +30,9 @@ kiro-cli chat --no-interactive "your prompt here"
 printf '%s\n' "your prompt here" | kiro-cli chat --no-interactive
 ```
 
-Since there's no user to approve tool calls, V3 can use `--trust-all-tools` for session-wide approval or `--trust-tools` with exact internal tool IDs. Use scoped `permissions.yaml` rules for reusable capability policies. CLI 2.x uses its own tool names with `--trust-tools`.
+Since there is no user to approve tool calls, local V3 sessions can use `--trust-all-tools` for session-wide approval or `--trust-tools` with a comma-separated list of tool IDs. Use scoped `permissions.yaml` rules for reusable capability policies.
+
+In a `--no-interactive` V3 run, a `--trust-tools` entry can also be `@server` or `@server/tool` for an MCP server's tools, `@builtin`, or a `*`/`?` pattern. A trusted tool runs on any path it would ask about, outside the workspace too.
 
 ```bash
 # V3: trust all tools for this session
@@ -40,17 +42,35 @@ kiro-cli chat --v3 --no-interactive --trust-all-tools "Write tests for the auth 
 kiro-cli chat --v3 --no-interactive --trust-tools=read_file,grep_search "Find all TODO comments in src/"
 ```
 
+In V3, a sub-agent's tool call runs without approval only when the parent session's policy also allows it. Otherwise the call needs approval, so a headless run denies it with this error:
+
+```text
+[denied] tool permission approval is not supported in non-interactive mode. Use --trust-all-tools to auto-approve.
+```
+
+Adding the sub-agent to `trustedAgents` doesn't change this. Add the sub-agent's `allow` rules to the parent agent's `permissions.rules` or to `permissions.yaml`, or use `--trust-all-tools`. See [Sub-agent permissions](https://kiro.dev/docs/custom-agents/subagents.md#sub-agent-permissions).
+
+### Run a prompt or SOP as the first message
+
+A first message that starts with `@<prompt-name>` runs that prompt instead of sending the text as typed, both in an interactive session and with `--no-interactive`. The name matches a workspace, global, or MCP prompt, case-insensitively; `@agent-sop:<name>` runs the named SOP. Text after the name becomes the prompt's arguments.
+
+```bash
+kiro-cli chat --agent <agent> --no-interactive "@agent-sop:<name> Payments eu-west-1"
+```
+
+Kiro waits for the MCP servers that serve prompts to finish starting, up to 30 seconds by default, before it decides. A name that no prompt matches once every server has started is sent as typed. A path-like mention such as `@src/main.rs` stays a file reference. To confirm the SOP is available to the agent, start an interactive session with the same `--agent` and run `/prompts list`; the SOP appears under its `agent-sop:` name.
+
 ### V3 Hooks and built-in tools
 
-Starting with Kiro CLI 2.27.1, V3 non-interactive runs load Hooks from the selected agent and workspace. `PreToolUse` Hooks run before a tool call and can deny it. See [Hooks](https://kiro.dev/docs/hooks.md) for supported triggers and actions.
+V3 non-interactive runs load Hooks from the selected agent and workspace. `PreToolUse` Hooks run before a tool call and can deny it. See [Hooks](https://kiro.dev/docs/hooks.md) for supported triggers and actions.
 
 `--trust-all-tools` approves Hook confirmation requests automatically. `--trust-tools` cannot, because a Hook request is not tied to a tool ID. Without `--trust-all-tools`, Kiro denies it. A Hook that blocks is final under either flag. For automation, write Hooks that return a final allow or deny decision.
 
-V3 non-interactive runs enable knowledge and code intelligence by default. Set `chat.enableKnowledge` or `chat.enableCodeIntelligence` to `false` to turn either tool off. See [V3 built-in tools](https://kiro.dev/docs/cli/v3/new-features.md#built-in-tools) and the [settings reference](https://kiro.dev/docs/reference/settings.md#knowledge-base).
+V3 non-interactive runs enable knowledge and code intelligence by default. Set `chat.enableKnowledge` or `chat.enableCodeIntelligence` to `false` to turn either tool off. See [Built-in tools](https://kiro.dev/docs/tools.md) and the [settings reference](https://kiro.dev/docs/reference/settings.md#knowledge-base).
 
 ### Saved V3 settings
 
-Kiro CLI 2.31.1 and later applies saved compaction and Tool Search settings to V3 non-interactive runs.
+V3 non-interactive runs apply saved compaction and Tool Search settings.
 
 | Purpose | Settings |
 |---|---|
@@ -72,7 +92,7 @@ See [Compaction](https://kiro.dev/docs/compaction.md#configuration), [Tool Searc
 
 ## Local command sandbox
 
-Kiro CLI 2.31 and later V3 headless runs read global and project `sandbox.json` settings. When the resolved settings have `enabled: true`, Kiro requests sandboxing without an extra flag. If Kiro cannot activate the sandbox, the run warns and continues without sandboxing. If requested MCP wrapping fails, sandboxed commands stay protected, but the affected MCP servers do not.
+V3 headless runs read global and project `sandbox.json` settings. When the resolved settings have `enabled: true`, Kiro requests sandboxing without an extra flag. If Kiro cannot activate the sandbox, the run warns and continues without sandboxing. If requested MCP wrapping fails, sandboxed commands stay protected, but the affected MCP servers do not.
 
 Add `--sandbox` when your script must stop instead of continuing without all requested protection:
 
@@ -107,7 +127,7 @@ jobs:
 
 ```bash
 # Generate and run tests
-kiro-cli chat --no-interactive --trust-all-tools "Write tests for the auth module and run them"
+kiro-cli chat --v3 --no-interactive --trust-all-tools "Write tests for the auth module and run them"
 
 # Troubleshoot a failing build with the full instruction on stdin
 {
@@ -116,11 +136,11 @@ kiro-cli chat --no-interactive --trust-all-tools "Write tests for the auth modul
 } | kiro-cli chat --v3 --no-interactive --trust-tools=read_file
 ```
 
-Use `--require-mcp-startup` when a non-interactive run depends on MCP tools. V2 and V3 wait for configured MCP servers before submitting the instruction. In V3, Kiro exits with code 3 if a server fails, its startup state cannot be determined, or it does not report a status within 30 seconds. Without the flag, Kiro logs MCP startup problems and continues. See [exit codes](https://kiro.dev/docs/reference/exit-codes.md) for handling failures in scripts.
+Use `--require-mcp-startup` when a non-interactive run depends on MCP tools. V3 waits for configured MCP servers before submitting the instruction. In V3, Kiro exits with code 3 if a server fails, its startup state cannot be determined, or it does not report a status within 30 seconds. Without the flag, Kiro logs MCP startup problems and continues. See [exit codes](https://kiro.dev/docs/reference/exit-codes.md) for handling failures in scripts.
 
 ### Agent selection
 
-Pass `--agent <name>` to run a non-interactive command with a specific agent. Without `--agent`, a fresh V3 run uses `chat.defaultAgent` when configured. If no default is configured, it uses the built-in default. Without an explicit model, a new V3 run applies `chat.defaultModel` when configured; a selected agent that specifies a model can override it. V2 resolves its default agent and model internally.
+Pass `--agent <name>` to run a non-interactive command with a specific agent. Without `--agent`, a fresh V3 run uses `chat.defaultAgent` when configured. If no default is configured, it uses the built-in default. Without an explicit model, a new V3 run applies `chat.defaultModel` when configured; a selected agent that specifies a model can override it.
 
 ```bash
 kiro-cli settings chat.defaultAgent my-project-agent
@@ -129,7 +149,7 @@ kiro-cli chat --v3 --no-interactive "Write tests for the auth module"  # runs on
 
 **⚠️ Warning:** If the agent named by `--agent` isn't available, the run exits with code 4. A fresh V3 run also exits with code 4 when its configured `chat.defaultAgent` is unavailable. See [exit codes](https://kiro.dev/docs/reference/exit-codes.md) for exact rules and script handling.
 
-Pass `--model <id>` to pin the model for a run. On V2 and V3, an explicit value overrides the selected agent's configured model; on V3, it also overrides `chat.defaultModel`, and on V2, it overrides a resumed session's saved model. V2 trims surrounding whitespace before passing an unlisted, non-empty ID to the backend; a blank value sends no override and leaves the current model selection unchanged. Without `--model`, a resumed session keeps its original agent and model.
+Pass `--model <id>` to pin the model for a run. An explicit value overrides the selected agent's configured model and `chat.defaultModel`. A blank value sends no override and leaves the current model selection unchanged. Without `--model`, a resumed session keeps its original agent and model.
 
 **ℹ️ Info:** V3 headless runs do not use the terminal UI's model availability check or session-start notices. If Kiro cannot set the requested model, it writes a warning to stderr and continues the run.
 
@@ -140,10 +160,10 @@ Pass `--effort <level>` to set the reasoning effort for a non-interactive run. S
 Pass `--output-format stream-json` to receive run events as [JSON Lines](https://jsonlines.org/) on stdout. Each line is a self-contained JSON object, making the output easier to process in scripts, logging pipelines, and CI jobs than formatted text.
 
 ```bash
-kiro-cli chat --no-interactive --trust-all-tools --output-format stream-json "Summarize open TODOs in src/"
+kiro-cli chat --v3 --no-interactive --trust-all-tools --output-format stream-json "Summarize open TODOs in src/"
 ```
 
-`--output-format stream-json` requires V2 or V3 (`--agent-engine v2` or `--agent-engine v3`).
+`--output-format stream-json` requires V3 (`--agent-engine v3`).
 
 ### Handle interrupted runs
 
@@ -174,18 +194,36 @@ Each workflow's progress is written to the run's output as it happens. When a wo
 
 If a workflow doesn't finish within the timeout, the run reports `workflow run incomplete (<outcomes>)` with a recovery hint. It does not report plain success.
 
+## Cloud sessions in V3
+
+Kiro CLI V3 can start a cloud session interactively or non-interactively. Add `--cloud` to run the task in a managed cloud sandbox, and `--repo` to start with one or more repositories.
+
+```bash
+kiro-cli --cloud --repo owner/repository
+kiro-cli chat --v3 --no-interactive --cloud --repo owner/repository "Review the open pull request"
+```
+
+For every cloud-session flag, the startup flow, repository setup, output, resume and delete behavior, and what differs from local sessions, see [Cloud sessions](https://kiro.dev/docs/cloud-sessions.md#cli).
+
+## Plain-text failures and exit status
+
+Plain-text runs explain when a turn was cancelled or refused. They also print why a session could not be created or resumed. A failed tool call includes its error message when one is available. If stdout closes before completion, Kiro exits with a nonzero status instead of finishing the turn.
+
 ## Flags reference
 
 | Flag | Description |
 |------|-------------|
 | `--no-interactive` | Run without an interactive session. Requires a non-empty instruction, either as a positional argument or via piped stdin |
+| `--cloud` | Run the V3 task in a cloud session |
+| `--repo <owner/repository>` | Add one or more comma-separated repositories to a V3 cloud session |
+| `--resume-id <ID>` | Resume a local or cloud session by ID |
 | `--agent <name>` | Run with a specific agent. When omitted, a fresh V3 run uses `chat.defaultAgent` when configured, or the built-in default otherwise |
 | `--model <id>` | Pin the model for the run. Takes precedence over a model named in the agent configuration and, on V3, over `chat.defaultModel` |
 | `--effort <level>` | Set reasoning effort for the run when the selected model supports it |
-| `--agent-engine <v1\|v2\|v3>` | Select the agent harness version. Shorthand flags `--v2` and `--v3` are also accepted |
-| `--output-format stream-json` | Emit run events as JSON Lines on stdout for programmatic use (V2/V3 only) |
+| `--agent-engine <v3>` | Select the agent harness version. Shorthand flag `--v3` is also accepted. |
+| `--output-format stream-json` | Emit run events as JSON Lines on stdout for programmatic use (V3 only) |
 | `--trust-all-tools` | Auto-approve all tool calls without prompting |
-| `--trust-tools=<tool-ids>` | Non-interactive V3: auto-approve exact internal tool IDs. CLI 2.x accepts its own tool names. Ignored by interactive V3 |
+| `--trust-tools=<tool-ids>` | Non-interactive V3: auto-approve the listed tool IDs, `@server` references, `@builtin`, and `*`/`?` patterns. Ignored by interactive V3 |
 | `--sandbox` | Require the local command sandbox and exit if protection cannot start |
 | `--require-mcp-startup` | Wait for required MCP servers and exit with code 3 if startup fails |
 
@@ -199,9 +237,10 @@ If a workflow doesn't finish within the timeout, the run reports `workflow run i
 ## Best practices
 
 - Store `KIRO_API_KEY` as a secret in your CI/CD platform — never hardcode it in pipeline configs or commit it to source control.
-- In headless V3, prefer `--trust-tools` with exact internal tool IDs over `--trust-all-tools`. Use scoped `permissions.yaml` allow rules when the policy should be reusable.
+- Name the harness with `--v3` in every headless command, so the run does not depend on the default.
+- In local headless V3 sessions, prefer `--trust-tools` with the tool IDs you need over `--trust-all-tools`. Use scoped `permissions.yaml` allow rules when the policy should be reusable.
 - Add `--require-mcp-startup` when your pipeline depends on MCP servers, so the task stops before it begins instead of running without the expected tools.
-- When using V2 or V3, supply your instruction as a positional argument or pipe it through stdin, but not both. V2 and V3 only read stdin when no positional argument is present.
+- When using V3, supply your instruction as a positional argument or pipe it through stdin, but not both. V3 only reads stdin when no positional argument is present.
 - Check [exit codes](https://kiro.dev/docs/reference/exit-codes.md) in your pipeline to handle failures gracefully.
 - Rotate API keys regularly and revoke any that are no longer in use from the [Kiro portal](https://app.kiro.dev).
 

@@ -7,7 +7,7 @@ Check Python dependency freshness and known vulnerabilities against
 
 - Python 3.13 and [uv](https://docs.astral.sh/uv/)
 
-Set up with `make setup` inside `tools/depschecker`.
+Set up with `make setup` inside `.kiro/skills/deps-audit/references/depschecker`.
 
 ## Usage
 
@@ -17,7 +17,7 @@ dependencies appear. The lockfile is inferred as a sibling of the given
 `pyproject.toml`, so the existing invocation keeps working unchanged.
 
 The commands below assume the tool environment is active. From the repository root,
-prefix each with `uv run --project tools/depschecker`.
+prefix each with `uv run --project .kiro/skills/deps-audit/references/depschecker`.
 
 ```bash
 # Full report (freshness + vulnerabilities), uv.lock inferred alongside
@@ -130,6 +130,12 @@ suite stays deterministic.
 ## Development
 
 Targets (`make lint`, `make code-check`, `make test`, `make all`) come from
-[`tools/tool.mk`](../tool.mk); the repository gates (`make lint-depschecker`,
-`make test-depschecker`) are in the root [`Makefile`](../../Makefile). `make test`
-enforces an 80% coverage floor.
+[`tools/tool.mk`](../../../../../tools/tool.mk); the repository gates
+(`make lint-depschecker`, `make test-depschecker`) are in the root
+[`Makefile`](../../../../../Makefile). `make test` enforces an 80% coverage floor.
+
+## Maintainer notes
+
+- Two version sources: freshness from the `pyproject.toml` constraints, vulnerabilities
+  from the `uv.lock` resolved versions, the only place transitive dependencies appear.
+- `requests>=2.32,<3` is the only runtime dependency.

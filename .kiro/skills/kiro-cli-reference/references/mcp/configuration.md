@@ -136,6 +136,8 @@ MCP configuration files use JSON format with the following structure:
     kiro-cli mcp add --name git-server --agent rust-dev
     ```
 
+    This grants the server to the named agent, including an agent whose `tools` list does not already include it. When `chat.enableAutoAgentUpgrade` is on, it also upgrades the agent file for V3.
+
     ### Viewing loaded servers
 
     To verify your configuration, check which MCP servers are currently loaded in an interactive chat session:
@@ -148,7 +150,7 @@ MCP configuration files use JSON format with the following structure:
 
     Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. You can edit that JSON file in your repository or configure servers from the Kiro Web settings panel. See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for complete Web-specific configuration details.
 
-    1. Add local server definitions to `.kiro/settings/mcp.json` in your repository, or open the sandbox MCP server settings in Kiro Web ([Settings](https://app.kiro.dev/settings/agent) > **Agent** tab > **MCP server settings**)
+    1. Add local server definitions to `.kiro/settings/mcp.json` in your repository, or open the sandbox MCP server settings in Kiro Web ([Agent Config > Powers & MCP](https://app.kiro.dev/settings/powers) > **MCP server settings**)
     2. In the settings panel, click **Add server**
     3. Enter the server name, type, and command
 
@@ -183,11 +185,11 @@ When multiple configurations define the same MCP server, they are loaded based o
 
 **Complete override:**
 ```
-Agent config:     { "fetch": { command: "fetch-v2" } }
-Workspace config: { "fetch": { command: "fetch-v1" } }
-Global config:    { "fetch": { command: "fetch-old" } }
+Agent config:     { "fetch": { command: "fetch-agent" } }
+Workspace config: { "fetch": { command: "fetch-workspace" } }
+Global config:    { "fetch": { command: "fetch-global" } }
 
-Result: Only "fetch-v2" from agent config is used
+Result: Only "fetch-agent" from agent config is used
 ```
 
 **Additive (different names):**
@@ -312,6 +314,9 @@ IDE
 
 Remote MCP servers that require OAuth authentication are supported. Kiro handles the browser-based OAuth flow automatically when connecting to an OAuth-protected server.
 
+**ℹ️ Info:** OAuth for MCP servers you configure yourself works in the IDE and CLI. Kiro Web and Kiro Mobile sessions don't use the `oauth` settings below; connect remote servers there with headers, or install a [Power](https://kiro.dev/docs/web/sandbox/mcp.md#power-authentication-oauth) that supports OAuth.
+
+
 ```json
 {
   "mcpServers": {
@@ -372,7 +377,7 @@ To use this configuration, register an OAuth app in the Figma Developer Console.
 
 #### How it works
 
-- **No `clientId` or `clientMetadataUrl` set** - Kiro attempts Dynamic Client Registration with the server. If DCR fails, it falls back to a default client configuration.
+- **No `clientId` or `clientMetadataUrl` set** - Kiro attempts Dynamic Client Registration with the server. If DCR fails, it falls back to a default client configuration. In Kiro CLI 3.2.0 or later and Kiro IDE 1.4.178 or later, when the authorization server supports Client ID Metadata Documents and offers no registration endpoint, Kiro signs in with its own hosted document instead. See [Client ID Metadata Documents](#client-id-metadata-documents-cimd) below.
 - **`clientId` set (without `clientSecret`)** - Kiro skips DCR and authenticates as a public OAuth client using your registered client ID.
 - **`clientId` and `clientSecret` both set (CLI only)** - Kiro skips DCR and authenticates as a confidential client, sending the secret to the token endpoint. This is required for servers like Figma that issue tokens only to confidential clients.
 - **`clientMetadataUrl` set (without `clientId`)** - Kiro skips DCR and presents the metadata document URL as its client identity, when the authorization server supports it. See [Client ID Metadata Documents](#client-id-metadata-documents-cimd) below.
@@ -415,6 +420,8 @@ If you host a [Client ID Metadata Document](https://datatracker.ietf.org/doc/htm
 **⚠️ Warning:** Pair `clientMetadataUrl` with a pinned `oauth.redirectUri`. Under CIMD, the authorization server validates the callback against the `redirect_uris` listed in your hosted document, not against the request. Because Kiro assigns a random loopback port by default, an unpinned callback is rejected on every connect. Pin the port (and path) to a value your document lists - see [redirect URI formats](#redirect-uri-formats) above.
 
 Do not set both `clientMetadataUrl` and `clientId`. When a `clientId` is present, Kiro uses it and never consults `clientMetadataUrl`.
+
+In Kiro CLI 3.2.0 or later and Kiro IDE 1.4.178 or later, you need no `oauth` block for a server whose authorization server supports Client ID Metadata Documents and offers no registration endpoint, such as Tableau's hosted MCP. Kiro signs in with its own hosted document, `https://kiro.dev/oauth/client-metadata.json`, whose redirect URIs are `http://localhost/oauth/callback` and `http://127.0.0.1/oauth/callback` with no port. This works only when the authorization server accepts any port on a `localhost` callback. A server that matches ports exactly rejects the random port Kiro's callback uses. A server that offers Dynamic Client Registration keeps using it, and a configured `clientId` or `clientMetadataUrl` still takes priority.
 
 #### Scopes
 
@@ -524,14 +531,7 @@ For enterprise teams using IAM Identity Center, MCP server access can be central
    - Fetch the authorization-server metadata for that issuer URL. Per RFC 8414, for an issuer without a path (e.g. `https://auth.example.com`) the metadata endpoint is `https://auth.example.com/.well-known/oauth-authorization-server`; for a path-bearing issuer (e.g. `https://auth.example.com/tenant1`) it is `https://auth.example.com/.well-known/oauth-authorization-server/tenant1`. Compare the returned `issuer` field against `authorization_servers[0]` character-for-character: scheme, host, port, path, and trailing slash must be identical. For example, `https://auth.example.com` and `https://auth.example.com/` are treated as different issuers.
    - Correct whichever metadata source has the wrong value. Do not add client-side normalization or bypasses.
 
-5. **Pass arguments to Kiro CLI V2 stdio servers on Windows**
-   
-   - In Kiro CLI V2 sessions, arguments pass unchanged when a command resolves on `PATH` to an `.exe`, `.com`, `.bat`, or `.cmd` file.
-   - Other commands, and servers whose `env` sets `PATHEXT`, still launch through `cmd.exe`.
-   - Directly resolved servers do not run the `cmd.exe` AutoRun hook. If AutoRun sets `PATH`, add that value to the server's `env` configuration instead.
-   - An argument containing a line break causes a `.bat` or `.cmd` launch to fail instead of truncating the argument.
-
-6. **Review configuration loading**
+5. **Review configuration loading**
    - Check which configuration files are being loaded and their priority:
 
     ```bash

@@ -122,7 +122,6 @@
     ]
   },
   "resources": [
-    "skill://.kiro/skills/concise-communication/SKILL.md",
     "skill://.kiro/skills/agent-creation/SKILL.md",
     "skill://.kiro/skills/spec-to-dev/SKILL.md"
   ],

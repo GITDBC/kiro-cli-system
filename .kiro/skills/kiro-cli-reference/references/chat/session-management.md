@@ -38,7 +38,7 @@ kiro-cli chat --list-sessions
 kiro-cli chat --delete-session <SESSION_ID>
 ```
 
-In V3, `--resume` selects the newest session that matches how the current launch is placed: local launches resume the newest matching local session, while cloud launches resume the newest matching cloud session.
+In V3, `--resume` selects the newest session that matches how the current launch is placed: local launches resume the newest matching local session, while cloud launches resume the newest matching cloud session. In Kiro CLI 3.3.0 or later, a local launch passes over a newer session that holds no prompt or turn, such as one left by opening and quitting Kiro without sending anything, and opens the newest session that has a conversation; it opens an empty session only when no other session exists. The same rule applies to `--no-interactive --resume`.
 
 In the terminal UI, if `--resume-id` doesn't match a local session, Kiro no longer silently starts a replacement conversation. When cloud sessions are enabled and you provide a full session ID, Kiro checks the remote session store before reporting that the ID couldn't be resolved.
 
@@ -57,16 +57,16 @@ In the terminal UI, if `--resume-id` doesn't match a local session, Kiro no long
 # Print the current session ID
 /session-id
 
-# Save to file
-/chat save <path>
+# Save a V3 session archive
+/chat save backup.zip
 
-# Load from file
-/chat load <path>
+# Load a V3 session archive
+/chat load backup.zip
 ```
 
 **ℹ️ Resume hint on exit:** When you exit a session, Kiro CLI prints the session ID along with the command to resume it (`kiro-cli chat --resume-id <ID>`). Use `/session-id` mid-session to print the same ID on demand.
 
-**ℹ️ File extension:** The `.json` extension is optional when loading sessions.
+**ℹ️ Session archive format:** In V3, `/chat save` writes a zip session archive. Use a `.zip` name. If you omit that extension, Kiro still identifies the saved file as a zip archive. `/chat load` checks the archive and explains when it was altered after saving.
 
 ### Workflow step sessions
 
@@ -96,7 +96,7 @@ Use the **Filter** control to combine the `current workspace only`, `main sessio
 
 ### Search sessions
 
-Start typing anywhere in the dashboard to search. The immediate filter matches session titles, workspace names and paths, session IDs, and tags; prefix a tag with `#` to narrow by tag. Queries of three or more characters also search indexed session content from local V2 and V3 transcripts.
+Start typing anywhere in the dashboard to search. The immediate filter matches session titles, workspace names and paths, session IDs, and tags; prefix a tag with `#` to narrow by tag. Queries of three or more characters also search indexed session content from local V3 transcripts.
 
 By default, the content index covers your prompts and the agent's responses. Run `/settings` in a V3 session and choose **Session search** to switch between **Prompts only** and **Prompts and agent responses**; the choice is stored as `chat.sessionDashboard.indexResponses`. Tool output is not indexed in either mode. If your local index currently covers prompts only, `/sessions` asks once before rebuilding it to include responses. Classic sessions and cloud sessions still match listing metadata (titles, workspace, session ID, and tags), but their transcript content is not part of the local content index.
 
@@ -120,7 +120,7 @@ Cleanup cannot be undone. Kiro scans again before deletion, so a session that is
 
 ### V3 launch behavior
 
-The dashboard is a V3-only surface. `/sessions` is not available in V1 or V2. `kiro-cli chat --sessions` selects V3 when you have not chosen an agent harness. If you explicitly pass a non-V3 harness or save `chat.agentEngine` as `v1` or `v2`, Kiro reports the conflict instead of silently switching. Run `kiro-cli chat --v3 --sessions` for that launch, or change your saved setting. To run a single session on the V2 harness regardless of that saved value, pass `--v2`.
+The dashboard is a V3-only surface. `/sessions` is not available in V1. `kiro-cli chat --sessions` selects V3 when you have not chosen an agent harness. If you explicitly pass a non-V3 harness, Kiro reports the conflict instead of silently switching. Run `kiro-cli chat --v3 --sessions` for that launch, or change your saved setting.
 
 ## Cloud sessions
 
@@ -174,9 +174,9 @@ git notes --ref=kiro/notes show "$COMMIT"
 
 ## Session storage
 
-**Database**: Sessions auto-saved per-directory  
-**Files**: Manual export via `/chat save`  
-**Custom**: Script-based integration
+- **Database:** Sessions auto-saved per-directory
+- **Files:** V3 zip archives via `/chat save`
+- **Custom:** Script-based integration
 
 **Session ID**: UUID format (e.g., `f2946a26-3735-4b08-8d05-c928010302d5`)
 
@@ -198,13 +198,13 @@ kiro-cli chat --resume-picker
 
 Shows a list of sessions to choose from.
 
-### Export to file
+### Export a V3 archive
 
-```
-/chat save backup.json
+```bash
+/chat save backup.zip
 ```
 
-Exports current session to file.
+Saves the current V3 session as a zip archive.
 
 ### Version control integration
 
@@ -253,7 +253,7 @@ Exports current session to file.
 - Auto-save to database only (not files)
 - Session IDs are UUIDs (not human-readable)
 - Local sessions don't sync across machines (use scripts for custom storage); [cloud sessions](https://kiro.dev/docs/cloud-sessions.md) are stored in the cloud and resume from anywhere
-- Content search covers local V2 and V3 sessions. Your prompts and the agent's responses are both indexed by default; choose **Session search** in `/settings` to index prompts only. Tool output, classic-session transcripts, and cloud-session transcripts are not indexed; use title, workspace, session ID, or tag matching for those sessions
+- Content search covers local V3 sessions. Your prompts and the agent's responses are both indexed by default; choose **Session search** in `/settings` to index prompts only. Tool output, classic-session transcripts, and cloud-session transcripts are not indexed; use title, workspace, session ID, or tag matching for those sessions
 
 ## Technical details
 

@@ -25,7 +25,7 @@ commands and editing rules: [PROVENANCE.md](PROVENANCE.md).
 | Architecture and config     | `how-kiro-works.md`, `configuration.md`             | Resolving which global, project or agent scope a setting comes from                           |
 | Steering                    | `steering.md`                                       | Writing steering files, inclusion modes, always-on versus on-demand context                   |
 | Skills                      | `skills.md`                                         | Authoring or loading `SKILL.md` packages and their resources                                  |
-| Permissions                 | `permissions.md`, `v3/permissions.md`               | Capability-based permissions, trust rules, and migrating 2.x trust flags                      |
+| Permissions                 | `permissions.md`, `v3/permissions.md`               | Capability-based permissions, trust rules, session-wide trust, headless approvals             |
 | Custom agents and subagents | `custom-agents.md`, `custom-agents/`                | Agent JSON fields (`configuration-reference.md`), built-in agents, `subagents.md` delegation  |
 | Hooks                       | `hooks.md`, `hooks/`                                | Trigger types, actions, examples, debugging hook failures                                     |
 | MCP                         | `mcp.md`, `mcp/`                                    | Server configuration, tool search, MCP security, usage of tools, prompts and resources        |
@@ -36,15 +36,14 @@ commands and editing rules: [PROVENANCE.md](PROVENANCE.md).
 | Models and effort           | `models.md`, `models/`                              | Model selection, availability and lifecycle, the effort setting                               |
 | Context handling            | `compaction.md`, `checkpoints.md`, `kiroignore.md`  | Automatic summarisation, undo and conversation forks, excluding files from search             |
 | Specs                       | `specs.md`, `specs/`                                | Feature and bugfix specs, requirements-first versus design-first, quick specs, correctness    |
-| CLI 3.0                     | `v3.md`, `v3/`                                      | 3.0 changes: Markdown agent profiles (`agent-config.md`), new features, tangent conversations |
+| CLI V3                      | `v3.md`, `v3/`                                      | V3 changes and capabilities, V3 permissions model                                             |
 | Experimental                | `experimental.md`, `experimental/`                  | Knowledge bases, delegate, tangent mode, thinking, TODO lists                                 |
 | Privacy and security        | `privacy-and-security.md`, `privacy-and-security/`  | Data protection, firewall and VPC endpoint requirements, compliance, IAM permissions          |
 
 ## Reading Guidance
 
 - Prefer the 3.0 pages. Where a top-level page and a `v3/` page disagree, the `v3/` page
-  describes the current harness; the mirror no longer carries the 2.x reference or the
-  2.x-to-3.0 migration guides.
+  describes the current harness.
 - Some pages cover several Kiro surfaces (IDE, CLI, Web). Answer from the CLI-specific
   passages and say so when a feature is documented for another surface only.
 - Cite the page path when quoting configuration fields, so the claim can be checked

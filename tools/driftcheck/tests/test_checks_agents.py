@@ -9,6 +9,7 @@ import pytest
 
 # Own modules
 from driftcheck.checks.agents import (
+    check_agent_engine,
     check_agent_registry,
     check_cost_labels,
     check_model_defaults,
@@ -192,12 +193,28 @@ def test_resource_references_report_malformed_json(valid_root: Path) -> None:
 
 
 def test_agent_registry_detects_unregistered_agent(valid_root: Path) -> None:
-    """An agent missing from availableAgents is a warning."""
+    """An agent without a subagent/<name> tool entry is a warning."""
     write_agent(valid_root, "ghost-writer")
     findings = check_agent_registry(build_context(valid_root))
     warnings = problems(findings)
     assert severities(warnings) == [Severity.WARNING]
-    assert "ghost-writer" in warnings[0].message
+    assert "subagent/ghost-writer" in warnings[0].message
+
+
+@pytest.mark.parametrize("selector", ["subagent", "@builtin", "*"])
+def test_agent_registry_warns_on_unrestricted_selector(
+    valid_root: Path, selector: str
+) -> None:
+    """A selector that lets the orchestrator spawn any agent is a warning."""
+    write_agent(
+        valid_root,
+        "orchestrator",
+        model="claude-sonnet-5.5",
+        tools=[selector, "subagent/senior-developer"],
+    )
+    warnings = problems(check_agent_registry(build_context(valid_root)))
+    assert severities(warnings) == [Severity.WARNING]
+    assert f"'{selector}'" in warnings[0].message
 
 
 def test_agent_registry_reports_config_without_name(valid_root: Path) -> None:
@@ -240,43 +257,21 @@ def test_v2_fields_reject_embedded_hooks(valid_root: Path) -> None:
     assert ".kiro/hooks/*.json" in errors[0].message
 
 
-def test_v2_fields_reject_per_tool_blocks(valid_root: Path) -> None:
-    """A full v2-shaped config is reported key by key."""
+def test_v2_fields_reject_tools_settings(valid_root: Path) -> None:
+    """Any toolsSettings block is ignored by v3, so it is an error."""
     write_agent(
         valid_root,
         "senior-developer",
-        allowedTools=["execute_bash"],
-        toolsSettings={
-            "execute_bash": {
-                "allowedCommands": ["^git status$"],
-                "denyByDefault": False,
-            },
-            "fs_write": {"deniedPaths": ["*.lock"]},
-        },
-    )
-    errors = problems(check_v2_config_fields(build_context(valid_root)))
-    messages = " ".join(error.message for error in errors)
-    assert severities(errors) == [Severity.ERROR] * 6
-    assert "toolsSettings.execute_bash" in messages
-    assert "toolsSettings.execute_bash.allowedCommands" in messages
-    assert "toolsSettings.execute_bash.denyByDefault" in messages
-    assert "toolsSettings.fs_write.deniedPaths" in messages
-
-
-def test_v2_fields_reject_bare_setting_key(valid_root: Path) -> None:
-    """A setting key hoisted to the toolsSettings root is an error."""
-    write_agent(
-        valid_root,
-        "senior-developer",
-        toolsSettings={"autoAllowReadonly": True},
+        toolsSettings={"execute_bash": {"allowedCommands": ["git status"]}},
     )
     errors = problems(check_v2_config_fields(build_context(valid_root)))
     assert severities(errors) == [Severity.ERROR]
-    assert "toolsSettings.autoAllowReadonly" in errors[0].message
+    assert "removed v2 field 'toolsSettings'" in errors[0].message
+    assert "permissions.rules" in errors[0].message
 
 
-def test_v2_fields_permit_the_subagent_block(valid_root: Path) -> None:
-    """toolsSettings.subagent survives in v3 and must not be flagged."""
+def test_v2_fields_reject_the_former_subagent_block(valid_root: Path) -> None:
+    """toolsSettings.subagent is ignored too; the remedy names subagent tools."""
     write_agent(
         valid_root,
         "orchestrator",
@@ -288,7 +283,9 @@ def test_v2_fields_permit_the_subagent_block(valid_root: Path) -> None:
             }
         },
     )
-    assert problems(check_v2_config_fields(build_context(valid_root))) == []
+    errors = problems(check_v2_config_fields(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "subagent/<name>" in errors[0].message
 
 
 def test_v2_fields_ignore_malformed_config(valid_root: Path) -> None:
@@ -297,10 +294,13 @@ def test_v2_fields_ignore_malformed_config(valid_root: Path) -> None:
     assert problems(check_v2_config_fields(build_context(valid_root))) == []
 
 
-def test_v2_fields_tolerate_non_object_tools_settings(valid_root: Path) -> None:
-    """A toolsSettings value of the wrong type never crashes the check."""
+def test_v2_fields_flag_non_object_tools_settings_without_crashing(
+    valid_root: Path,
+) -> None:
+    """A toolsSettings value of the wrong type is still reported once."""
     write_agent(valid_root, "senior-developer", toolsSettings=["shell"])
-    assert problems(check_v2_config_fields(build_context(valid_root))) == []
+    errors = problems(check_v2_config_fields(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
 
 
 def test_model_governance_rejects_auto(valid_root: Path) -> None:
@@ -389,6 +389,27 @@ def test_cost_labels_keep_other_opus_models_at_two_point_two(
         ROUTING_MD.replace("high (2.0x)", "high (2.2x)"),
     )
     assert problems(check_cost_labels(build_context(valid_root))) == []
+
+
+def test_cost_labels_hold_haiku_five_point_five_at_six_hundredths(
+    valid_root: Path,
+) -> None:
+    """Haiku 5.5 is 0.06x, so the 0.4x of Haiku 4.5 is wrong for it."""
+    write_agent(valid_root, "senior-developer", model="claude-haiku-5.5")
+    routing = valid_root / ".kiro" / "orchestration" / "routing.md"
+    write(routing, ROUTING_MD.replace("high (2.0x)", "low (0.06x)"))
+    assert problems(check_cost_labels(build_context(valid_root))) == []
+    write(routing, ROUTING_MD.replace("high (2.0x)", "low (0.4x)"))
+    warnings = problems(check_cost_labels(build_context(valid_root)))
+    assert severities(warnings) == [Severity.WARNING]
+    assert "expected '0.06x'" in warnings[0].message
+
+
+def test_model_governance_accepts_haiku_five_point_five(valid_root: Path) -> None:
+    """Haiku 5.5 is an approved Anthropic model."""
+    write_agent(valid_root, "senior-developer", model="claude-haiku-5.5")
+    errors = problems(check_model_governance(build_context(valid_root)))
+    assert errors == []
 
 
 def test_cost_labels_accept_legacy_label_without_multiplier(
@@ -503,3 +524,87 @@ def test_model_defaults_reject_non_object_model_defaults(
     errors = problems(check_model_defaults(build_context(valid_root)))
     assert severities(errors) == [Severity.ERROR]
     assert "'chat.modelDefaults' is not an object" in errors[0].message
+
+
+RALPH_RELATIVE: str = ".kiro/skills/ralph-loop/ralph.sh"
+
+
+def write_engine_settings(root: Path, engine: object) -> None:
+    """
+    Write a cli.json carrying only chat.agentEngine.
+
+    Args:
+        root: Repository root.
+        engine: Value stored under chat.agentEngine.
+    """
+    payload = {"chat.agentEngine": engine}
+    write(root / ".kiro" / "settings" / "cli.json", json.dumps(payload))
+
+
+def test_agent_engine_accepts_v3_setting(valid_root: Path) -> None:
+    """chat.agentEngine pinned to v3 is clean."""
+    write_engine_settings(valid_root, "v3")
+    assert problems(check_agent_engine(build_context(valid_root))) == []
+
+
+@pytest.mark.parametrize("engine", ["v2", "v1", "", None])
+def test_agent_engine_rejects_other_engine(valid_root: Path, engine: object) -> None:
+    """Any engine other than v3 is an error."""
+    write_engine_settings(valid_root, engine)
+    errors = problems(check_agent_engine(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "chat.agentEngine" in errors[0].message
+
+
+def test_agent_engine_requires_the_setting(valid_root: Path) -> None:
+    """A settings file without chat.agentEngine is an error."""
+    write(valid_root / ".kiro" / "settings" / "cli.json", "{}")
+    errors = problems(check_agent_engine(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "must pin" in errors[0].message
+
+
+def test_agent_engine_tolerates_missing_settings(valid_root: Path) -> None:
+    """The settings file is optional, so its absence is OK."""
+    findings = check_agent_engine(build_context(valid_root))
+    assert problems(findings) == []
+    assert "skipping" in findings[0].message
+
+
+def test_agent_engine_leaves_malformed_json_to_model_defaults(
+    valid_root: Path,
+) -> None:
+    """Malformed settings are reported once, by the model-defaults check."""
+    write(valid_root / ".kiro" / "settings" / "cli.json", "{not json")
+    assert problems(check_agent_engine(build_context(valid_root))) == []
+
+
+def test_agent_engine_accepts_ralph_with_explicit_engine(valid_root: Path) -> None:
+    """ralph.sh passing --agent-engine v3 is clean."""
+    write_engine_settings(valid_root, "v3")
+    write(valid_root / RALPH_RELATIVE, "kiro-cli chat --agent-engine v3 --agent x\n")
+    assert problems(check_agent_engine(build_context(valid_root))) == []
+
+
+@pytest.mark.parametrize("flag", ["--v3", "--v2"])
+def test_agent_engine_rejects_ralph_shorthand_flags(
+    valid_root: Path, flag: str
+) -> None:
+    """The shorthand harness flags in ralph.sh are errors."""
+    write_engine_settings(valid_root, "v3")
+    write(
+        valid_root / RALPH_RELATIVE,
+        f"kiro-cli chat --agent-engine v3 {flag} --agent x\n",
+    )
+    errors = problems(check_agent_engine(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert flag in errors[0].message
+
+
+def test_agent_engine_requires_explicit_engine_in_ralph(valid_root: Path) -> None:
+    """A ralph.sh without --agent-engine v3 is an error."""
+    write_engine_settings(valid_root, "v3")
+    write(valid_root / RALPH_RELATIVE, "kiro-cli chat --agent x\n")
+    errors = problems(check_agent_engine(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "--agent-engine v3" in errors[0].message

@@ -2,14 +2,16 @@
 
 Single source for the orchestrator side of delegation: how work is planned, dispatched,
 parallelised, verified, and escalated. Only the orchestrator acts on it, and it reaches
-the session solely through the `file://.kiro/orchestration/delegation-lifecycle.md`
-entry in `.kiro/agents/orchestrator.json`. Keep this file and `routing.md` in
-`.kiro/orchestration/` and keep that entry: do not move either into `.kiro/steering/`.
-`preflight-report-format.md` sits there too, because the orchestrator enforces the
-preflight contract and names that path when it dispatches a separate preflight turn.
-Where a rule below carries no argument, the argument — and the placement decision itself
-— is in `.kiro/orchestration/orchestration-rationale.md`; read it when a settled
-decision is being challenged.
+the session on demand: the orchestrator prompt names this file and the orchestrator
+reads it with `read`. It is deliberately not an `orchestrator.json` resource, because a
+subagent that declares no `file://` resources inherits its parent's, which would charge
+every dispatch for this file. Keep it and `routing.md` in `.kiro/orchestration/`, never
+in `.kiro/steering/`, and keep the pointer in the prompt. `preflight-report-format.md`
+sits there too, because the orchestrator enforces the preflight contract and names that
+path when it dispatches a separate preflight turn. Where a rule below carries no
+argument, the argument — and the placement decision itself — is in
+`.kiro/orchestration/orchestration-rationale.md`; read it when a settled decision is
+being challenged.
 
 The specialist side of the contract lives in `COMMON.md`: the **Preflight Report**
 obligations and the per-agent verification duties; the **Autonomous Mode** resolution

@@ -138,29 +138,28 @@ fields exclusively. The distinctions that matter when writing a new config:
   `./**` write scope, for example).
 
 Three field shapes are **removed** in v3 and must never appear in a new config:
-`allowedTools`, per-tool `toolsSettings` blocks (`shell`, `fs_read`, `fs_write`, and
-settings such as `allowedCommands`, `deniedPaths`, `autoAllowReadonly`,
-`denyByDefault`), and an embedded `hooks` key — hooks live in standalone
+`allowedTools`, the whole `toolsSettings` field (v3 reads none of its blocks, the former
+`subagent` block included), and an embedded `hooks` key — hooks live in standalone
 `.kiro/hooks/*.json` files using the v1 schema. The `Legacy v2 agent config fields`
 drift check fails the build when any of them reappears under `.kiro/agents/`.
 
-The single surviving `toolsSettings` sub-block is `toolsSettings.subagent`, which is
-added only on an agent that dispatches subagents:
+An agent that dispatches subagents lists each spawnable agent as a `subagent/<name>`
+entry in `tools`, in place of the bare `subagent` tag, which would let it spawn any
+agent. A `permissions.rules` entry with capability `subagent` and effect `allow` lets
+those dispatches start without an approval prompt:
 
 ```json
 {
-  "toolsSettings": {
-    "subagent": {
-      "availableAgents": ["<agent-slug>", "<agent-slug>"],
-      "trustedAgents": ["*"]
-    }
+  "tools": ["read", "subagent/<agent-slug>", "subagent/<agent-slug>"],
+  "permissions": {
+    "rules": [{ "capability": "subagent", "match": ["*"], "effect": "allow" }]
   }
 }
 ```
 
-`availableAgents` lists the agents this agent may spawn and `trustedAgents` those that
-run without an approval prompt. Both matter for non-interactive dispatch, since a
-subagent that cannot prompt fails fast when an approval is required.
+The parent session's policy still applies to every tool call of a dispatched subagent,
+so a headless run needs the subagent's allow rules on the parent or `--trust-all-tools`;
+otherwise a subagent that cannot prompt fails fast when an approval is required.
 
 ### Resource Conventions
 
@@ -246,25 +245,26 @@ description: >
 Files under `.kiro/steering/` are always-on: Kiro CLI loads every one of them into every
 session, subagent sessions included, regardless of an agent's `resources` list. Only
 material every agent needs belongs there. Orchestrator-only instruction files live in
-`.kiro/orchestration/` and reach the session solely through the orchestrator's
-`resources`, so a specialist never pays for them.
+`.kiro/orchestration/` and the orchestrator reads them on demand from pointers in its
+prompt. They are not `file://` resources: a subagent that declares none inherits its
+parent's, so a dispatcher's `file://` resources would be charged to every specialist.
 
 | File                                    | Purpose                                  | Who loads it             |
 | --------------------------------------- | ---------------------------------------- | ------------------------ |
 | `steering/COMMON.md`                    | Behavioral rules for all agents          | All agents               |
 | `steering/code-standards-summary.md`    | Compact coding essentials                | All agents (lightweight) |
 | `steering/python-environment.md`        | uv and env rules                         | All agents               |
-| `orchestration/routing.md`              | Routing rules and collaboration patterns | Orchestrator             |
-| `orchestration/delegation-lifecycle.md` | Delegation, planning and harness gates   | Orchestrator             |
+| `orchestration/routing.md`              | Routing rules and collaboration patterns | Orchestrator (on demand) |
+| `orchestration/delegation-lifecycle.md` | Delegation, planning and harness gates   | Orchestrator (on demand) |
 
 Adding a file to `.kiro/steering/` taxes every turn of every agent, so the bar is that
-all ten agents act on it. Anything narrower goes to `.kiro/orchestration/` with an
-explicit `resources` entry, or into a skill loaded on demand.
+all ten agents act on it. Anything narrower goes to `.kiro/orchestration/` with a
+pointer in the prompt of the agent that reads it, or into a skill loaded on demand.
 
 Full coding conventions and JIRA interaction rules are deliberately NOT steering files.
-They live in the `code-standards` and `jira-fetcher` skills and load on demand via
-`skill://`, because always-on duplication of detail that most invocations never need is
-paid for on every turn.
+They live in the `code-standards` and `jira` skills and load on demand via `skill://`,
+because always-on duplication of detail that most invocations never need is paid for on
+every turn.
 
 ### When to create a new steering file vs. a skill
 
@@ -276,7 +276,7 @@ paid for on every turn.
 
 After creating an agent or skill:
 
-- [ ] Agent added to `orchestrator.json` → `availableAgents`
+- [ ] Agent added to `orchestrator.json` → `subagent/<name>` entry in `tools`
 - [ ] Agent added to `routing.md` → Quick Lookup table (with Fallback)
 - [ ] Agent added to `routing.md` → Routing Rules (`trigger_when` / `never_when`)
 - [ ] Agent added to `routing.md` → Capabilities Matrix

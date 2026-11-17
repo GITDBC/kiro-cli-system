@@ -17,15 +17,15 @@ are stated once, in `code-standards-summary.md`.
 | software-architect | design, DDD, ADRs, trade-offs | high (2.0x)   | senior-developer |
 | ai-engineer        | ML, MLOps, prompt engineering | medium (1.3x) | data-engineer    |
 | data-engineer      | ETL, Spark, dbt, schemas      | medium (1.3x) | senior-developer |
-| senior-developer   | implement, refactor, fix      | high (2.0x)   | code-reviewer    |
+| senior-developer   | implement, refactor, fix      | medium (1.3x) | code-reviewer    |
 | security-engineer  | threats, OWASP, secure review | high (2.0x)   | code-reviewer    |
 | code-reviewer      | review, anti-patterns, debt   | medium (1.3x) | senior-developer |
 | qa-engineer        | test analysis, tool eval, TCO | medium (1.3x) | code-reviewer    |
 | platform-engineer  | CI/CD, IaC, K8s, SLOs         | medium (1.3x) | senior-developer |
-| technical-writer   | docs, READMEs, tutorials      | medium (1.3x) | senior-developer |
+| technical-writer   | docs, READMEs, tutorials      | low (0.06x)   | senior-developer |
 
 Cost is the credit multiplier of the model backing each agent: `claude-opus-5.5` = 2.0x,
-`claude-sonnet-5.5` = 1.3x.
+`claude-sonnet-5.5` = 1.3x, `claude-haiku-5.5` = 0.06x.
 
 **Routing shortcut**: implementation → senior-developer · review → code-reviewer ·
 security → security-engineer · infra → platform-engineer · docs → technical-writer ·
@@ -259,7 +259,8 @@ matches the task to a pattern, then delegates following the agent sequence.
 | Database design         | — (pattern only, no skill) | software-architect → data-engineer                                                                                          | sequential                                                                                |
 | Debugging               | — (pattern only, no skill) | senior-developer                                                                                                            | single (iterative, max 3)                                                                 |
 | Domain research         | — (pattern only, no skill) | software-architect (investigation, then a separate validation dispatch) → technical-writer                                  | sequential                                                                                |
-| JIRA enhancement        | jira-enhancement           | senior-developer                                                                                                            | single                                                                                    |
+| JIRA enhancement        | jira                       | senior-developer                                                                                                            | single                                                                                    |
+| Document conversion     | doc2md                     | technical-writer                                                                                                            | single                                                                                    |
 | Autonomous loop         | ralph-loop                 | senior-developer                                                                                                            | single (standalone)                                                                       |
 | Dynamic orchestration   | — (Conductor)              | —                                                                                                                           | generated at runtime                                                                      |
 | Self-improvement        | — (pattern only, no skill) | code-reviewer → software-architect                                                                                          | sequential                                                                                |

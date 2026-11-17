@@ -91,13 +91,13 @@ sync.
 Discovery reads the published `llms.txt` catalogue, which lists every documentation page
 as a Markdown link to its `.md` form — the same kind of enumeration the kiro sitemap
 provides, so `--prune` applies here too. Two selection rules keep the mirror to the part
-this repository needs: everything under `build-with-claude/prompt-engineering/` is taken
-by prefix, so a per-model guide added with a new model release is picked up without a
-code change, and the pages listed in `TRACKED_PAGES` are taken by exact slug because
-their section siblings are irrelevant to prompting. `EXCLUDED_PAGES` lists the subtree
-pages left out despite the prefix rule (prompting guides for models no agent runs); a
-sync never fetches them back, `--prune` treats a local copy as an orphan, and an entry
-absent from the catalogue is harmless.
+this repository needs: the general pages under `build-with-claude/prompt-engineering/`
+are taken by prefix, and the pages listed in `TRACKED_PAGES` are taken by exact slug
+because their section siblings are irrelevant to prompting. The per-model prompting
+guides in that subtree (`prompting-claude-<model>`) are skipped by the prefix rule and
+enter only through `TRACKED_PAGES`, which holds the Opus 5.5, Sonnet 5.5 and Haiku 5.5
+guides; a guide for any other model is never fetched, and `--prune` treats a local copy
+as an orphan.
 
 The exact slugs in `TRACKED_PAGES` (`sources/anthropic.py`) and the scope decisions
 behind them are recorded in the mirror's

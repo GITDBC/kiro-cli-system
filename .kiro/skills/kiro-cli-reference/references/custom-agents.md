@@ -10,7 +10,7 @@ Custom agents provide a way to customize Kiro behavior by defining specific conf
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Project-level agents (`.kiro/agents/`) | ✓ | ✓ | ✓ | — |
+| Project-level agents (`.kiro/agents/`) | ✓ | ✓ | ✓ | ✓ |
 | Global agents (`~/.kiro/agents/`) | ✓ | ✓ | — | — |
 | Agent switching via UI | ✓ | ✓ | — | — |
 | Modify agent settings | ✓ | ✓ | — | — |
@@ -109,19 +109,18 @@ Nested directories are supported. The agent name is the path relative to the age
 
 #### Surface behavior
 
-The IDE and CLI can select a custom agent as the primary session agent. Kiro Web loads project-level custom agents committed to `.kiro/agents/` and can invoke them for sub-agent delegation, but you cannot select one as the primary Web session agent. Mobile uses Kiro's [built-in agents](https://kiro.dev/docs/custom-agents/built-in.md) only.
+The IDE and CLI can select a custom agent as the primary session agent. Kiro Web loads project-level custom agents committed to `.kiro/agents/` and can invoke them for sub-agent delegation, but you cannot select one as the primary Web session agent. Sessions you start from Mobile behave the same way as Kiro Web sessions.
 
-To use personal custom agents in cloud sessions, upload them from **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then manage them under **Settings > Agents**.
+To use personal custom agents in cloud sessions, upload them from **Agent Config > Cloud Config** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then manage them under **Agent Config > Agents**.
 
 **💡 Tip:** Custom agents control **what tools are available and what they can do**. If you want to influence how the agent thinks and responds without changing tool access, use [Steering files](https://kiro.dev/docs/steering.md) instead. You can combine both - a custom agent that includes steering via the `resources` field.
 
 ## Previous versions
 
-If you're upgrading from IDE 0.x, existing JSON profiles continue to work. For CLI 2.x, profiles that still use `allowedTools` or `toolsSettings` without a `permissions` block must be converted with `/upgrade-agent` before CLI V3 can load them; other supported fields carry over. Current optional fields include `permissions`, `excludedTools`, `includeMcpJson`, `resources` with `skill://`, and Markdown format.
+If you're upgrading from IDE 0.x, existing JSON profiles continue to work. Current optional fields include `permissions`, `excludedTools`, `includeMcpJson`, `resources` with `skill://`, and Markdown format.
 
 - [IDE 0.x reference - Custom agent config](https://kiro.dev/docs/ide/0x-reference.md#custom-agent-config)
-- [CLI 2.x reference - Custom agent config](https://kiro.dev/docs/cli/2x-reference.md#custom-agent-config)
-- [What's new in CLI V3 - Agent config changes](https://kiro.dev/docs/cli/v3/agent-config.md)
+- [Agent configuration reference - Markdown format](https://kiro.dev/docs/custom-agents/configuration-reference.md#markdown-format)
 - [What's new in IDE 1.0 - Agent config changes](https://kiro.dev/docs/ide/whats-new-v1/agent-config.md)
 
 ## Next steps

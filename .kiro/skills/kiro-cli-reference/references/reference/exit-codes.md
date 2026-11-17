@@ -31,9 +31,9 @@ If a required server does not start, Kiro CLI exits with code 3. In a non-intera
 
 ## Requested agent not found
 
-A non-interactive run (`--no-interactive`, V2 or V3) exits with code 4 when its named agent isn't available on the selected agent engine:
+A non-interactive run (`--no-interactive`) exits with code 4 when its named agent isn't available:
 
-- A run names an agent with `--agent` on either engine. If that agent isn't found, the run exits 4.
+- A run names an agent with `--agent`. If that agent isn't found, the run exits 4.
 - On V3, a fresh session also names the `chat.defaultAgent` setting. If that configured default is unavailable, the run exits 4.
 - A run with no named agent is not gated. This includes resumed sessions without `--agent`.
 

@@ -104,7 +104,7 @@ In addition to prompts, you can use the `@` syntax to reference files and direct
 > Check @"my file.txt" for errors
 
 # Relative paths
-> Compare @./v1/api.rs with @./v2/api.rs
+> Compare @./old/api.rs with @./new/api.rs
 ```
 
 **Features:**

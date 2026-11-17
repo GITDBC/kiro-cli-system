@@ -137,25 +137,49 @@ def test_orchestration_placement_detects_file_back_in_steering(
     assert ".kiro/steering/routing.md re-imposes" in errors[0].message
 
 
-def test_orchestration_placement_detects_dropped_resource(
+def test_orchestration_placement_detects_unnamed_file_in_prompt(
     valid_root: Path,
 ) -> None:
-    """Dropping the resources entry strips the orchestrator's routing."""
+    """A prompt that stops naming a file leaves the orchestrator unable to read it."""
+    write(valid_root / ".kiro" / "prompts" / "orchestrator.md", "# Orchestrator\n")
+    errors = problems(check_orchestration_placement(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR, Severity.ERROR]
+    assert "prompt no longer names .kiro/orchestration/routing.md" in errors[0].message
+
+
+def test_orchestration_placement_rejects_dispatcher_file_resources(
+    valid_root: Path,
+) -> None:
+    """Subagents inherit a dispatcher's file:// resources, so it declares none."""
     write_agent(
         valid_root,
         "orchestrator",
         model="claude-sonnet-5.5",
-        resources=["file://.kiro/steering/COMMON.md"],
-        toolsSettings={"subagent": {"availableAgents": ["senior-developer"]}},
+        resources=["file://.kiro/orchestration/routing.md"],
+        tools=["subagent/senior-developer"],
     )
-    findings = check_orchestration_placement(build_context(valid_root))
-    errors = problems(findings)
-    assert severities(errors) == [Severity.ERROR, Severity.ERROR]
-    assert "no longer references .kiro/orchestration/routing.md" in errors[0].message
+    errors = problems(check_orchestration_placement(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "orchestrator.json declares file:// resource" in errors[0].message
+    assert "inherit" in errors[0].message
+
+
+def test_orchestration_placement_allows_skill_resources_on_dispatchers(
+    valid_root: Path,
+) -> None:
+    """Only file:// resources are inherited; skills stay on the dispatcher."""
+    write_agent(
+        valid_root,
+        "orchestrator",
+        model="claude-sonnet-5.5",
+        resources=["skill://.kiro/skills/reviewing-code/SKILL.md"],
+        tools=["subagent/senior-developer"],
+    )
+    assert problems(check_orchestration_placement(build_context(valid_root))) == []
 
 
 def test_orchestration_reachability_accepts_the_valid_tree(valid_root: Path) -> None:
-    """Both files are declared resources, so both are reachable."""
+    """Both files are named by the orchestrator prompt, so both are reachable."""
     assert problems(check_orchestration_reachability(build_context(valid_root))) == []
 
 
@@ -184,16 +208,32 @@ def test_orchestration_reachability_accepts_pointer_from_steering(
     assert problems(check_orchestration_reachability(build_context(valid_root))) == []
 
 
-def test_orchestration_reachability_accepts_pointer_from_declared_resource(
+def test_orchestration_reachability_follows_pointers_between_files(
     valid_root: Path,
 ) -> None:
-    """A pointer inside a declared resource is equally always-on."""
+    """A pointer inside a reachable orchestration file reaches the next one."""
     write(valid_root / ".kiro" / "orchestration" / "rationale.md", "# Rationale\n")
     write(
         valid_root / ".kiro" / "orchestration" / "delegation-lifecycle.md",
         f"{DELEGATION_LIFECYCLE_MD}\nArgument: `rationale.md`.\n",
     )
     assert problems(check_orchestration_reachability(build_context(valid_root))) == []
+
+
+def test_orchestration_reachability_rejects_mutually_pointing_islands(
+    valid_root: Path,
+) -> None:
+    """Two files naming only each other are still unreachable from a session."""
+    write(
+        valid_root / ".kiro" / "orchestration" / "island-a.md",
+        "See `island-b.md`.\n",
+    )
+    write(
+        valid_root / ".kiro" / "orchestration" / "island-b.md",
+        "See `island-a.md`.\n",
+    )
+    errors = problems(check_orchestration_reachability(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR, Severity.ERROR]
 
 
 def test_orchestration_reachability_rejects_self_reference(valid_root: Path) -> None:

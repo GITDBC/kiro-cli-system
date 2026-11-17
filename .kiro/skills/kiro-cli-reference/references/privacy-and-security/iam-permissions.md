@@ -43,6 +43,16 @@ If you are connecting an external identity provider, you will also need the foll
 - q:BatchDescribeGroups
 ```
 
+### OpenTelemetry export related
+
+If you are configuring the [OpenTelemetry export](https://kiro.dev/docs/enterprise/monitor-and-track/user-activity/opentelemetry.md), you will also need the following permission to test the connection from the Kiro console
+
+```
+- codewhisperer:TestOtelConnection
+```
+
+The test response includes the collector endpoint from your Secrets Manager secret. Kiro returns only the endpoint's scheme, host, port, and path, and removes any credentials and query string.
+
 ## Additional resources
 
 For more information about IAM and security best practices:

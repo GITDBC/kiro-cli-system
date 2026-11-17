@@ -13,8 +13,8 @@ the only automated enforcement of either shape:
   patterns against the documented vocabulary (v3/permissions.md,
   "Available capabilities" and the behavioral-changes table).
 - :func:`check_tool_tags` validates each ``tools`` array entry against
-  the documented tag vocabulary (v3/agent-config.md, "Tags vs
-  Capabilities").
+  the documented tag vocabulary (custom-agents/configuration-reference.md,
+  "Tools field", and custom-agents/subagents.md for ``subagent/<name>``).
 
 The two are shipped as separate checks, matching this codebase's
 one-concern-per-check convention: a bad capability and a bad tag are
@@ -54,9 +54,9 @@ ALLOWED_CAPABILITIES: Final[frozenset[str]] = frozenset(
 # declare any of the three effects.
 ALLOWED_EFFECTS: Final[frozenset[str]] = frozenset(("allow", "deny", "ask"))
 
-# v3/agent-config.md, "Tags vs Capabilities": the documented tools tag
-# vocabulary. @mcp and @builtin are meta-tags naming every tool of a
-# kind rather than a literal tool id.
+# custom-agents/configuration-reference.md, "Tools field": the documented
+# tools tag vocabulary. @mcp and @builtin are meta-tags naming every tool
+# of a kind rather than a literal tool id.
 ALLOWED_TOOL_TAGS: Final[frozenset[str]] = frozenset(
     (
         "read",
@@ -94,6 +94,10 @@ REGEX_SMELL_PATTERNS: Final[tuple[tuple[re.Pattern[str], str], ...]] = (
 # still support ?". Every other capability is shell/URL-shaped, where
 # '?' is unsupported and therefore a smell like the other regex leftovers.
 QUESTION_MARK_CAPABILITIES: Final[frozenset[str]] = frozenset(("fs_read", "fs_write"))
+
+# custom-agents/subagents.md, "Configuring sub-agent access": a
+# ``subagent/<name>`` entry names one agent the owner may spawn.
+SUBAGENT_TAG: Final[re.Pattern[str]] = re.compile(r"subagent/[a-z0-9][a-z0-9-]*")
 
 SECTION_PERMISSION_RULES: Final[str] = "permissions.rules validation"
 SECTION_TOOL_TAGS: Final[str] = "tools tag validation"
@@ -299,6 +303,19 @@ def check_tool_tags(ctx: DriftContext) -> list[Finding]:
     return findings
 
 
+def _is_subagent_tag(tag: object) -> bool:
+    """
+    Tell whether a tools entry is a ``subagent/<name>`` selector.
+
+    Args:
+        tag: One entry of an agent's tools array.
+
+    Returns:
+        True for a well-formed per-agent subagent selector.
+    """
+    return isinstance(tag, str) and SUBAGENT_TAG.fullmatch(tag) is not None
+
+
 def _config_tool_tag_findings(config: AgentConfig) -> list[Finding]:
     """
     Validate the tools array of one config.
@@ -317,7 +334,7 @@ def _config_tool_tag_findings(config: AgentConfig) -> list[Finding]:
     findings: list[Finding] = []
     allowed = ", ".join(sorted(ALLOWED_TOOL_TAGS))
     for tag in tools:
-        if tag in ALLOWED_TOOL_TAGS:
+        if tag in ALLOWED_TOOL_TAGS or _is_subagent_tag(tag):
             continue
         findings.append(
             Finding(

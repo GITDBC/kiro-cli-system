@@ -17,12 +17,9 @@ These arguments work with any Kiro CLI command:
 | `--verbose` | `-v` | Increase logging verbosity (can be repeated: `-v`, `-vv`, `-vvv`) |
 | `--agent` | | Start a conversation using a specific custom agent configuration |
 | `--v3` | | Start with the V3 agent harness for this invocation |
-| `--v2` | | Start with the V2 agent harness for this invocation |
 | `--help` | `-h` | Show help information |
 | `--version` | `-V` | Show version information |
 | `--help-all` | | Print help for all subcommands |
-
-`--v2` and `--v3` cannot be combined, and at the root `--v2` also conflicts with `--legacy-ui`. `--v2` takes precedence over a saved `chat.agentEngine` value for that invocation without changing it. Both flags are also accepted on `kiro-cli chat`; an explicit harness on `chat` wins over a root shorthand.
 
 ## Commands
 
@@ -103,15 +100,18 @@ kiro-cli chat [OPTIONS] [INPUT]
 | `--no-interactive` | Print first response to STDOUT without interactive mode |
 | `--resume` / `-r` | Resume the previous conversation from this directory |
 | `--resume-picker` | Open interactive session picker to choose which session to resume |
-| `--resume-id <ID>` | Resume a specific session by its ID |
+| `--resume-id <ID>` | Resume a specific local or cloud session by its ID |
+| `--cloud` | Run the V3 session in a managed cloud sandbox |
+| `--repo <owner/repository>` | Add one or more comma-separated repositories to a V3 cloud session |
 | `--list-sessions` | List all saved chat sessions for the current directory |
 | `--list-models` | Display available models |
 | `--delete-session <ID>` | Delete a saved chat session by ID |
 | `--agent` | Specify which agent to use |
-| `--v3` | Use the V3 agent harness for this session. Conflicts with `--v2` and `--agent-engine` |
-| `--v2` | Use the V2 agent harness for this session. Takes precedence over a saved `chat.agentEngine` value without changing it. Conflicts with `--v3` and `--agent-engine` |
+| `--v3` | Use the V3 agent harness for this session. Conflicts with `--agent-engine` |
+| `--agent-engine <ENGINE>` | Agent harness for this session: `v3` or `v1`. Accepted on `kiro-cli chat` only, not at the root. In Kiro CLI 3.0.0 or later, `v1` selects the retired Classic interface and opens the Classic upgrade prompt |
+| `--model <MODEL>` | Model for this session. Overrides the agent configuration's `model` value and `chat.defaultModel` |
 | `--trust-all-tools` | Allow the model to use any tool without confirmation |
-| `--trust-tools` | Pre-approve listed tools. Non-interactive V3 matches exact internal tool IDs; interactive V3 ignores the flag; CLI 2.x accepts its own tool names |
+| `--trust-tools` | Pre-approve listed tools. Non-interactive V3 matches tool IDs and, in Kiro CLI 3.3.0 or later, `@server` references and `*`/`?` patterns; interactive V3 ignores the flag. See [Headless mode](https://kiro.dev/docs/cli/headless.md) |
 | `--sandbox` | Require the local command sandbox for a V3 headless run. Use with `--no-interactive` or `--output-format stream-json` |
 | `--require-mcp-startup` | Exit with code 3 if any MCP server fails to start |
 | `--wrap` | Line wrapping mode: `always`, `never`, or `auto` (default) |
@@ -153,59 +153,33 @@ kiro-cli chat --agent my-agent "Help me with AWS CLI"
 # Use the V3 harness for this session
 kiro-cli chat --v3
 
-# Use the V2 harness for this session, leaving your saved default unchanged
-kiro-cli chat --v2
-
 # Set the initial reasoning effort level at launch
 kiro-cli chat --effort high "Refactor this module for testability"
 ```
 
-### kiro-cli translate
+### kiro-cli acp
 
-Translate natural language instructions to executable shell commands using AI.
+Start Kiro CLI as an [Agent Client Protocol](https://kiro.dev/docs/cli/acp.md) server for an editor or other ACP client. The client spawns this command and talks to it over standard input and output. `kiro-cli acp` is a hidden subcommand: it does not appear in `kiro-cli --help`.
 
 **Syntax:**
 ```bash
-kiro-cli translate [OPTIONS] [INPUT...]
+kiro-cli acp [OPTIONS]
 ```
 
 **Arguments:**
 
-| Argument | Short | Description |
-|----------|-------|-------------|
-| `--n` | `-n` | Number of completions to generate (max 5) |
-| `INPUT` | | Natural language description (positional arguments) |
-
+| Argument | Description |
+|----------|-------------|
+| `--agent-engine <ENGINE>` | Agent harness for the server: `v3` or `v1`. Overrides the `acp.agentEngine` setting. In Kiro CLI 3.0.0 or later, when no harness is named the server starts V3 on a machine that can run it |
+| `--auth-method <METHOD>` | Who answers access-token requests: `cli` (the default, your Kiro CLI login) or `client` (the client answers `_kiro/auth/getAccessToken`). Alias: `--authMethod`. V3 only; see [Start the CLI V3 server](https://kiro.dev/docs/cli/v3/acp-migration.md#1-start-the-cli-v3-server) |
+| `--login` | Run the Kiro sign-in in the terminal, then exit without starting the server. Reconnect the ACP client after you sign in |
 **Examples:**
 ```bash
-kiro-cli translate "list all files in the current directory"
-kiro-cli translate "find all Python files modified in the last week"
-kiro-cli translate "compress all log files older than 30 days"
-kiro-cli translate -n 3 "search for text in files"
-```
+# Serve an ACP client on the saved or default harness
+kiro-cli acp
 
-### kiro-cli doctor
-
-Diagnose and fix common installation and configuration issues.
-
-**Syntax:**
-```bash
-kiro-cli doctor [OPTIONS]
-```
-
-**Arguments:**
-
-| Argument | Short | Description |
-|----------|-------|-------------|
-| `--all` | `-a` | Run all diagnostic tests without fixes |
-| `--strict` | `-s` | Error on warnings |
-| `--format` | `-f` | Output format: `plain`, `json`, `json-pretty` |
-
-**Examples:**
-```bash
-kiro-cli doctor
-kiro-cli doctor --all
-kiro-cli doctor --strict
+# Serve an ACP client on V3 and sign in through the client
+kiro-cli acp --agent-engine v3 --auth-method client
 ```
 
 ### kiro-cli update
@@ -219,81 +193,45 @@ kiro-cli update [OPTIONS]
 
 **Options:**
 
-The available options depend on your platform.
-
-    macOS
-    Windows
-
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--non-interactive` | `-y` | Don't prompt for confirmation |
-| `--relaunch-dashboard` | | Relaunch the dashboard after updating (default: false) |
-| `--rollout` | | Honor staged rollout timing |
-
-`--check` and `--force` are not available on macOS.
-
-```bash
-kiro-cli update
-kiro-cli update --non-interactive
-```
-
 | Option | Description |
 |--------|-------------|
 | `--check` | Only check for updates without installing |
 | `--force` | Install the advertised version even when the installed version is equal or newer (can reinstall or downgrade) |
-| `--help` | Print help information |
 
-```bash
-kiro-cli update
-kiro-cli update --check
-```
+If a package manager installed Kiro CLI, for example a deb or rpm package, `kiro-cli update` prints how to update with that package manager and installs nothing, even with `--force`.
 
-### kiro-cli theme
-
-Get or set the visual theme for the autocomplete dropdown menu.
-
-**Syntax:**
-```bash
-kiro-cli theme [OPTIONS] [THEME]
-```
-
-**Arguments:**
-
-| Argument | Description |
-|----------|-------------|
-| `--list` | List all available themes |
-| `--folder` | Show the theme directory path |
-| `THEME` | Theme name: `dark`, `light`, `system` |
+On macOS and Linux, if you cannot write to the directory that holds Kiro CLI, `kiro-cli update` installs nothing and tells you to run `sudo kiro-cli update`.
 
 **Examples:**
 ```bash
-kiro-cli theme --list
-kiro-cli theme dark
-kiro-cli theme light
-kiro-cli theme system
+kiro-cli update
+kiro-cli update --check
+kiro-cli update --force
 ```
 
 ### kiro-cli integrations
 
-Manage system integrations for Kiro.
+Manage system integrations for Kiro. Available on macOS and Linux.
 
 **Syntax:**
 ```bash
-kiro-cli integrations [SUBCOMMAND] [OPTIONS]
+kiro-cli integrations <SUBCOMMAND> [OPTIONS] <INTEGRATION>
 ```
 
 **Subcommands:**
 
 | Subcommand | Description |
 |------------|-------------|
-| `install [integration]` | Install an integration (e.g., kiro-command-router) |
-| `uninstall [integration]` | Uninstall an integration |
-| `reinstall [integration]` | Reinstall an integration |
-| `status` | Check integration status |
+| `install <integration>` | Install an integration (e.g., kiro-command-router) |
+| `uninstall <integration>` | Uninstall an integration |
+| `reinstall <integration>` | Reinstall an integration |
+| `status <integration>` | Check integration status |
 
 **Options:**
-- `--silent` / `-s`: Suppress status messages
+- `--silent` / `-s`: Suppress status messages (for `install`, `uninstall`, and `reinstall`)
 - `--format` / `-f`: Output format (for status command)
+
+Put options before the integration name.
 
 **Examples:**
 ```bash
@@ -301,10 +239,10 @@ kiro-cli integrations [SUBCOMMAND] [OPTIONS]
 kiro-cli integrations install kiro-command-router
 
 # Check integration status
-kiro-cli integrations status
+kiro-cli integrations status kiro-command-router
 
 # Uninstall silently
-kiro-cli integrations uninstall --silent
+kiro-cli integrations uninstall --silent kiro-command-router
 ```
 
 #### Kiro Command Router (v1.26.0+)
@@ -334,34 +272,6 @@ kiro set-default ide
 - CLI-focused workflows where you primarily use the terminal
 - Quick access to CLI without typing `kiro-cli` every time
 - Flexibility to switch defaults based on your current project or workflow
-
-### kiro-cli inline
-
-Manage inline suggestions (ghost text) that appear as you type.
-
-**Syntax:**
-```bash
-kiro-cli inline [SUBCOMMAND] [OPTIONS]
-```
-
-**Subcommands:**
-
-| Subcommand | Description |
-|------------|-------------|
-| `enable` | Enable inline suggestions |
-| `disable` | Disable inline suggestions |
-| `status` | Show current status |
-| `set-customization` | Select a customization model |
-| `show-customizations` | Show available customizations |
-
-**Examples:**
-```bash
-kiro-cli inline enable
-kiro-cli inline disable
-kiro-cli inline status
-kiro-cli inline set-customization
-kiro-cli inline show-customizations --format json
-```
 
 ### kiro-cli login
 
@@ -396,6 +306,7 @@ kiro-cli login [OPTIONS]
 - Shows device code and URL
 - Complete authentication on another device
 - CLI polls for completion
+- In Kiro CLI 3.2.1 or later, `kiro-cli login` run at a terminal on a Linux host with no graphical session (neither `DISPLAY` nor `WAYLAND_DISPLAY` is set), such as a container, also uses the device flow. WSL keeps the browser flow
 
 **Examples:**
 ```bash
@@ -566,7 +477,7 @@ kiro-cli settings list --format json-pretty
 
 ### kiro-cli diagnostic
 
-Run diagnostic tests and generate system information report for troubleshooting.
+Generate a system information report for troubleshooting.
 
 **Syntax:**
 ```bash
@@ -578,46 +489,38 @@ kiro-cli diagnostic [OPTIONS]
 | Option | Short | Description |
 |--------|-------|-------------|
 | `--format` | `-f` | Output format: `plain`, `json`, `json-pretty` (default: `plain`) |
-| `--force` | | Force limited diagnostic output (faster, works without app running) |
+| `--force` | | Accepted for compatibility. Has no effect |
 | `--verbose` | `-v` | Increase logging verbosity (can be repeated) |
 | `--help` | `-h` | Print help information |
 
-The `plain` format outputs Markdown-formatted text.
-
-**Behavior:**
-
-- **Without `--force`**: Requires Kiro CLI app to be running (use `kiro-cli launch` first). Generates comprehensive diagnostics by connecting to the running app.
-- **With `--force`**: Standalone command that works without the app running. Generates limited but faster diagnostics.
+The `plain` format outputs TOML.
 
 **Output Information:**
 
 The diagnostic report includes:
-- System information (OS, architecture, memory)
-- Kiro CLI version and build details
-- Configuration status
-- Environment variables
-- Installed dependencies
-- Potential issues
+- Kiro CLI version, build hash, and build date
+- System information (OS, chip, core count, memory)
+- Environment (current directory, Kiro CLI path, install method, and the `in-ssh`, `in-ci`, `in-wsl`, and `in-codespaces` flags, each shown only when true)
+- Cloud session settings
+- Kiro CLI environment variables, plus shell and display variables such as `PATH`, `SHELL`, and `TERM`
+
+The report replaces your username in paths with `USER`.
 
 **Examples:**
 ```bash
-# Generate full diagnostic report
+# Generate a diagnostic report
 kiro-cli diagnostic
 
 # JSON output
 kiro-cli diagnostic --format json-pretty
-
-# Limited output (faster)
-kiro-cli diagnostic --force
 ```
 
-**Example Output (TOML format):**
+**Example Output (excerpt):**
 ```toml
 [q-details]
 version = "1.23.0"
 hash = "97d58722cd90f6d3dda465f6462ee4c6dc104b22"
 date = "2025-12-18T16:49:27.015389Z (4d ago)"
-variant = "full"
 
 [system-info]
 os = "macOS 15.7.1 (24G231)"
@@ -626,13 +529,9 @@ total-cores = 10
 memory = "32.00 GB"
 
 [environment]
-cwd = "/Users/user/project"
-cli-path = "/Users/user/.cargo/bin/kiro-cli"
-os = "Mac"
-shell-path = "/bin/bash"
-shell-version = "5.1.16"
-terminal = "iTerm2"
-install-method = "cargo"
+cwd = "/Users/USER/project"
+cli-path = "/Users/USER/.local/bin/kiro-cli"
+install-method = "unknown"
 
 [env-vars]
 PATH = "..."
@@ -642,15 +541,12 @@ TERM = "xterm-256color"
 
 **Troubleshooting:**
 
-- **"Kiro CLI app is not running" error**: Launch the app with `kiro-cli launch` or use `--force` flag for standalone diagnostics
-- **Diagnostic hangs**: Use `--force` for faster limited output
 - **Permission errors**: Run with appropriate permissions or ignore errors
 
 **Use Cases:**
 - Troubleshooting installation issues
 - Providing information to support
 - Verifying environment configuration
-- Checking for potential problems
 
 ### kiro-cli issue
 
@@ -671,7 +567,7 @@ kiro-cli issue [OPTIONS] [DESCRIPTION...]
 **Examples:**
 ```bash
 kiro-cli issue
-kiro-cli issue "Autocomplete not working in zsh"
+kiro-cli issue "Chat session fails to resume after restart"
 ```
 
 ### kiro-cli version
@@ -828,14 +724,14 @@ Use the `/chat` command to manage sessions:
 # Resume a chat session (interactive selector)
 /chat resume
 
-# Save current session to a file
-/chat save <FILE_PATH>
+# Save current V3 session to a zip archive
+/chat save <FILE_PATH>.zip
 
-# Load a session from a file
-/chat load <FILE_PATH>
+# Load a V3 session archive
+/chat load <FILE_PATH>.zip
 ```
 
-The `.json` extension is optional when loading - Kiro will try both with and without the extension.
+In V3, `/chat save` writes a zip session archive and `/chat load` reads that archive.
 
 ### Custom session storage
 
@@ -864,11 +760,12 @@ Kiro CLI maintains log files for troubleshooting:
 
 **Environment Variables:**
 
-Control logging and Kiro home directory with these environment variables:
+Control logging, the Kiro home directory, and the runtime directory with these environment variables:
 
 | Variable | Values | Description |
 |----------|--------|-------------|
 | `KIRO_HOME` | path | Override the global Kiro directory used for MCP configuration and sign-ins, permissions, sessions, Powers, settings, custom agents, Skills, Steering, Workflows, and other V3 agent state |
+| `KIRO_RUNTIME_DIR` | absolute path | Extract the bundled runtime to this directory instead of the home directory. A relative value is ignored |
 | `KIRO_LOG_LEVEL` | `error`, `warn`, `info`, `debug`, `trace` | Set logging verbosity (default: `error`) |
 | `KIRO_LOG_NO_COLOR` | `1`, `true`, `yes` | Disable colored log output (v1.26.0+) |
 

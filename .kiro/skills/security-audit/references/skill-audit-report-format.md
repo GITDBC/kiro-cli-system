@@ -8,6 +8,10 @@ prompt.
 ```markdown
 # Skill Security Audit Report
 
+## Verdict: [PASS / WARN / FAIL]
+
+[One-line justification.]
+
 ## Skill Metadata
 
 - **Skill**: [skill name]
@@ -26,8 +30,4 @@ permissions are requested.]
 | --- | -------- | -------------------------- | -------------- |
 | 1   | FAIL     | [description of the issue] | [concrete fix] |
 | 2   | WARN     | [description of the issue] | [concrete fix] |
-
-## Verdict: [PASS / WARN / FAIL]
-
-[One-line justification.]
 ```

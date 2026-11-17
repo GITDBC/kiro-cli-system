@@ -11,6 +11,9 @@ patterns this task's coordination note calls out by name.
 # Standard libraries
 from pathlib import Path
 
+# 3pps
+import pytest
+
 # Own modules
 from driftcheck.checks.permissions import check_permission_rules, check_tool_tags
 from driftcheck.types import Severity, build_context
@@ -205,6 +208,26 @@ def test_tool_tags_accept_documented_tags(valid_root: Path) -> None:
         tools=["read", "write", "shell", "web", "subagent", "@mcp", "@builtin", "*"],
     )
     assert problems(check_tool_tags(build_context(valid_root))) == []
+
+
+def test_tool_tags_accept_per_agent_subagent_selectors(valid_root: Path) -> None:
+    """subagent/<name> entries are documented selectors."""
+    write_agent(
+        valid_root,
+        "senior-developer",
+        tools=["read", "subagent/code-reviewer", "subagent/qa-engineer"],
+    )
+    assert problems(check_tool_tags(build_context(valid_root))) == []
+
+
+@pytest.mark.parametrize("tag", ["subagent/", "subagent/Bad Name", "subagent//x"])
+def test_tool_tags_reject_malformed_subagent_selectors(
+    valid_root: Path, tag: str
+) -> None:
+    """A malformed subagent selector is an undocumented tag."""
+    write_agent(valid_root, "senior-developer", tools=["read", tag])
+    errors = problems(check_tool_tags(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
 
 
 def test_tool_tags_reject_typo(valid_root: Path) -> None:

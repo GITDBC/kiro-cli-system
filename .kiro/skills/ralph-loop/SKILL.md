@@ -47,18 +47,26 @@ environment (devcontainer recommended).
 .kiro/skills/ralph-loop/ralph.sh --time 3h "Implement REST API with CRUD and tests"
 .kiro/skills/ralph-loop/ralph.sh --max 10 "Fix authentication bug"
 .kiro/skills/ralph-loop/ralph.sh --time 2h --agent my-agent --promise "FINISHED" "Task"
+.kiro/skills/ralph-loop/ralph.sh --max 8 --effort low "Rename the config keys and update tests"
 ```
+
+Every iteration is a fresh session that pays the agent's context floor again, so cost
+scales with the iteration count. `--effort low|medium|high|xhigh|max` and `--model <id>`
+override the saved per-model default and the agent's model for the whole run (both are
+optional and validated); use a low effort for mechanical work and keep the default for
+design-heavy tasks.
 
 1. **Implementation phase** — iterate until the agent emits `<promise>DONE</promise>`.
 2. **Hardening phase** — with time left, one verification area per iteration (lint,
    coverage, error handling, integration, performance, security).
 
 Each iteration writes `.kiro/ralph-state.json` atomically, runs
-`kiro-cli chat --no-interactive --trust-all-tools` with a fresh prompt, and compares the
-text of the last `<promise>…</promise>` in the log literally (whitespace normalised)
-with the promise phrase. The default agent is `senior-developer`, per the Autonomous
-loop row of `routing.md`. Arguments are validated strictly (`--time` grammar
-`1h30m`/`45m`/`90s`/bare minutes, numeric `--max`, non-empty prompt and promise).
+`kiro-cli chat --no-interactive --trust-all-tools --agent-engine v3` with a fresh
+prompt, and compares the text of the last `<promise>…</promise>` in the log literally
+(whitespace normalised) with the promise phrase. The default agent is
+`senior-developer`, per the Autonomous loop row of `routing.md`. Arguments are validated
+strictly (`--time` grammar `1h30m`/`45m`/`90s`/bare minutes, numeric `--max`, the
+`--effort` levels, non-empty prompt and promise).
 
 Safety mechanisms:
 

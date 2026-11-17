@@ -24,9 +24,6 @@ from driftcheck.types import AgentConfig, DriftContext, Finding, Severity
 DIRECT_INVOKE_SKILLS: Final[frozenset[str]] = frozenset(
     {
         "code-standards",
-        "commit-message",
-        "concise-communication",
-        "jira-fetcher",
         "kiro-cli-reference",
         "claude-prompting-reference",
     }
@@ -37,12 +34,10 @@ DIRECT_INVOKE_SKILLS: Final[frozenset[str]] = frozenset(
 # exclusively meta-content — topology, sequencing, invocation mechanics —
 # with nothing addressed to the specialist that executes the work, so
 # loading it into the specialist's context would buy nothing. ralph-loop
-# drives a standalone shell process and commit-message documents a
-# convention the orchestrator applies itself.
+# drives a standalone shell process.
 ORCHESTRATOR_ONLY_SKILLS: Final[frozenset[str]] = frozenset(
     {
         "ralph-loop",
-        "commit-message",
     }
 )
 
@@ -173,7 +168,7 @@ def check_pattern_resource_wiring(ctx: DriftContext) -> list[Finding]:
     declare a workflow skill such as `deps-audit` without appearing in
     that skill's pattern row, and nothing would raise a warning. This
     is deliberate rather than an oversight: several skills (notably
-    code-standards and concise-communication) are legitimately
+    code-standards) are legitimately
     cross-cutting and declared by many agents while being named in no
     pattern row at all, so a converse check would need an allowlist of
     such cross-cutting skills to avoid flagging all of them as errors.

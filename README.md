@@ -2,39 +2,39 @@
   <img src="assets/imgs/kiro_logo.png" alt="Work Agents logo">
 </p>
 
+<p align="center">
+  <a href="https://github.com/GITDBC/kiro-cli-system/actions/workflows/ci-cd.yml"><img src="https://github.com/GITDBC/kiro-cli-system/actions/workflows/ci-cd.yml/badge.svg" alt="CI/CD pipeline status"></a>
+  <a href="https://opensource.org/licenses/MIT" target="_blank">
+    <img src="https://img.shields.io/badge/license-MIT-blue" alt="License MIT">
+  </a>
+</p>
+
 # Work Agents
 
-A [Kiro CLI](https://kiro.dev/docs/cli/) v3 agent system made up of nine specialised
+A [Kiro CLI](https://kiro.dev/docs/cli/) V3 agent system made up of nine specialised
 engineering agents and an orchestrator that routes each task to the right one.
 
 ## Requirements
 
-To use this project you need Kiro CLI v3 and [uv](https://docs.astral.sh/uv/) (Python
-3.13), which manages the Python environment of every available tool. If you want to
-develop your own version of the project, you also need `make` to run the Makefile
-targets and Node.js with `npx` to run Prettier.
+- Kiro CLI 3.0.0 or later (V3 harness)
+- [uv](https://docs.astral.sh/uv/) with Python 3.13
 
 ## Usage
 
-All configuration is managed through the `config.toml` file, which you must fill in with
-the appropriate credentials. Once it is ready, you can start the Kiro system with the
-following steps:
-
 ```bash
 cp config.toml.example config.toml   # gitignored; may hold secrets
-kiro-cli chat --agent orchestrator --v3
+kiro-cli chat --agent orchestrator --trust-all-tools
 ```
 
-Routing rules: [routing.md](.kiro/orchestration/routing.md). Permissions are set per
-agent in `.kiro/agents/`.
+The project is V3-only: `.kiro/settings/cli.json` pins `chat.agentEngine` to `v3`.
 
-## Ralph Loop
+## Autonomous execution
 
-Autonomous, time-budgeted development: implement first, then verify with the time left.
+For unattended work with a time budget:
 
 ```bash
 .kiro/skills/ralph-loop/ralph.sh --time 3h "Implement user auth with JWT and tests"
 ```
 
 For short interactive tasks, `.kiro/skills/ralph-loop/ralph-session.sh start "<prompt>"`
-keeps the current session iterating through a Stop hook instead.
+keeps the session iterating through a Stop hook instead.

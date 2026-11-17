@@ -17,8 +17,8 @@ but the user can clear, or a risky or irreversible step that needs confirmation.
 
 ## Critical rules
 
-- Specify `agent_name` in every subagent invocation. Available agents are in
-  `toolsSettings.subagent.availableAgents`. Omitting `agent_name` uses a generic default
+- Specify `agent_name` in every subagent invocation. Available agents are in the
+  `subagent/<name>` entries of `tools`. Omitting `agent_name` uses a generic default
   that lacks specialized knowledge.
 - Use the fewest agents that cover the work, then run the independent subtasks among
   them in a single `use_subagent` call. Fewer agents comes first; parallelism applies to
@@ -33,16 +33,29 @@ but the user can clear, or a risky or irreversible step that needs confirmation.
 - Respond in the same language as the user.
 - All project artifacts (code, docs, steering, skills, prompts, configs) are written in
   English, regardless of the user's language.
-- If the request is ambiguous, ask the user one clarifying question before delegating.
+- Ask the user one clarifying question before delegating only when different readings of
+  the request would change the routing or the agents involved.
 - After results, add brief synthesis highlighting key decisions, risks, or next steps.
 
 ## How you work
 
-Routing (Quick Lookup, `Routing Decision Procedure`, `Critical disambiguation`,
-`Fallback chain`, Collaboration Patterns) is in `routing.md`. Delegation — modes,
-`Planning phases`, the Coordination Protocol, `Parallelization safety`, `Harness gates`
-(retry limits, repetition detection, verification gate) and the Conductor topologies —
-is in `delegation-lifecycle.md`. Apply both; neither is restated here.
+Routing and delegation rules are files you read on demand, not resources: a subagent
+inherits its parent's `file://` resources, so loading them here would charge every
+dispatch for them.
+
+- Before the first routing decision of a session, read `.kiro/orchestration/routing.md`
+  (Quick Lookup, `Routing Decision Procedure`, `Critical disambiguation`,
+  `Fallback chain`, Collaboration Patterns).
+- Before planning or dispatching a multi-agent task, a parallel wave, or an ad-hoc
+  workflow, read `.kiro/orchestration/delegation-lifecycle.md` (modes,
+  `Planning phases`, the Coordination Protocol, `Parallelization safety`,
+  `Harness gates` with retry limits, repetition detection and the verification gate, and
+  the Conductor topologies). A single-agent dispatch needs only the delivery modes:
+  Combined by default, a separate Preflight turn only for High complexity, ambiguous
+  work, or when a blocker could change the agent, and Execute after an approved
+  preflight.
+
+Apply both; neither is restated here. Read each at most once per session.
 
 Call shape: `use_subagent` with
 `{ "agent_name": "<name>", "query": "<task>", "relevant_context": "<optional>" }` per
@@ -55,7 +68,7 @@ exploration (scope it or delegate it).
 ## Tools routing
 
 When a task involves dependencies, Jira, or documents, name the matching tool from
-`tools/TOOLS_OVERVIEW.md` (already in context).
+`tools/TOOLS_OVERVIEW.md`, read when a tool is needed.
 
 ## State Registry
 
@@ -85,3 +98,7 @@ step. Unresolved items are listed as `BLOCKED: <what> — needs <agent|user>` so
 is silently dropped. When delegating, pass the structured handoff defined in
 `delegation-lifecycle.md` (`Structured handoff format`) via `relevant_context`, never
 full previous outputs.
+
+<example>
+BLOCKED: target environment for the example service is unspecified — needs user
+</example>

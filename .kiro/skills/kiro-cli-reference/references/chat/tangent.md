@@ -8,7 +8,7 @@
 
 Need to ask something unrelated mid-task, like looking up an API limit, debugging a side error, or exploring an alternative, without polluting your main thread? `/tangent` lets you branch into a side-conversation that inherits everything discussed so far, explore freely, then jump back to exactly where you left off.
 
-**ℹ️ Info:** This page covers tangent in CLI V3 (`kiro-cli --v3`), built on the unified agent harness. The earlier experimental tangent mode behaves differently — a single checkpoint toggled with `/tangent` or `Ctrl+T`, with no naming or nesting. See [Tangent mode (experimental)](https://kiro.dev/docs/cli/experimental/tangent-mode.md) for that behavior.
+**ℹ️ Info:** This page covers `/tangent` in a V3 session.
 
 ## Commands
 
@@ -60,7 +60,7 @@ Exploring in a tangent and want its findings folded into another session, withou
 
 Merge never creates a session. An unresolvable named destination is an error.
 
-**ℹ️ Info:** The tangent itself is never removed or truncated by a merge. Kiro sends one summarization turn inside the tangent, then injects only that distilled summary into the destination as a real prompt turn. The destination never receives the tangent's full transcript. The short line you see for this (e.g. "Merging findings from...") is saved as that turn's own content, so reopening or resuming the session later shows the same summary line instead of replaying the original merge instruction.
+**ℹ️ Info:** The tangent itself is never removed or truncated by a merge. Kiro sends one summarization turn inside the tangent, then injects only that distilled summary into the destination as a real prompt turn. The destination never receives the tangent's full transcript.
 
 ### Merge errors
 
@@ -70,10 +70,9 @@ Merge never creates a session. An unresolvable named destination is an error.
 | `No session named "<name>" to merge into` | The named destination doesn't exist. Merge never creates one. |
 | `Cannot merge a session into itself` | The resolved destination is the current session. |
 | `Nothing to merge yet — this conversation has no findings of its own` | The tangent has no prompts of its own to summarize. |
-| `Merge cancelled — ...` | The summarization turn was cancelled or failed to send. |
+| `Merge cancelled — ...` | The summarization turn was interrupted or failed, or the destination session was busy when the summary was ready. |
 
 ## Related
 
-- [CLI V3 overview](https://kiro.dev/docs/cli/v3.md) for the unified agent harness and how to opt in
-- [New features in V3](https://kiro.dev/docs/cli/v3/new-features.md) for what else is new in the V3 harness
-- [Tangent mode (experimental)](https://kiro.dev/docs/cli/experimental/tangent-mode.md) for the earlier single-checkpoint behavior
+- [`/tangent`](https://kiro.dev/docs/reference/slash-commands.md#tangent) for the command syntax
+- [Session management](https://kiro.dev/docs/cli/chat/session-management.md) for resuming and browsing sessions, including tangents

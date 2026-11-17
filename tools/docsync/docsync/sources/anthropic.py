@@ -10,12 +10,17 @@ it, so pruning is meaningful and is offered.
 Two selection rules decide what the mirror holds, because the upstream
 set is far larger than the part this repository needs:
 
-The prompt-engineering subtree is taken by prefix. Anthropic adds a
-per-model prompting guide with every release, and a prefix rule picks up
-a new one without an edit here — which is the whole point of mirroring
-the subtree rather than a fixed list. The few subtree pages for models
-no agent runs are listed in EXCLUDED_PAGES instead, so a sync does not
-fetch them back and --prune treats a local copy as an orphan.
+The general pages of the prompt-engineering subtree (the overview and
+the best-practices guide) are taken by prefix, so a new general guide
+enters the mirror without an edit here. The per-model prompting guides
+in that subtree, named ``prompting-claude-<model>``, are not: Anthropic
+publishes one with every release, and the mirror holds only those of the
+models the agents run (Opus 5.5, Sonnet 5.5 and Haiku 5.5). Those three
+are listed in TRACKED_PAGES like any other deliberate choice, and every
+other per-model guide (earlier generations, models no agent runs) stays
+out and is treated as an orphan by --prune. Moving the agents to a new
+model is an edit to that list, never a side effect of an upstream
+release.
 
 Everything else is taken by exact slug. Those pages sit in unrelated
 sections (guardrails, effort and thinking controls, per-model release
@@ -25,12 +30,11 @@ the catalogue raises instead of being silently dropped: the page was
 chosen deliberately, so its removal is a decision to re-take, not a
 diff to mirror.
 
-The per-model "what's new" pages are tracked only for the models the
-agents actually run (Opus 5.5 and Sonnet 5.5). They carry the breaking
-API changes and the per-model effort defaults that the session effort
-policy and ``.kiro/settings/cli.json`` depend on. Their sibling overview
-and migration-guide pages, and the Haiku 5.5 set, are deliberately left
-out: nothing in this repository consumes them.
+The per-model "what's new" pages are tracked for the same three models.
+They carry the breaking API changes and the per-model effort defaults
+that the session effort policy and ``.kiro/settings/cli.json`` depend
+on. Their sibling overview and migration-guide pages are deliberately
+left out: nothing in this repository consumes them.
 
 Upstream serves these pages as Markdown with a YAML frontmatter block
 naming the canonical URL, so the inherited identity transform applies
@@ -52,32 +56,27 @@ from docsync.types import MirrorPaths, Page
 CATALOGUE_URL: Final[str] = "https://platform.claude.com/llms.txt"
 DOCS_PREFIX: Final[str] = "https://platform.claude.com/docs/en/"
 
-# Subtree taken wholesale: every prompting guide, including the
-# per-model ones added with each release.
+# Subtree whose general pages are taken by prefix.
 SUBTREE: Final[str] = "build-with-claude/prompt-engineering/"
 
-# Subtree pages left out despite the prefix rule, by slug relative to
-# DOCS_PREFIX: prompting guides for models no agent here runs (Haiku 5.5,
-# Fable 5 and 5.1). The 5.0 and Opus 4.8 guides stay, because driftcheck's
-# prompt_quality checks cite them. An entry absent from the catalogue is
-# harmless, so this set never raises.
-EXCLUDED_PAGES: Final[frozenset[str]] = frozenset(
-    {
-        f"{SUBTREE}prompting-claude-fable-5",
-        f"{SUBTREE}prompting-claude-fable-5-1",
-        f"{SUBTREE}prompting-claude-haiku-5-5",
-    }
-)
+# Per-model prompting guides inside the subtree. The prefix rule skips
+# them; the ones the agents run are listed in TRACKED_PAGES instead.
+MODEL_GUIDE_PREFIX: Final[str] = f"{SUBTREE}prompting-claude-"
 
 # Pages taken individually, by slug relative to DOCS_PREFIX. Each one is
-# prompting guidance whose section siblings are not, so the subtree rule
-# cannot reach it. A slug listed here and absent from the catalogue is an
-# error rather than a silent removal.
+# either prompting guidance whose section siblings are not, so the
+# subtree rule cannot reach it, or a per-model guide the prefix rule
+# skips on purpose. A slug listed here and absent from the catalogue is
+# an error rather than a silent removal.
 TRACKED_PAGES: Final[frozenset[str]] = frozenset(
     {
+        f"{MODEL_GUIDE_PREFIX}haiku-5-5",
+        f"{MODEL_GUIDE_PREFIX}opus-5-5",
+        f"{MODEL_GUIDE_PREFIX}sonnet-5-5",
         "build-with-claude/context-windows",
         "build-with-claude/effort",
         "build-with-claude/thinking",
+        "models/haiku-5-5/whats-new-haiku-5-5",
         "models/opus-5-5/whats-new-opus-5-5",
         "models/sonnet-5-5/whats-new-sonnet-5-5",
         "test-and-evaluate/strengthen-guardrails/increase-consistency",
@@ -120,11 +119,12 @@ def is_in_scope(slug: str) -> bool:
         slug: Documentation slug without its suffix.
 
     Returns:
-        True when the slug is inside the prompting subtree and not
-        excluded, or is tracked individually.
+        True when the slug is a general page of the prompting subtree or
+        is tracked individually. Per-model guides are in scope only when
+        tracked.
     """
-    in_subtree = slug.startswith(SUBTREE) and slug not in EXCLUDED_PAGES
-    return in_subtree or slug in TRACKED_PAGES
+    is_general = slug.startswith(SUBTREE) and not slug.startswith(MODEL_GUIDE_PREFIX)
+    return is_general or slug in TRACKED_PAGES
 
 
 def catalogue_slugs(catalogue: str) -> list[str]:

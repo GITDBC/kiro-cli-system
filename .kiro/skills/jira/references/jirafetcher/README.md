@@ -9,7 +9,7 @@ Markdown files ready for LLM processing.
 - A Jira instance with REST API v2 access
 - A Personal Access Token (PAT) or API token
 
-Set up with `make setup` inside `tools/jirafetcher`.
+Set up with `make setup` inside `.kiro/skills/jira/references/jirafetcher`.
 
 ## Configuration
 
@@ -35,7 +35,7 @@ JSON file wins when both are present. A malformed TOML file exits 1 with a messa
 
 The CLI uses subcommands: `fetch`, `transition`, and `comment`. The commands below
 assume the tool environment is active; from the repository root, prefix each with
-`uv run --project tools/jirafetcher`.
+`uv run --project .kiro/skills/jira/references/jirafetcher`.
 
 ### Fetch subtasks to Markdown
 
@@ -157,6 +157,13 @@ errors (502, 503, 504) with exponential backoff, up to 3 attempts.
 ## Development
 
 Targets (`make lint`, `make code-check`, `make test`, `make all`) come from
-[`tools/tool.mk`](../tool.mk); the repository gates (`make lint-jirafetcher`,
-`make test-jirafetcher`) are in the root [`Makefile`](../../Makefile). `make test`
-enforces an 80% coverage floor.
+[`tools/tool.mk`](../../../../../tools/tool.mk); the repository gates
+(`make lint-jirafetcher`, `make test-jirafetcher`) are in the root
+[`Makefile`](../../../../../Makefile). `make test` enforces an 80% coverage floor.
+
+## Maintainer notes
+
+- Configuration comes from a JSON file first and the `[jirafetcher]` TOML section as a
+  fallback; a `token` is required.
+- Target modes `--self` and `--include-parent` are mutually exclusive; the default
+  operates on subtasks.

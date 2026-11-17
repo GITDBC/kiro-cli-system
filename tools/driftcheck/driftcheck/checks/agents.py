@@ -4,7 +4,7 @@ Checks over the agent configuration files themselves.
 Covers resource resolution (both file:// and skill:// URIs, resolved the
 way Kiro resolves them — against the workspace root), the form those
 resource paths must take, registration in the orchestrator's
-availableAgents list, the Anthropic-only model allow-list and the
+subagent tool entries, the Anthropic-only model allow-list and the
 accuracy of the cost labels routing.md publishes for each agent. The
 workspace-level model defaults in .kiro/settings/cli.json are validated
 here too, against the same allow-list and against the set of models the
@@ -37,6 +37,7 @@ ALLOWED_MODELS: Final[tuple[str, ...]] = (
     "claude-sonnet-4.6",
     "claude-sonnet-4.5",
     "claude-sonnet-4",
+    "claude-haiku-5.5",
     "claude-haiku-4.5",
 )
 
@@ -48,15 +49,17 @@ AUTO_MODEL: Final[str] = "auto"
 # Matched by prefix in insertion order, so an exact id whose multiplier
 # departs from its family must precede the family entry: Kiro's
 # models.md and `kiro-cli chat --list-models` both put Claude Opus 5.5 at
-# 2.0x while every other Opus model is 2.2x.
+# 2.0x while every other Opus model is 2.2x, and Claude Haiku 5.5 at 0.06x
+# (up to 100K tokens) against 0.4x for Haiku 4.5.
 MODEL_COST_LABELS: Final[dict[str, tuple[str, str]]] = {
     "claude-opus-5.5": ("high", "2.0x"),
     "claude-opus-": ("high", "2.2x"),
     "claude-sonnet-": ("medium", "1.3x"),
+    "claude-haiku-5.5": ("low", "0.06x"),
     "claude-haiku-": ("low", "0.4x"),
 }
 
-COST_MULTIPLIER: Final[re.Pattern[str]] = re.compile(r"[0-9]\.[0-9]x")
+COST_MULTIPLIER: Final[re.Pattern[str]] = re.compile(r"[0-9]+\.[0-9]+x")
 
 # Resource URI schemes. Both a file:// and a skill:// entry in
 # `resources` resolve against the repository root and may be a glob; the
@@ -77,45 +80,28 @@ GLOB_CHARACTERS: Final[str] = "*?["
 # broken configs passed this check green.
 CONFIG_RELATIVE_PREFIXES: Final[tuple[str, ...]] = ("./", "../")
 
-# Field shapes the v3 agent engine removed. This project is v3-only, so
-# any of them under .kiro/agents/ is a regression rather than a legacy
-# config: the migration rewrote every config by hand precisely so that no
-# legitimate one carries them, which is what makes this check writable.
-# The remedy is part of the constant because a finding has to say where
-# the removed field's behaviour moved to, not merely that it is removed.
+# Field shapes the v3 agent engine removed or ignores. This project is
+# v3-only, so any of them under .kiro/agents/ is a regression rather than
+# a legacy config: the migration rewrote every config by hand precisely
+# so that no legitimate one carries them, which is what makes this check
+# writable. The remedy is part of the constant because a finding has to
+# say where the removed field's behaviour moved to, not merely that it is
+# removed. toolsSettings is listed whole: v3 reads none of its blocks,
+# the former subagent block included (custom-agents/subagents.md).
 V2_FIELD_REMEDIES: Final[dict[str, str]] = {
     "allowedTools": "express trusted tools as tag-based 'tools' plus "
     "'permissions.rules' allow entries",
     "hooks": "move it to a standalone .kiro/hooks/*.json file using the v1 schema",
+    "toolsSettings": "v3 ignores it; express shell and file rules as "
+    "'permissions.rules' entries and subagent access as 'subagent/<name>' "
+    "entries in 'tools' plus a 'subagent' capability allow rule",
 }
 
-# v2 keyed per-tool blocks inside toolsSettings by tool id, each holding
-# allow/deny settings. Both levels are matched, because a config can
-# reappear carrying either the block or a bare setting key.
-V2_TOOL_BLOCKS: Final[frozenset[str]] = frozenset(
-    ("shell", "read", "write", "fs_read", "fs_write", "execute_bash")
-)
-V2_SETTING_KEYS: Final[frozenset[str]] = frozenset(
-    (
-        "autoAllowReadonly",
-        "denyByDefault",
-        "allowedCommands",
-        "deniedCommands",
-        "allowedPaths",
-        "deniedPaths",
-    )
-)
-
-# The one toolsSettings sub-block that survives in v3, documented under
-# custom-agents/subagents.md: availableAgents and trustedAgents govern
-# subagent dispatch and have no permissions.rules equivalent.
-PERMITTED_TOOLS_SETTINGS: Final[frozenset[str]] = frozenset(("subagent",))
-
-# The permitted sub-blocks as the findings name them, derived from the
-# set above so the message cannot disagree with what is enforced.
-PERMITTED_SUB_BLOCKS: Final[str] = ", ".join(
-    f"'toolsSettings.{key}'" for key in sorted(PERMITTED_TOOLS_SETTINGS)
-)
+# Entries of the orchestrator's `tools` array that name one spawnable
+# agent, and the selectors that let it spawn any agent regardless
+# (custom-agents/subagents.md, "Configuring sub-agent access").
+SUBAGENT_TOOL_PREFIX: Final[str] = "subagent/"
+UNRESTRICTED_SUBAGENT_SELECTORS: Final[tuple[str, ...]] = ("subagent", "@builtin", "*")
 
 SECTION_RESOURCES: Final[str] = "Resource references"
 SECTION_RESOURCE_FORM: Final[str] = "Resource path form"
@@ -124,10 +110,20 @@ SECTION_V2_FIELDS: Final[str] = "Legacy v2 agent config fields"
 SECTION_MODELS: Final[str] = "Model governance (Anthropic-only)"
 SECTION_MODEL_DEFAULTS: Final[str] = "Workspace model defaults"
 SECTION_COST_LABELS: Final[str] = "routing.md cost label accuracy"
+SECTION_AGENT_ENGINE: Final[str] = "Agent engine (v3-only)"
 
 # Relative label used in findings, so the message names the offending
 # file the same way regardless of which root was validated.
 CLI_SETTINGS_LABEL: Final[str] = ".kiro/settings/cli.json"
+
+# The project runs on the v3 engine only. The setting pins it for
+# interactive sessions; headless runs also pass it explicitly, because
+# an unattended run must not depend on a user-level configuration.
+ENGINE_SETTING: Final[str] = "chat.agentEngine"
+ENGINE_VALUE: Final[str] = "v3"
+RALPH_SCRIPT: Final[tuple[str, ...]] = (".kiro", "skills", "ralph-loop", "ralph.sh")
+RALPH_ENGINE_ARGUMENT: Final[str] = "--agent-engine v3"
+HARNESS_SHORTHAND_FLAGS: Final[tuple[str, ...]] = ("--v3", "--v2")
 
 
 def check_resource_references(ctx: DriftContext) -> list[Finding]:
@@ -321,45 +317,83 @@ def _skill_uri_resolves(root: Path, uri: str) -> bool:
 
 def check_agent_registry(ctx: DriftContext) -> list[Finding]:
     """
-    Verify every agent is registered in availableAgents.
+    Verify every agent is listed in the orchestrator's subagent tools.
+
+    v3 limits the agents an agent may spawn through ``subagent/<name>``
+    entries in its ``tools`` array. A bare ``subagent`` tag (or ``*`` or
+    ``@builtin``, which include it) lets the orchestrator spawn any
+    agent, so it defeats the registry and is reported as well.
 
     Args:
         ctx: Shared check context.
 
     Returns:
-        Findings for unparseable or unregistered agents.
+        Findings for unparseable, unregistered agents and open selectors.
     """
-    findings: list[Finding] = []
-    orchestrator = ctx.orchestrator
-    available: list[str] = []
-    if orchestrator is not None and orchestrator.data is not None:
-        subagent = orchestrator.data.get("toolsSettings", {}).get("subagent", {})
-        registered = subagent.get("availableAgents", [])
-        if isinstance(registered, list):
-            available = [item for item in registered if isinstance(item, str)]
+    tools = _orchestrator_tools(ctx)
+    available = [
+        tool.removeprefix(SUBAGENT_TOOL_PREFIX)
+        for tool in tools
+        if tool.startswith(SUBAGENT_TOOL_PREFIX)
+    ]
+    findings = [
+        Finding(
+            Severity.WARNING,
+            SECTION_REGISTRY,
+            f"Orchestrator tools contain '{selector}', which lets it spawn any "
+            f"agent; list '{SUBAGENT_TOOL_PREFIX}<name>' entries instead",
+        )
+        for selector in UNRESTRICTED_SUBAGENT_SELECTORS
+        if selector in tools
+    ]
     for config in ctx.agent_configs:
-        if config.path == ctx.orchestrator_path:
-            continue
-        name = config.name
-        if name is None:
-            findings.append(
-                Finding(
-                    Severity.ERROR,
-                    SECTION_REGISTRY,
-                    f"{config.path.name} is not valid JSON or has no 'name' field",
-                )
-            )
-            continue
-        if name not in available:
-            findings.append(
-                Finding(
-                    Severity.WARNING,
-                    SECTION_REGISTRY,
-                    f"Agent '{name}' exists but not in orchestrator's availableAgents",
-                )
-            )
+        if config.path != ctx.orchestrator_path:
+            findings.extend(_registration_findings(config, available))
     findings.append(Finding(Severity.OK, SECTION_REGISTRY, "Agent registry checked"))
     return findings
+
+
+def _orchestrator_tools(ctx: DriftContext) -> list[str]:
+    """
+    Read the string entries of the orchestrator's tools array.
+
+    Args:
+        ctx: Shared check context.
+
+    Returns:
+        The entries, empty when the orchestrator or the field is absent.
+    """
+    orchestrator = ctx.orchestrator
+    if orchestrator is None or orchestrator.data is None:
+        return []
+    raw = orchestrator.data.get("tools", [])
+    if not isinstance(raw, list):
+        return []
+    return [item for item in raw if isinstance(item, str)]
+
+
+def _registration_findings(config: AgentConfig, available: list[str]) -> list[Finding]:
+    """
+    Check that one agent has a matching subagent tool entry.
+
+    Args:
+        config: Parsed config of a non-orchestrator agent.
+        available: Agent names the orchestrator's tools list.
+
+    Returns:
+        An ERROR for an unnamed config, a WARNING for an unlisted agent.
+    """
+    name = config.name
+    if name is None:
+        message = f"{config.path.name} is not valid JSON or has no 'name' field"
+        return [Finding(Severity.ERROR, SECTION_REGISTRY, message)]
+    if name in available:
+        return []
+    message = (
+        f"Agent '{name}' exists but the orchestrator's tools have no "
+        f"'{SUBAGENT_TOOL_PREFIX}{name}' entry"
+    )
+    return [Finding(Severity.WARNING, SECTION_REGISTRY, message)]
 
 
 def check_v2_config_fields(ctx: DriftContext) -> list[Finding]:
@@ -414,72 +448,11 @@ def _v2_field_messages(config: AgentConfig) -> list[str]:
     """
     data = config.data or {}
     name = config.path.name
-    messages = [
+    return [
         f"{name} carries removed v2 field '{field}' — {remedy}"
         for field, remedy in V2_FIELD_REMEDIES.items()
         if field in data
     ]
-    messages.extend(_tools_settings_messages(name, data.get("toolsSettings")))
-    return messages
-
-
-def _tools_settings_messages(name: str, settings: Any) -> list[str]:
-    """
-    Report per-tool toolsSettings entries, sparing the subagent block.
-
-    Args:
-        name: Config filename, for the finding message.
-        settings: Value of the config's toolsSettings field.
-
-    Returns:
-        Finding messages for every offending key, at either level.
-    """
-    if not isinstance(settings, dict):
-        return []
-    messages: list[str] = []
-    for key, block in settings.items():
-        if key in PERMITTED_TOOLS_SETTINGS:
-            continue
-        if key in V2_TOOL_BLOCKS or key in V2_SETTING_KEYS:
-            messages.append(_removed_setting_message(name, f"toolsSettings.{key}"))
-        messages.extend(
-            _removed_setting_message(name, f"toolsSettings.{key}.{nested}")
-            for nested in _v2_setting_keys(block)
-        )
-    return messages
-
-
-def _v2_setting_keys(block: Any) -> list[str]:
-    """
-    List the removed setting keys a toolsSettings sub-block holds.
-
-    Args:
-        block: Value of one toolsSettings entry.
-
-    Returns:
-        The offending keys, in declaration order.
-    """
-    if not isinstance(block, dict):
-        return []
-    return [key for key in block if key in V2_SETTING_KEYS]
-
-
-def _removed_setting_message(name: str, path: str) -> str:
-    """
-    Phrase one removed per-tool settings finding.
-
-    Args:
-        name: Config filename.
-        path: Dotted path of the offending key.
-
-    Returns:
-        The finding message.
-    """
-    return (
-        f"{name} carries removed v2 per-tool setting '{path}' — express it as a "
-        "'permissions.rules' entry with capability/match/effect "
-        f"({PERMITTED_SUB_BLOCKS} is the only toolsSettings sub-block v3 keeps)"
-    )
 
 
 def check_model_governance(ctx: DriftContext) -> list[Finding]:
@@ -643,6 +616,99 @@ def _model_default_finding(model: str, in_use: frozenset[str]) -> Finding | None
             "it — dead configuration",
         )
     return None
+
+
+def check_agent_engine(ctx: DriftContext) -> list[Finding]:
+    """
+    Verify the project is pinned to the v3 agent engine.
+
+    The workspace settings must set chat.agentEngine to v3, so that no
+    launch flag is needed, and ralph.sh must select the engine with
+    the explicit --agent-engine v3 argument rather than a shorthand.
+    A missing settings file is optional and skipped; malformed JSON is
+    left to the model-defaults check so it is reported only once.
+
+    Args:
+        ctx: Shared check context.
+
+    Returns:
+        Findings per violation, or a single OK finding.
+    """
+    path = ctx.cli_settings
+    if not path.is_file():
+        return [
+            Finding(
+                Severity.OK,
+                SECTION_AGENT_ENGINE,
+                f"No {CLI_SETTINGS_LABEL} (optional), skipping",
+            )
+        ]
+    findings = _engine_setting_findings(path)
+    findings.extend(_ralph_engine_findings(ctx.root.joinpath(*RALPH_SCRIPT)))
+    if not findings:
+        findings.append(Finding(Severity.OK, SECTION_AGENT_ENGINE, "v3 engine pinned"))
+    return findings
+
+
+def _engine_setting_findings(path: Path) -> list[Finding]:
+    """
+    Check the chat.agentEngine value of a settings file.
+
+    Args:
+        path: Existing settings file.
+
+    Returns:
+        An ERROR when the engine is not pinned to v3, else nothing.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, dict):
+        return []
+    value = data.get(ENGINE_SETTING)
+    if value == ENGINE_VALUE:
+        return []
+    message = (
+        f"{CLI_SETTINGS_LABEL} must pin '{ENGINE_SETTING}' to "
+        f"'{ENGINE_VALUE}' (found {value!r})"
+    )
+    return [Finding(Severity.ERROR, SECTION_AGENT_ENGINE, message)]
+
+
+def _ralph_engine_findings(script: Path) -> list[Finding]:
+    """
+    Check how ralph.sh selects the agent engine.
+
+    Args:
+        script: Expected ralph.sh path; ignored when absent.
+
+    Returns:
+        ERROR findings for shorthand flags or a missing explicit engine.
+    """
+    if not script.is_file():
+        return []
+    text = script.read_text(encoding="utf-8")
+    findings: list[Finding] = [
+        Finding(
+            Severity.ERROR,
+            SECTION_AGENT_ENGINE,
+            f"ralph.sh uses {flag}; select the engine with "
+            f"'{RALPH_ENGINE_ARGUMENT}' instead",
+        )
+        for flag in HARNESS_SHORTHAND_FLAGS
+        if re.search(rf"(?<![\w-]){re.escape(flag)}(?![\w-])", text)
+    ]
+    if RALPH_ENGINE_ARGUMENT not in text:
+        findings.append(
+            Finding(
+                Severity.ERROR,
+                SECTION_AGENT_ENGINE,
+                f"ralph.sh must pass '{RALPH_ENGINE_ARGUMENT}' so unattended "
+                "runs do not depend on user-level settings",
+            )
+        )
+    return findings
 
 
 def check_cost_labels(ctx: DriftContext) -> list[Finding]:

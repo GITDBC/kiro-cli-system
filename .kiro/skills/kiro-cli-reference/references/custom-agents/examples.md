@@ -8,16 +8,11 @@
 
 This page provides practical examples of custom agents you can use as starting points for your own workflows.
 
-**ℹ️ Info:** Some examples below show both the current (v3) format and the older (v2) format for comparison. Current examples use `permissions.rules`; `allowedTools`, `toolAliases`, and `toolsSettings` appear only in legacy examples. Use the [`/upgrade-agent`](https://kiro.dev/docs/custom-agents/configuration-reference.md#upgrading-from-older-configs) command to convert older configs automatically.
-
 **ℹ️ Info:** The inline `hooks` arrays in the current examples are profile-scoped CLI V3 configuration. To run the same automation independently of an agent profile or across IDE and CLI, place the definitions in standalone [Hook files](https://kiro.dev/docs/hooks.md).
 
 ## AWS specialist agent
 
 This custom agent is optimized for AWS infrastructure management. It pre-approves safe operations while restricting destructive commands.
-
-CLI V3
-IDE 0.x / CLI 2.x (legacy)
 
 ```json
 {
@@ -48,26 +43,6 @@ IDE 0.x / CLI 2.x (legacy)
 }
 ```
 
-
-```json
-{
-  "name": "aws-specialist-agent",
-  "description": "Specialized custom agent for AWS infrastructure and development tasks",
-  "prompt": "You are an expert AWS infrastructure specialist with deep knowledge of cloud architecture and best practices",
-  "tools": ["read", "write", "shell", "aws"],
-  "allowedTools": ["read", "aws"],
-  "toolsSettings": {
-    "aws": { "allowedServices": ["s3", "lambda", "cloudformation", "ec2", "iam", "logs"] },
-    "write": { "allowedPaths": ["infrastructure/**", "scripts/**", "*.yaml", "*.yml", "*.json"] }
-  },
-  "resources": ["file://README.md", "file://infrastructure/**/*.yaml", "file://docs/aws-setup.md"],
-  "hooks": {
-    "agentSpawn": [{ "command": "aws sts get-caller-identity" }]
-  },
-  "model": "claude-sonnet-4.6"
-}
-```
-
 **Use cases:**
 - Deploying CloudFormation stacks
 - Managing S3 buckets and Lambda functions
@@ -77,9 +52,6 @@ IDE 0.x / CLI 2.x (legacy)
 ## Development workflow agent
 
 This custom agent is designed for general software development tasks, including code review, testing, and Git operations.
-
-CLI V3
-IDE 0.x / CLI 2.x (legacy)
 
 ```json
 {
@@ -122,28 +94,6 @@ IDE 0.x / CLI 2.x (legacy)
 }
 ```
 
-
-```json
-{
-  "name": "development-workflow-agent",
-  "description": "General development workflow agent with Git integration",
-  "prompt": "You are a software development assistant with expertise in Git workflows and code management",
-  "mcpServers": {
-    "git": { "command": "git-mcp-server", "args": [], "timeout": 30000 }
-  },
-  "tools": ["read", "write", "shell", "@git"],
-  "allowedTools": ["read", "@git/git_status", "@git/git_log", "@git/git_diff"],
-  "toolAliases": { "@git/git_status": "status", "@git/git_log": "log", "@git/git_diff": "diff" },
-  "toolsSettings": {
-    "write": { "allowedPaths": ["src/**", "tests/**", "docs/**", "*.md", "*.json"] }
-  },
-  "resources": ["file://README.md", "file://CONTRIBUTING.md", "file://docs/**/*.md"],
-  "hooks": {
-    "agentSpawn": [{ "command": "git status --porcelain" }, { "command": "git branch --show-current" }]
-  }
-}
-```
-
 **Use cases:**
 - Code review and analysis
 - Writing and updating tests
@@ -153,9 +103,6 @@ IDE 0.x / CLI 2.x (legacy)
 ## Code review agent
 
 This custom agent focuses specifically on code review tasks, with tools and context optimized for analyzing code quality, security, and best practices.
-
-CLI V3
-IDE 0.x / CLI 2.x (legacy)
 
 ```json
 {
@@ -185,26 +132,6 @@ IDE 0.x / CLI 2.x (legacy)
 }
 ```
 
-
-```json
-{
-  "name": "code-review-agent",
-  "description": "Specialized agent for code review and quality analysis",
-  "prompt": "You are a code review specialist focused on quality, security, and best practices",
-  "tools": ["read", "shell"],
-  "allowedTools": ["read", "shell"],
-  "toolsSettings": {
-    "shell": {
-      "allowedCommands": ["grep", "find", "wc", "head", "tail", "diff", "git diff", "git log", "eslint", "pylint"]
-    }
-  },
-  "resources": ["file://CONTRIBUTING.md", "file://docs/coding-standards.md", "file://.eslintrc.json", "file://pyproject.toml"],
-  "hooks": {
-    "agentSpawn": [{ "command": "git diff --name-only HEAD~1" }]
-  }
-}
-```
-
 **Use cases:**
 - Reviewing pull requests for code quality
 - Identifying security vulnerabilities
@@ -214,9 +141,6 @@ IDE 0.x / CLI 2.x (legacy)
 ## Project-specific agent
 
 This example shows how to create a custom agent tailored to a specific project, including project-specific MCP servers, documentation, and build processes.
-
-CLI V3
-IDE 0.x / CLI 2.x (legacy)
 
 ```json
 {
@@ -261,30 +185,6 @@ IDE 0.x / CLI 2.x (legacy)
       "action": { "type": "command", "command": "git status --porcelain" }
     }
   ]
-}
-```
-
-
-```json
-{
-  "name": "mobile-app-agent",
-  "description": "Agent for the mobile app backend project",
-  "prompt": "You are a backend development specialist for mobile applications with expertise in Docker and database management",
-  "mcpServers": {
-    "docker": { "command": "docker-mcp-server", "args": ["--socket", "/var/run/docker.sock"] },
-    "database": { "command": "postgres-mcp-server", "args": ["--connection", "postgresql://localhost:5432/myapp"], "env": { "PGPASSWORD": "$DATABASE_PASSWORD" } }
-  },
-  "tools": ["read", "write", "shell", "@docker", "@database"],
-  "allowedTools": ["read", "@docker/docker_ps", "@docker/docker_logs", "@database/query_read_only"],
-  "toolAliases": { "@docker/docker_ps": "containers", "@docker/docker_logs": "logs", "@database/query_read_only": "query" },
-  "toolsSettings": {
-    "write": { "allowedPaths": ["src/**", "tests/**", "migrations/**", "docker-compose.yml", "Dockerfile"] },
-    "shell": { "allowedCommands": ["npm test", "npm run build", "docker-compose up", "docker-compose down"] }
-  },
-  "resources": ["file://README.md", "file://docs/api-documentation.md", "file://docs/database-schema.md", "file://docker-compose.yml"],
-  "hooks": {
-    "agentSpawn": [{ "command": "docker-compose ps" }, { "command": "git status --porcelain" }]
-  }
 }
 ```
 
@@ -375,5 +275,4 @@ If you encounter OAuth scope errors, you can use an empty array to bypass scope 
 
 - [Creating custom agents](https://kiro.dev/docs/custom-agents/creating.md)
 - [Configuration reference](https://kiro.dev/docs/custom-agents/configuration-reference.md) - full details on all fields
-- [Upgrading older configs](https://kiro.dev/docs/custom-agents/configuration-reference.md#upgrading-from-older-configs) - use `/upgrade-agent` to migrate v2 configs
 - [Troubleshooting](https://kiro.dev/docs/custom-agents/troubleshooting.md) - resolve common issues

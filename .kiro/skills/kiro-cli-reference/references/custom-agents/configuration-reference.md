@@ -6,37 +6,47 @@
 
 > Complete reference for agent configuration file format and advanced settings
 
-This reference documents the agent configuration format for IDE 1.0 and CLI V3. If you have older agent configs, use the [`/upgrade-agent`](#upgrading-from-older-configs) command to migrate them.
+This reference documents the agent configuration format for IDE 1.0 and CLI V3.
 
-## Version comparison
+Inline `hooks` are described in [Hooks field](#hooks-field). For cross-surface automation, use standalone [Hook files](https://kiro.dev/docs/hooks.md).
 
-**New in IDE 1.0 / CLI V3:**
+## Markdown format
 
-| Field | Description |
-|-------|-------------|
-| `permissions` | Capability-based access control rules (replaces `toolsSettings`) |
-| `excludedTools` | Exclude specific tools even when `tools` allows them |
-| `includeMcpJson` | Auto-include workspace MCP servers |
-| `includePowers` | Auto-include IDE-installed powers |
-| `welcomeMessage` | Custom greeting on session start |
-| `resources` (expanded) | Now supports `skill://` and `knowledgeBase` in addition to `file://` |
-| Markdown format (`.md`) | Frontmatter for config, body for system prompt |
-| Tags in `tools` | Short names: `read`, `write`, `shell`, `web`, `@builtin`, `*` |
+An agent configuration can be a JSON file or a Markdown file with YAML front matter. In Markdown, the front matter holds the supported current configuration fields, and the document body is the system prompt. In JSON, the system prompt lives in the `prompt` field. Use Markdown when the system prompt is long or you want to read it as prose; JSON suits generated configs.
 
-**CLI 2.x migration fields:**
+`.kiro/agents/backend-dev.md`:
 
-| Field | CLI V3 handling |
-|-------|-----------------|
-| `toolsSettings` | `/upgrade-agent` converts supported shell and file rules to `permissions.rules` |
-| `allowedTools` | `/upgrade-agent` converts entries to capability-level allow rules; new profiles use `permissions` |
-| `toolAliases` | Not part of the CLI V3 schema; use full tool selectors |
-| `keyboardShortcut` | Not part of the CLI V3 schema |
+```markdown
+---
+name: backend-dev
+description: Backend development agent
+model: claude-sonnet-4.6
+tools: ["read", "write", "shell", "web"]
+excludedTools: ["knowledge"]
+includeMcpJson: true
+includePowers: false
+mcpServers:
+  postgres:
+    command: npx
+    args: ["-y", "@modelcontextprotocol/server-postgres"]
+    env:
+      DATABASE_URL: "${DATABASE_URL}"
+resources:
+  - file://./ARCHITECTURE.md
+  - skill://backend-patterns
+permissions:
+  rules:
+    - capability: shell
+      match: ["npm *", "node *"]
+      effect: allow
+welcomeMessage: "Ready to work on backend code."
+---
 
-**Unchanged:** `name`, `description`, `prompt`, `model`, `mcpServers`
+You are a backend developer focused on Node.js and TypeScript.
+Always use async/await. All database queries must be parameterized.
+```
 
-Inline `hooks` have distinct current and legacy shapes; see [Hooks field](#hooks-field). For cross-surface automation, use standalone [Hook files](https://kiro.dev/docs/hooks.md).
-
-Use [`/upgrade-agent`](#upgrading-from-older-configs) to migrate supported fields in older configs.
+The [`tools`](#tools-field) field decides which tools the agent can see and call; the [`permissions`](#permissions-field) field decides what those tools may do when called. The two use different names: `tools` takes selectors such as `read`, `write`, `shell`, `web`, `@mcp`, `@builtin`, and `*`, while `permissions` takes capability names such as `fs_read`, `fs_write`, and `shell`. For the tools each selector covers, see [Configuring tool access](https://kiro.dev/docs/tools.md#configuring-tool-access).
 
 ## Field reference
 
@@ -47,15 +57,11 @@ Every agent configuration file can include the following sections:
 - [`prompt`](#prompt-field) - High-level context for the agent.
 - [`mcpServers`](#mcpservers-field) - The MCP servers the agent has access to.
 - [`tools`](#tools-field) - The tools available to the agent.
-- [`toolAliases`](#toolaliases-field) - CLI 2.x legacy tool-name remapping.
-- [`allowedTools`](#allowedtools-field) - CLI 2.x legacy pre-approval entries; migrate them to `permissions`.
 - [`permissions`](#permissions-field) - Inline capability-based access control rules.
-- [`toolsSettings`](#toolssettings-field) - Per-tool configuration (deprecated for shell/fs rules).
 - [`resources`](#resources-field) - Resources available to the agent.
 - [`hooks`](#hooks-field) - Commands run at specific trigger points.
 - [`includeMcpJson`](#includemcpjson-field) - Whether to include MCP servers from mcp.json files.
 - [`model`](#model-field) - The model ID to use for this agent.
-- [`keyboardShortcut`](#keyboardshortcut-field) - CLI 2.x legacy agent-switch shortcut.
 - [`welcomeMessage`](#welcomemessage-field) - Message displayed when switching to this agent.
 
 ## Name field
@@ -244,131 +250,11 @@ To include all available tools, use:
 }
 ```
 
-## ToolAliases field
-
-The `toolAliases` field is a CLI 2.x legacy field and is not applied by CLI V3. The examples in this section document older profiles; current profiles should use full tool selectors.
-
-For example, if both `@github-mcp` and `@gitlab-mcp` servers provide a tool called `get_issues`, you would have a naming collision. You can use `toolAliases` to disambiguate them:
-
-```json
-{
-  "toolAliases": {
-    "@github-mcp/get_issues": "github_issues",
-    "@gitlab-mcp/get_issues": "gitlab_issues"
-  }
-}
-```
-
-With this configuration, the tools will be available to the agent as `github_issues` and `gitlab_issues` instead of having a collision on `get_issues`.
-
-You can also use aliases to create shorter or more intuitive names for frequently used tools:
-
-```json
-{
-  "toolAliases": {
-    "@aws-cloud-formation/deploy_stack_with_parameters": "deploy_cf",
-    "@kubernetes-tools/get_pod_logs_with_namespace": "pod_logs"
-  }
-}
-```
-
-The key is the original tool name (including server prefix for MCP tools), and the value is the new name to use.
-
-## AllowedTools field
-
-The `allowedTools` field belongs to CLI 2.x. New CLI V3 profiles use capability-based `permissions.rules`. A CLI 2.x JSON profile containing `allowedTools` without a `permissions` block is skipped by V3 until `/upgrade-agent` converts it. The patterns below document the legacy field.
-
-```json
-{
-  "allowedTools": [
-    "read",
-    "write",
-    "@git/git_status",
-    "@server/read_*",
-    "@fetch"
-  ]
-}
-```
-
-You can allow tools using several patterns:
-
-### Exact matches
-- **Built-in tools**: `"read"`, `"shell"`, `"knowledge"`
-- **Specific MCP tools**: `"@server_name/tool_name"` (e.g., `"@git/git_status"`)
-- **All tools from MCP server**: `"@server_name"` (e.g., `"@fetch"`)
-
-### Wildcard patterns
-The `allowedTools` field supports glob-style wildcard patterns using `*` and `?`:
-
-#### MCP tool patterns
-- **Tool prefix**: `"@server/read_*"` - matches `@server/read_file`, `@server/read_config`
-- **Tool suffix**: `"@server/*_get"` - matches `@server/issue_get`, `@server/data_get`
-- **Server pattern**: `"@*-mcp/read_*"` - matches `@git-mcp/read_file`, `@db-mcp/read_data`
-- **Any tool from pattern servers**: `"@git-*/*"` - matches any tool from servers matching `git-*`
-
-Optionally, you can also prefix native tools with the namespace `@builtin`.
-
-### Examples
-
-```json
-{
-  "allowedTools": [
-    "read",
-    "knowledge",
-    "@server/specific_tool",
-
-    "r*",
-    "w*",
-    "@builtin",
-
-    "@server/api_*",
-    "@server/read_*",
-    "@git-server/get_*_info",
-    "@*/status",
-
-    "@fetch",
-    "@git-*"
-  ]
-}
-```
-
-### Pattern matching rules
-- **`*`** matches any sequence of characters (including none)
-- **`?`** matches exactly one character
-- **Exact matches** take precedence over patterns
-- **Server-level permissions** (`@server_name`) allow all tools from that server
-- **Case-sensitive** matching
-
-Unlike the `tools` field, the `allowedTools` field does not support the `"*"` wildcard for allowing all tools. To allow tools, you must use specific patterns or server-level permissions.
-
 **⚠️ Warning:** When you allow write tools (such as `write`, `shell`, or MCP tools with write access), the agent can modify any file the tools have access to - including all resources under `~/.kiro` such as skills, steering files, MCP configurations, and other agent configurations. All installed skills and resources operate with the same permissions as the agent. Review the [Security best practices](#security-best-practices) section before enabling write tools.
-
-## ToolsSettings field
-
-**⚠️ Warning:** `toolsSettings` is deprecated in CLI V3 and IDE 1.0. Use the [`permissions`](#permissions-field) field instead for capability-based access control. See [Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md) for the full guide.
-
-The `toolsSettings` field provides per-tool configuration. In older versions, this was used for shell command allow/deny lists and file path restrictions. These use cases are now handled by the `permissions` field.
-
-The field is still supported for tool-specific settings that `permissions` does not represent. In CLI V3, include a `permissions` block so a profile with `toolsSettings` is not classified as unconverted CLI 2.x configuration:
-
-```json
-{
-  "permissions": { "rules": [] },
-  "toolsSettings": {
-    "@git/git_status": {
-      "git_user": "$GIT_USER"
-    },
-    "subagent": {
-      "availableAgents": ["reviewer", "tester"],
-      "trustedAgents": ["reviewer"]
-    }
-  }
-}
-```
 
 ## Permissions field
 
-The `permissions` field provides inline capability-based policy rules embedded in the agent profile. This replaces the older `toolsSettings` approach for controlling what tools can do.
+The `permissions` field provides inline capability-based policy rules embedded in the agent profile.
 
 Rules use the same syntax as `permissions.yaml` files (see [Permissions](https://kiro.dev/docs/permissions.md)) but are scoped to this agent only.
 
@@ -394,6 +280,8 @@ Each rule has:
 | `exclude` | Optional glob patterns that must NOT match |
 
 Agent-scoped permissions support all three effects (`allow`, `ask`, `deny`). The deny-overrides algorithm applies: a `deny` in any scope wins regardless of `allow` rules elsewhere.
+
+When this agent runs as a sub-agent in CLI V3 or the IDE, Kiro also checks each of its tool calls against the parent session's policy, and the stricter result wins. The agent's `allow` rules don't grant anything the parent session doesn't allow. See [Sub-agent permissions](https://kiro.dev/docs/custom-agents/subagents.md#sub-agent-permissions).
 
 ## Resources field
 
@@ -423,6 +311,8 @@ Both support:
 
 File resources are loaded directly into the agent's context when the agent starts. Use these for content the agent always needs.
 
+In Kiro CLI 3.1.0 or later, an agent loads at most 32 `file://` resource files and 100,000 characters in total. Kiro loads at most 50,000 characters from one file, truncating longer files, and skips a file larger than 1 MiB. When the file count or total-character limit is reached, it stops loading later resource files.
+
 ```json
 {
   "resources": [
@@ -431,6 +321,16 @@ File resources are loaded directly into the agent's context when the agent start
   ]
 }
 ```
+
+In Kiro IDE 1.4.86 and later, an agent loads at most 32 `file://` resource files and 100,000 characters of them. Each file is limited to 1 MiB and 50,000 characters.
+
+- A file larger than 1 MiB is not loaded. A marker in its place names the file.
+- A file longer than 50,000 characters is cut to fit and ends with a marker that says so.
+- When the 32-file or 100,000-character total is reached, Kiro stops at the first file that does not fit and does not load the remaining resource files. A marker explains that the remaining files were not loaded.
+
+Each marker tells the agent to read the file directly to see the rest.
+
+A custom agent that runs as a sub-agent and declares its own `file://` resources loads those files in place of the parent agent's `file://` resources. A sub-agent that declares no `file://` resources inherits the parent agent's `file://` resources.
 
 ### Skill resources
 
@@ -534,10 +434,6 @@ Each inline Hook uses the same definition fields as a standalone Hook:
 - `matcher` (optional): Tool selector (tool ID, category tag such as `shell`, `@mcp`, `@<server>`, or a `*` wildcard) or regex matched against the tool ID for tool-use triggers. See [Hook types](https://kiro.dev/docs/hooks/types.md#pre-tool-use).
 - `action` (required): A command or agent action. See [Hook actions](https://kiro.dev/docs/hooks/actions.md).
 
-CLI 2.x embedded Hooks used an object keyed by camelCase event names such as `agentSpawn`, `preToolUse`, and `postToolUse`. CLI V3 still recognizes that legacy shape as compatibility input, and [`/upgrade-agent`](#upgrading-from-older-configs) converts object-form Hooks to the current array format.
-
-In a legacy CLI 2.x profile, a `use_aws` matcher targeted the structured built-in AWS tool; `aws` was its preferred alias. This tool is not a V3 built-in, so retaining the matcher does not make it available. Replace the AWS tool reference during migration and use the current shell or MCP tool name in the converted Hook.
-
 ## includeMcpJson field
 
 The `includeMcpJson` field determines whether to include MCP servers defined in the MCP configuration files (`~/.kiro/settings/mcp.json` for global and `<cwd>/.kiro/settings/mcp.json` for workspace).
@@ -563,51 +459,6 @@ The `model` field specifies the model ID to use for this agent. If not specified
 The model ID must match one of the available models returned by Kiro's model service. You can see available models by using the `/model` command in an active chat session.
 
 If the specified model is unavailable, the first prompt can fail instead of falling back automatically. Kiro restores the model that was active before applying the agent pin; retry to use that restored model, or choose a different model with `/model` or update the agent's `model` field.
-
-## KeyboardShortcut field
-
-The `keyboardShortcut` field belongs to CLI 2.x and is not part of the CLI V3 profile schema. The details below document legacy profiles.
-
-```json
-{
-  "keyboardShortcut": "ctrl+a"
-}
-```
-
-Shortcuts consist of a modifier and a key, separated by `+`:
-
-**Modifiers** (optional):
-- `ctrl` - Control key
-- `shift` - Shift key
-
-**Keys**:
-- Single letter: `a-z` (case insensitive)
-- Single digit: `0-9`
-
-**Examples**:
-
-```json
-{
-  "keyboardShortcut": "ctrl+a"
-}
-```
-
-
-```json
-{
-  "keyboardShortcut": "shift+b"
-}
-```
-
-**Toggle behavior:**
-
-When you press a keyboard shortcut:
-- If you're on a different agent: switches to this agent
-- If you're already on this agent: switches back to your previous agent
-
-**Conflict handling:**
-
-If multiple agents have the same keyboard shortcut, a warning is logged and the shortcut is disabled. Use `/agent swap` to switch manually in this case.
 
 ## WelcomeMessage field
 
@@ -745,72 +596,6 @@ To reduce risk when using write tools:
 - Define path and command restrictions with `permissions.rules` using narrow `match` patterns.
 - Review skills and resources before installing them, especially from untrusted sources.
 - Use `PreToolUse` [Hooks](https://kiro.dev/docs/hooks.md) to audit or block sensitive operations.
-
-## Upgrading from older configs
-
-If you have agent configs created before IDE 1.0 or CLI V3, `/upgrade-agent` identifies configs that need migration, backs up originals, and converts supported fields in place.
-
-```bash
-# Scan agents and open the selection menu
-/upgrade-agent
-
-# Review previously upgraded agents and any conversion warnings
-/upgrade-agent diagnostics
-```
-
-The command scans `.kiro/agents/` in your workspace and `~/.kiro/agents/` globally, then shows a selection menu grouped by scope. Only agents that need upgrading appear.
-
-Legacy CLI 2.x profiles can appear in the V3 `/agent` picker, but profiles with unsupported trust fields fall back to another agent until `/upgrade-agent` converts them. `/upgrade-agent` flattens object-form Hooks into an array of Hook documents. It preserves the legacy camelCase trigger string as a compatibility alias; use PascalCase when you hand-author or revise the migrated Hook.
-
-Before:
-
-```json
-{
-  "hooks": {
-    "agentSpawn": [
-      {
-        "command": "git status"
-      }
-    ]
-  }
-}
-```
-
-After `/upgrade-agent`:
-
-```json
-{
-  "hooks": [
-    {
-      "name": "agentSpawn-0",
-      "trigger": "agentSpawn",
-      "action": {
-        "type": "command",
-        "command": "git status"
-      },
-      "timeout": 10
-    }
-  ]
-}
-```
-
-Kiro V3 accepts the emitted `agentSpawn` alias. For new configuration, rename it to `SessionStart` and replace the generated name with one that describes the Hook's purpose.
-
-### What gets converted
-
-| Old pattern | New equivalent |
-|------------|----------------|
-| `toolsSettings.shell.allowedCommands` | `permissions.rules` with `capability: shell`, `effect: allow` |
-| `toolsSettings.shell.deniedCommands` | `permissions.rules` with `capability: shell`, `effect: deny` |
-| `toolsSettings.write.allowedPaths` | `permissions.rules` with `capability: fs_write`, `effect: allow` |
-| `allowedTools` entries | Capability-level allow rules |
-| CLI 2.x tool names (`fs_read`, `execute_bash`) | Current selectors (`read`, `shell`) chosen by `/upgrade-agent` |
-| `autoAllowReadonly` | Read-only shell policy rule |
-| Object-form Hooks | Flat array of Hook documents; legacy trigger aliases remain accepted |
-
-Original files are backed up to `<filename>.json.bak`. To revert, rename the backup back.
-
-For the full upgrade guide including diagnostics and troubleshooting, see [What's new in CLI V3 - Agent config](https://kiro.dev/docs/cli/v3/agent-config.md).
 
 ## Next steps
 

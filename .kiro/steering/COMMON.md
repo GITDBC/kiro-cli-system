@@ -1,9 +1,9 @@
 # Common Directives for All Agents
 
 Behavioral rules for every agent. Coding standards and every numeric threshold:
-`.kiro/steering/code-standards-summary.md`. Rationale for these rules and the
-`.kiro/orchestration/` layout: `.kiro/orchestration/orchestration-rationale.md` — read
-it only when a settled decision is being challenged.
+`.kiro/steering/code-standards-summary.md`. Rationale and the `.kiro/orchestration/`
+layout: `.kiro/orchestration/orchestration-rationale.md`, read only when a settled
+decision is challenged.
 
 ## Technology Stack
 
@@ -11,63 +11,56 @@ Python 3.13 with uv, pytest, SonarQube, Jenkins/GitLab CI/CD.
 
 ## Available Tools (tools/)
 
-Invoke CLIs with `shell`; usage in `tools/TOOLS_OVERVIEW.md`.
+Invoke CLIs with `shell`; usage in `tools/TOOLS_OVERVIEW.md`, read when a tool is
+needed.
 
-- `gh` CLI is NOT installed. Push branch, provide compare URL, hand off merge to user.
-- Docker is available; GPU access depends on host configuration.
+- `gh` CLI is NOT installed. Push the branch, provide the compare URL, hand the merge to
+  the user.
+- Docker is available; GPU access depends on the host.
 
 ## Documentation Verification
 
-- Academic, professional, impersonal tone. Third person.
-- Never start headers with numbers. Do not use "---" to separate sections.
-- Use Mermaid for diagrams.
-- **Language**: All project artifacts MUST be written in English.
-
-Before recommending any API, library, or pattern, verify it is not deprecated in the
-target Python version, will not be removed in the next 2 versions, and follows official
-recommendations (Python, Docker, GitLab CI, Jenkins, SonarQube docs).
+- Academic, professional, impersonal tone, third person. No numbered headers, no `---`
+  section separators. Mermaid for diagrams.
+- **Language**: all project artifacts MUST be written in English.
+- Before recommending an API, library, or pattern, verify it is not deprecated in the
+  target Python version, will not be removed within 2 versions, and follows the official
+  recommendations (Python, Docker, GitLab CI, Jenkins, SonarQube).
 
 ## Preflight Protocol (mandatory)
 
-Every agent MUST run a preflight analysis before implementation. The orchestrator states
-the **delivery mode** and expected depth when it delegates:
+Every agent runs a preflight analysis before implementing. The orchestrator states the
+**delivery mode** and expected depth on dispatch:
 
-| Declared mode | Agent obligation                                                        |
-| ------------- | ----------------------------------------------------------------------- |
-| Preflight     | Produce the Preflight Report and stop. Read-only — no modifications.    |
-| Execute       | Implement following the approved preflight plan; report files modified. |
-| Combined      | Open with a 2-3 line preflight, then implement in the same turn.        |
+| Declared mode | Agent obligation                                                    |
+| ------------- | ------------------------------------------------------------------- |
+| Preflight     | Produce the Preflight Report and stop. Read-only, no modifications. |
+| Execute       | Implement the approved preflight plan; report the files modified.   |
+| Combined      | Open with a 2-3 line preflight, then implement in the same turn.    |
 
-The report's shape lives in `.kiro/orchestration/preflight-report-format.md`: read it
-first in a separate preflight turn; combined mode does not need it.
-
-### Rules
-
-- Report blockers clearly — do NOT work around them silently.
-- Escalate high-risk assumptions; document low-risk ones and proceed.
-
-### Autonomous Mode
-
-When the dispatch says `mode: autonomous`, read `## Autonomous Mode` in
-`.kiro/orchestration/preflight-report-format.md`; the rules also arrive inline in
-`ralph.sh` prompts.
+The report's shape is in `.kiro/orchestration/preflight-report-format.md`: read it first
+in a separate preflight turn; combined mode does not need it. Report blockers clearly
+instead of working around them silently; escalate high-risk assumptions, document
+low-risk ones and proceed. When the dispatch says `mode: autonomous`, follow
+`## Autonomous Mode` in the same file (the rules also arrive inline in `ralph.sh`
+prompts).
 
 ## Verification First
 
-Validation runs after every change, before reporting a task complete, by the agent that
-made the change: after implementing, `pytest` passes; after configuration changes, the
-syntax is valid; after documentation, code examples are syntactically valid; after
-fixes, re-run the check that revealed the problem. If verification fails, fix before
-proceeding; never pass unverified work downstream. For code that can be run, built, or
-type-checked, a syntax-only check or a check that failed to start does not count as
-verification. If no real check can run, name the check not run and why instead of
-reporting the change as done; missing environments or dependencies are reported, not
-installed (see `python-environment.md`).
+The agent that made a change validates it before reporting the task complete: `pytest`
+passes after implementing, configuration syntax is valid, documentation code examples
+are valid, and the check that revealed a bug is re-run after the fix. Fix failures
+before proceeding; never pass unverified work downstream. For code that can be run,
+built, or type-checked, a syntax-only check or one that failed to start does not count.
+If no real check can run, name the check not run and why instead of reporting the change
+as done; missing environments or dependencies are reported, not installed (see
+`python-environment.md`).
 
 ### Tooling detection
 
-Before writing code, detect what the project provides, then run its own targets after
-the change. A `Makefile` target always wins over the raw command it wraps.
+Detect what the project provides before writing code, then run its own targets after the
+change; a `Makefile` target wins over the raw command it wraps. Prefix every invocation
+with `uv run`.
 
 | Marker in the project        | Command                                                     |
 | ---------------------------- | ----------------------------------------------------------- |
@@ -78,68 +71,53 @@ the change. A `Makefile` target always wins over the raw command it wraps.
 | `pyproject.toml` with mypy   | `mypy .`                                                    |
 | `.pre-commit-config.yaml`    | `pre-commit run --all-files`                                |
 
-`<tool>` is a directory name under `tools/`. Some repositories expose only the `-all`
-and per-tool forms, with no bare `make lint` or `make test`; check the Makefile. Every
-invocation is prefixed with `uv run` (see `python-environment.md`).
+`<tool>` is a tool directory (under `tools/` or a skill's `references/`); check the
+Makefile for the forms it exposes. Run in order and stop on the first failure: format
+check, lint, type check (when configured), tests covering the changed files at minimum.
+Fix auto-fixable findings and re-run. Fix lint, type, and test failures in the code
+(update a test only when behavior changed on purpose); no bare `# type: ignore`, no
+suppression without a justification confirmed with the user, no project-wide linter
+disabling, no deleting a failing test.
 
-### Validation order
-
-Run in sequence, stopping on the first failure: format check → lint → type check (when
-configured) → tests covering the changed files at minimum.
-
-### Handling failures
-
-Auto-fixable (formatting, import order): fix and re-run. Lint error: fix the code; do
-not suppress without justification. Type error: fix the types; no bare `# type: ignore`.
-Test failure: fix the code, or update the test if behavior changed on purpose. Never
-disable a linter project-wide or delete a failing test to reach green. A legitimate
-suppression is documented inline and confirmed with the user.
-
-### Reporting
-
-State in prose the validation commands actually run and their outcome — e.g. "ran
-`make lint-driftcheck` and `make test-driftcheck`; both passed". No fixed template: a
-template invites reporting rows that were never run.
+Report in prose the commands actually run and their outcome; a fixed template invites
+rows that were never run.
 
 ## Continuous Improvement
 
-Report improvement opportunities met during any task — automatable manual steps, missing
-abstractions causing duplication, workflow friction — in a **Recommendations** section:
-what, estimated effort (low/medium/high), and which agents/workflows benefit.
+Report improvement opportunities met during a task (automatable manual steps, missing
+abstractions, workflow friction) in a **Recommendations** section: what, estimated
+effort (low/medium/high), and who benefits.
 
 ## Communication
 
-Always-on directives; the `concise-communication` skill carries the detailed patterns
-(banned phrases, reference codes, worked do/don't examples) on demand.
+Always-on directives for every agent.
 
-- **Length**: calibrate to task complexity. Spend the response on the main answer, keep
-  caveats short; an explanation request gets a high-level summary unless depth was asked
-  for.
-- **Narration**: in an interactive session, say in one sentence what is about to happen
-  before the first tool call; a dispatched subagent skips that line, since only its
-  final response reaches the orchestrator. While working, report only an important
-  finding or a change of direction. On finishing, lead with the outcome — the first
-  sentence answers what happened or was found, supporting detail after it.
+- **Length**: calibrate to task complexity; spend the response on the main answer and
+  keep caveats short. An explanation request gets a high-level summary unless depth was
+  asked for.
+- **Narration**: interactive sessions say in one sentence what is about to happen before
+  the first tool call; a dispatched subagent skips it, since only its final response
+  reaches the orchestrator. While working, report only an important finding or a change
+  of direction. Lead the final message with the outcome.
 - **Scope**: deliver what was asked at the scope intended. Make routine judgment calls
   directly; check in only where different readings lead to materially different work. If
   the request appears mistaken, say so in one sentence and continue as asked. In a
-  dispatched run (Combined, Execute, or autonomous mode) nobody answers mid-turn: keep
-  working until everything asked for is done, and never end a turn with a summary that
-  announces the next step or offers to continue. Stop early only when nothing can
-  advance without the user, or before a risky or irreversible action. When the work is
-  done and checked, stop and report: add no unrequested features, tests, files, docs, or
-  refactors — mention a worthwhile one at the end instead. Tests and docstrings the code
-  standards require for the change are part of the work, not additions.
+  dispatched run (Combined, Execute, or autonomous) nobody answers mid-turn: keep
+  working until everything asked is done, never end with a summary that announces the
+  next step or offers to continue, and stop early only when nothing can advance without
+  the user or before a risky or irreversible action. When the work is done and checked,
+  stop: add no unrequested features, tests, files, docs, or refactors (mention a
+  worthwhile one at the end). Tests and docstrings the code standards require are part
+  of the work.
 - **Corrections**: correct an earlier statement when the error would change the user's
-  code, conclusions, or decisions, then continue. Fix inconsequential slips silently.
+  code, conclusions, or decisions; fix inconsequential slips silently.
 
 ## Output Guidelines
 
 - **Substantial deliverables** (reports, reviews, analyses, multi-step implementations):
-  open with a 3-5 line executive summary — key result, decisions, blockers — then the
+  open with a 3-5 line executive summary (key result, decisions, blockers), then the
   detail under a Markdown header. A short answer stays short: a one-line question gets a
-  one-line reply, with no summary or header.
-- Tables and lists for genuinely enumerable content; prose for reasoning and trade-offs.
-- **Files written to disk** (notes, reports, specs, docs): match length to what the task
-  needs — cover the substance, no filler sections, redundant summaries, or boilerplate.
-  Conversational density is owned by the `concise-communication` skill.
+  one-line reply.
+- Tables and lists for enumerable content; prose for reasoning and trade-offs.
+- **Files written to disk**: match length to what the task needs, with no filler
+  sections, redundant summaries, or boilerplate.

@@ -12,10 +12,10 @@ Sub-agents let you hand off focused tasks to agents that run in their own isolat
 |------------|:---:|:---:|:---:|:------:|
 | Automatic sub-agent invocation | ✓ | ✓ | ✓ | ✓ |
 | Explicit sub-agent invocation | ✓ | ✓ | ✓ | ✓ |
-| Custom agents as sub-agents | ✓ | ✓ | ✓ | — |
+| Custom agents as sub-agents | ✓ | ✓ | ✓ | ✓ |
 | Parallel execution | ✓ | ✓ | ✓ | ✓ |
 
-On Web, custom agents committed to `.kiro/agents/` can be invoked as sub-agents, along with Kiro's [built-in sub-agents](#built-in-sub-agents). Mobile uses built-in sub-agents only.
+On Web, custom agents committed to `.kiro/agents/` can be invoked as sub-agents, along with Kiro's [built-in sub-agents](#built-in-sub-agents). Sessions you start from Mobile can use the same custom agents as Kiro Web.
 
 ## How sub-agents work
 
@@ -43,10 +43,12 @@ Sub-agents share the workspace environment but run with isolated conversation co
 
 ## Built-in sub-agents
 
-Kiro includes two internal sub-agents used automatically when appropriate:
+Kiro includes internal sub-agents used automatically when appropriate:
 
 - **Context gathering** - Explores your project structure and gathers relevant files and context
 - **General purpose** - Handles parallelized tasks of any kind using the default agent configuration
+- **Validation** - Checks a finished change against your request (rolling out gradually). See [Validation sub-agent](https://kiro.dev/docs/custom-agents/built-in.md#validation-sub-agent)
+- **Introspect** - Answers questions about Kiro from its documentation (CLI V3). See [Introspect sub-agent](https://kiro.dev/docs/custom-agents/built-in.md#introspect-sub-agent)
 
 You don't need to configure these - the main agent uses them as needed.
 
@@ -108,31 +110,63 @@ Constraints:
 
 The default sub-agent has the same built-in tools as the main agent - `read`, `write`, `shell`, `web_search`, `web_fetch`, and any configured MCP tools.
 
-When you delegate to a custom agent, the sub-agent uses that agent's `tools` and `permissions` configuration. Tools not listed in the custom agent's config won't be available to the sub-agent.
+When you delegate to a custom agent, the sub-agent uses that agent's `tools` and `permissions` configuration. Tools not listed in the custom agent's config won't be available to the sub-agent. In CLI V3 and the IDE, the parent session's permissions also apply to the sub-agent's tool calls. See [Sub-agent permissions](#sub-agent-permissions).
 
 **ℹ️ Custom orchestrator agents need the subagent tool:** If you're building a custom agent that will spawn sub-agents, include `subagent` in its `tools` array (or use `@builtin`). Without it, the agent can't delegate.
 
 ## Configuring sub-agent access
 
-Control which agents can be spawned and which run without approval prompts using `toolsSettings.subagent` in your [agent configuration](https://kiro.dev/docs/custom-agents/configuration-reference.md):
+To limit which agents an agent can spawn, list `subagent/<name>` entries in its `tools` instead of `subagent`. Don't add `@builtin` or `*` to that agent's `tools`, since both include `invoke_sub_agent`, which can start any agent. To start a sub-agent without a prompt, add a `subagent` rule to its `permissions`:
 
 ```json
 {
-  "toolsSettings": {
-    "subagent": {
-      "availableAgents": ["reviewer", "tester", "docs-*"],
-      "trustedAgents": ["reviewer", "tester"]
-    }
+  "tools": ["read", "write", "shell", "web", "subagent/reviewer", "subagent/tester"],
+  "permissions": {
+    "rules": [
+      { "capability": "subagent", "match": ["reviewer", "tester"], "effect": "allow" }
+    ]
   }
 }
 ```
 
-| Field | Description |
-|-------|-------------|
-| `availableAgents` | Glob patterns for agents this agent can spawn. Omit to allow all. |
-| `trustedAgents` | Agents that run without permission prompts. |
-
 To restrict the tools a sub-agent can use, configure `tools` in the **sub-agent's own config file** rather than in the parent.
+
+## Sub-agent permissions
+
+In CLI V3 and the IDE, Kiro checks every sub-agent tool call against two policies:
+
+- The parent session's policy. This is your user and workspace `permissions.yaml`, the parent agent's `permissions`, and the approvals you gave earlier in the session.
+- The sub-agent's own `permissions`.
+
+The stricter result wins:
+
+- A `deny` from either policy denies the call.
+- An `ask` rule in either policy prompts you.
+- If the parent session's policy has no rule for the call, Kiro prompts you, even when the sub-agent's own rules allow it.
+
+A sub-agent's `allow` rules take effect only when that agent runs as the top-level agent, for example with `kiro-cli chat --agent <name>`. A call that the sub-agent's rules don't mention follows the parent session's policy. A sub-agent with no `permissions` block runs under the parent session's policy.
+
+To let a sub-agent's tool calls run without prompts in CLI V3, add the sub-agent's `allow` rules to one of these:
+
+- The parent agent's `permissions.rules`. The parent agent doesn't need the MCP server or tool itself.
+- Your user-scope `~/.kiro/settings/permissions.yaml`. These rules apply to every agent.
+- Your workspace-scope `permissions.yaml`. These rules apply to every agent in that workspace.
+
+For example, a sub-agent named `data-analyst` that allows every tool from the `analytics` MCP server needs the same rule in the parent agent:
+
+```json
+{
+  "tools": ["read", "write", "shell", "subagent/data-analyst"],
+  "permissions": {
+    "rules": [
+      { "capability": "subagent", "match": ["data-analyst"], "effect": "allow" },
+      { "capability": "mcp", "match": ["analytics/*"], "effect": "allow" }
+    ]
+  }
+}
+```
+
+In a session where you trust every tool, `--trust-all-tools` approves sub-agent tool calls that would otherwise prompt. `deny` rules still apply.
 
 ## Surface-specific behavior
 
@@ -150,12 +184,12 @@ In the CLI, you get live progress tracking as sub-agents work. Press **Ctrl+G** 
 
 Inside the monitor, use **Ctrl+D** and **Ctrl+U** to navigate between sub-agents, and press **q** to return to the main chat.
 
-**ℹ️ Delegation in V3 sessions with Workflows enabled:** The **Workflows: sub-agent tool** setting under `/settings features` is on by default. While it is on, the main chat can delegate directly to sub-agents or through Workflows. Turn it off to limit main-chat delegation to `run_workflow`; custom agents inside a workflow can still invoke sub-agents when their tool configuration permits it. See [Background delegation and sub-agents](https://kiro.dev/docs/workflows.md#background-delegation-and-sub-agents).
+**ℹ️ Delegation in V3 sessions with Workflows enabled:** **Workflow use** under `/settings features` controls how often the main chat starts Workflows. Choose **Only when asked**, **Only for large tasks**, or **As much as possible**. Custom agents inside a workflow can still invoke sub-agents when their tool configuration permits it. See [Background delegation and sub-agents](https://kiro.dev/docs/workflows.md#background-delegation-and-sub-agents).
 
 ### Runtime behavior
 
 - **Working directory reads are auto-approved.** `fs_read` within the current working directory doesn't prompt. Reads outside still prompt.
-- **Non-interactive sub-agents can't prompt for approvals.** If `is_interactive` is false and a tool requires approval, the sub-agent fails fast. Add the agent to `trustedAgents` to avoid this.
+- **In CLI V3, sub-agent approval prompts go to your session.** A headless run denies them. See [Sub-agent permissions](#sub-agent-permissions).
 - **Sub-agent sessions record their parent.** Each persisted session includes the spawning session's ID for traceability.
 
 Sub-agents run automatically in the background. The agent delegates tasks and aggregates results without additional user interaction.
@@ -165,7 +199,7 @@ Sub-agents run automatically in the background. The agent delegates tasks and ag
 1. **Use for complex tasks** - Most valuable for multi-step operations that benefit from isolation or parallelism
 2. **Provide clear instructions** - Specific task descriptions lead to better agent selection and results
 3. **Monitor progress** - In CLI, use Ctrl+G to check on long-running sub-agents
-4. **Configure access** - Use `availableAgents` and `trustedAgents` for orchestrator agents that spawn many sub-agents
+4. **Configure access** - Limit which agents an orchestrator agent can spawn, and decide which ones start without a prompt. See [Configuring sub-agent access](#configuring-sub-agent-access)
 
 ## Troubleshooting
 
@@ -174,6 +208,6 @@ Sub-agents run automatically in the background. The agent delegates tasks and ag
 | Sub-agent not starting | Verify the task description is clear and actionable |
 | Unknown agent | Check the agent name with `kiro-cli agent list`; a request naming an unknown agent fails instead of falling back to the default agent |
 | Missing tool access | Check the agent configuration's `tools` field |
-| Approval prompts blocking | Add the agent to `trustedAgents`, or trust the `subagent` tool |
+| Approval prompts blocking | Add a `subagent` allow rule to skip the start prompt, and add the sub-agent's `allow` rules to the parent session's policy. See [Sub-agent permissions](#sub-agent-permissions) |
 | Main agent can't spawn sub-agents | Add `subagent` to the orchestrator agent's `tools` array |
 | Incomplete results | Provide more specific instructions or break into smaller tasks |

@@ -16,7 +16,7 @@ Steering gives Kiro persistent knowledge about your project through markdown fil
 | Global steering (`~/.kiro/steering/`) | ✓ | ✓ | — | — |
 | Upload local steering to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | — |
 | Generate foundation files via UI | ✓ | — | — | — |
-| Inclusion modes | ✓ | V3: full; V1/V2: partial | ✓ | ✓ |
+| Inclusion modes | ✓ | ✓ | ✓ | ✓ |
 | AGENTS.md support | ✓ | ✓ | ✓ | ✓ |
 
 On Web, "Global steering" refers to your local `~/.kiro/steering/` directory, which the cloud sandbox cannot read. To reuse personal steering across cloud sessions, upload it through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md); the cloud copy then applies to every cloud session.
@@ -79,7 +79,7 @@ These foundation files are included in every interaction by default, forming the
 
     The agent automatically looks for steering files in the `.kiro/steering/` folder at the root of your repository. Create or edit project steering markdown files there, and the agent picks them up in every session.
 
-    To use personal steering in cloud sessions without committing it to the repository, upload it from **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit the cloud copy under **Settings > Steering**. Cloud steering applies across all your cloud sessions.
+    To use personal steering in cloud sessions without committing it to the repository, upload it from **Agent Config > Cloud Config** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit the cloud copy under **Agent Config > Steering**. Cloud steering applies across all your cloud sessions.
 
 ## Creating custom steering files
 
@@ -111,7 +111,7 @@ Extend Kiro's understanding with specialized guidance tailored to your project's
     2. Choose a descriptive filename (e.g., `api-standards.md`)
     3. Write your guidance using standard markdown syntax
 
-    For personal steering used by cloud sessions, upload files from **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit them under **Settings > Steering**.
+    For personal steering used by cloud sessions, upload files from **Agent Config > Cloud Config** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit them under **Agent Config > Steering**.
 
     The agent picks up new steering files automatically in subsequent sessions.
 
@@ -223,7 +223,7 @@ Auto-inclusion steering files also appear as slash commands in chat. Type `/` fo
 
 **Best for**: Context-heavy guidance that should only load when relevant - like specialized domain knowledge, complex workflows, or detailed reference material that would overwhelm always-on steering.
 
-**ℹ️ Info:** Kiro CLI V3 supports all four inclusion modes: `always`, `fileMatch`, `manual`, and `auto`. In V1/V2, files marked `always` load automatically. Files marked `fileMatch` or `manual` are excluded from automatic loading, and those engines do not provide V3's complete matching and activation behavior.
+**ℹ️ Info:** Kiro CLI V3 supports all four inclusion modes: `always`, `fileMatch`, `manual`, and `auto`.
 
 ## File references
 

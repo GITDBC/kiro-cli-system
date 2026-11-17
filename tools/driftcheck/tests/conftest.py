@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 # Own modules
-from driftcheck.checks.prompt_quality import REVIEW_ORIENTED_SKILLS
 from driftcheck.checks.skills import DIRECT_INVOKE_SKILLS, ORCHESTRATOR_ONLY_SKILLS
 from driftcheck.types import DriftContext, build_context
 from tests.helpers import (
@@ -16,6 +15,7 @@ from tests.helpers import (
     DRIFTCHECK_PYPROJECT,
     EMPTY_STATE_YAML,
     GITIGNORE,
+    ORCHESTRATOR_PROMPT,
     ORCHESTRATOR_RESOURCES,
     ROUTING_MD,
     SENIOR_DEVELOPER_PROMPT,
@@ -58,14 +58,14 @@ def valid_root(tmp_path: Path) -> Path:
     )
     write(root / ".kiro" / "steering" / "COMMON.md", COMMON_MD)
     allowlisted = DIRECT_INVOKE_SKILLS | ORCHESTRATOR_ONLY_SKILLS
-    for skill in allowlisted | REVIEW_ORIENTED_SKILLS:
+    for skill in allowlisted:
         write(root / ".kiro" / "skills" / skill / "SKILL.md", f"# {skill}\n")
     write(root / ".kiro" / "skills" / "reviewing-code" / "SKILL.md", SKILL_MD)
     write(
         root / ".kiro" / "prompts" / "senior-developer.md",
         SENIOR_DEVELOPER_PROMPT,
     )
-    write(root / ".kiro" / "prompts" / "orchestrator.md", "# Orchestrator\n")
+    write(root / ".kiro" / "prompts" / "orchestrator.md", ORCHESTRATOR_PROMPT)
     write(root / "memory" / "state.yaml", EMPTY_STATE_YAML)
     write(root / "tools" / "driftcheck" / "pyproject.toml", DRIFTCHECK_PYPROJECT)
     write_agent(root, "senior-developer")
@@ -74,7 +74,7 @@ def valid_root(tmp_path: Path) -> Path:
         "orchestrator",
         model="claude-sonnet-5.5",
         resources=ORCHESTRATOR_RESOURCES,
-        toolsSettings={"subagent": {"availableAgents": ["senior-developer"]}},
+        tools=["subagent/senior-developer"],
     )
     return root
 

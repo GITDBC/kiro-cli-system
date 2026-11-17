@@ -1,7 +1,7 @@
 # Enhancement Documentation Template
 
-Full 7-section markdown template for `jira-enhancement` Phase 1. Load this file when
-drafting an enhancement markdown document.
+Full 7-section markdown template for the `jira` skill, enhancement Phase 1. Load this
+file when drafting an enhancement markdown document.
 
 ## Output Format (7 sections)
 

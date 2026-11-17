@@ -29,14 +29,15 @@ updates:
   - package-ecosystem: "uv"
     directories:
       - "/tools/*"
+      - "/.kiro/skills/deps-audit/references/depschecker"
+      - "/.kiro/skills/jira/references/jirafetcher"
+      - "/.kiro/skills/doc2md/references/doc2md"
     schedule:
       interval: "monthly"
     target-branch: "dev"
     labels:
       - "dependencies"
       - "uv"
-    # With `directories`, one group spans every tools/* directory, so a pin
-    # shared by several tools moves in one pull request, not one per tool.
     groups:
       uv:
         patterns:

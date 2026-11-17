@@ -1,10 +1,20 @@
 {
   "chat.modelDefaults": {
     "claude-sonnet-5.5": {
-      "output_config": { "effort": "medium" }
+      "output_config": {
+        "effort": "medium"
+      }
     },
     "claude-opus-5.5": {
-      "output_config": { "effort": "medium" }
+      "output_config": {
+        "effort": "medium"
+      }
+    },
+    "claude-haiku-5.5": {
+      "output_config": {
+        "effort": "medium"
+      }
     }
-  }
+  },
+  "chat.agentEngine": "v3"
 }

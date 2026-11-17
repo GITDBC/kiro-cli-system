@@ -33,7 +33,7 @@ def test_skill_routing_detects_uncovered_skill(valid_root: Path) -> None:
 
 def test_skill_routing_exempts_direct_invoke_skills(valid_root: Path) -> None:
     """Direct-invoke skills need no collaboration pattern."""
-    write(valid_root / ".kiro" / "skills" / "commit-message" / "SKILL.md", "# C\n")
+    write(valid_root / ".kiro" / "skills" / "code-standards" / "SKILL.md", "# C\n")
     assert problems(check_skill_routing(build_context(valid_root))) == []
 
 

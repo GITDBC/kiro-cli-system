@@ -3,7 +3,22 @@
   "description": "Orchestrator agent that analyzes tasks and delegates to specialized subagents. Entry point for all user requests.",
   "prompt": "file://../prompts/orchestrator.md",
   "welcomeMessage": "Orchestrator ready. Describe your task and I'll route it to the right agent(s).",
-  "tools": ["read", "write", "shell", "web", "subagent", "knowledge"],
+  "tools": [
+    "read",
+    "write",
+    "shell",
+    "web",
+    "knowledge",
+    "subagent/software-architect",
+    "subagent/ai-engineer",
+    "subagent/data-engineer",
+    "subagent/senior-developer",
+    "subagent/security-engineer",
+    "subagent/code-reviewer",
+    "subagent/qa-engineer",
+    "subagent/platform-engineer",
+    "subagent/technical-writer"
+  ],
   "includeMcpJson": false,
   "includePowers": false,
   "permissions": {
@@ -147,27 +162,8 @@
       }
     ]
   },
-  "toolsSettings": {
-    "subagent": {
-      "availableAgents": [
-        "software-architect",
-        "ai-engineer",
-        "data-engineer",
-        "senior-developer",
-        "security-engineer",
-        "code-reviewer",
-        "qa-engineer",
-        "platform-engineer",
-        "technical-writer"
-      ],
-      "trustedAgents": ["*"]
-    }
-  },
   "resources": [
-    "file://.kiro/orchestration/routing.md",
-    "file://.kiro/orchestration/delegation-lifecycle.md",
     "skill://.kiro/skills/*/SKILL.md",
-    "file://tools/TOOLS_OVERVIEW.md",
     {
       "type": "knowledgeBase",
       "source": "file://.kiro/skills/kiro-cli-reference/references",
@@ -177,5 +173,5 @@
       "autoUpdate": false
     }
   ],
-  "model": "claude-sonnet-5.5"
+  "model": "claude-haiku-5.5"
 }

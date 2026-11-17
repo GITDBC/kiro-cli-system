@@ -56,14 +56,17 @@ DELEGATION_LIFECYCLE_MD = """# Delegation lifecycle
 Orchestrator-only delegation machinery, loaded through resources here.
 """
 
-# The orchestrator's resources: the two orchestration files the
-# placement check requires, plus the always-on steering file every agent
-# declares as insurance.
-ORCHESTRATOR_RESOURCES = [
-    "file://.kiro/orchestration/routing.md",
-    "file://.kiro/orchestration/delegation-lifecycle.md",
-    "file://.kiro/steering/COMMON.md",
-]
+# The orchestrator declares no file:// resource: every subagent that
+# declares none inherits its parent's, so a dispatcher's file resources
+# would be paid again on each dispatch. Its prompt names the two
+# orchestration files, which it reads on demand instead.
+ORCHESTRATOR_RESOURCES: list[str] = []
+
+ORCHESTRATOR_PROMPT = """# Orchestrator
+
+Read `.kiro/orchestration/routing.md` before routing, and
+`.kiro/orchestration/delegation-lifecycle.md` before planning a delegation.
+"""
 
 # Minimal prompt for a routable agent: it has to carry the boundary
 # section the prompt-quality check expects, because ROUTING_MD above

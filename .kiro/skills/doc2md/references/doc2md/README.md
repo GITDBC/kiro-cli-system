@@ -9,12 +9,12 @@ Convert documents and audio files to Markdown using
 - Python 3.13 and [uv](https://docs.astral.sh/uv/)
 - NVIDIA GPU (optional, for faster audio transcription)
 
-Set up with `make setup` inside `tools/doc2md`.
+Set up with `make setup` inside `.kiro/skills/doc2md/references/doc2md`.
 
 ## Usage
 
 The commands below assume the tool environment is active. From the repository root,
-prefix each with `uv run --project tools/doc2md`.
+prefix each with `uv run --project .kiro/skills/doc2md/references/doc2md`.
 
 ```bash
 # Convert a single file
@@ -91,6 +91,15 @@ output/
 ## Development
 
 Targets (`make lint`, `make code-check`, `make test`, `make all`) come from
-[`tools/tool.mk`](../tool.mk); the repository gates (`make lint-doc2md`,
-`make test-doc2md`) are in the root [`Makefile`](../../Makefile). `make test` enforces
-an 80% coverage floor.
+[`tools/tool.mk`](../../../../../tools/tool.mk); the repository gates
+(`make lint-doc2md`, `make test-doc2md`) are in the root
+[`Makefile`](../../../../../Makefile). `make test` enforces an 80% coverage floor.
+
+## Maintainer notes
+
+- Pins `faster-whisper==1.2.1` and `markitdown[docx,outlook,pdf,pptx,xls,xlsx]==0.1.5`.
+  The explicit extras replace `[all]`, so only the converters for those formats are
+  installed; audio goes through faster-whisper, not MarkItDown.
+- Documents convert in a `ProcessPoolExecutor`; audio runs sequentially.
+- Input hardening: path traversal checks, symlink escape detection, blob size limits and
+  `os.umask(0o077)`.

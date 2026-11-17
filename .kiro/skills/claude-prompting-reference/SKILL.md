@@ -30,28 +30,25 @@ Never hand-edit `references/`; scope, sync and editing rules are in
 
 ### Per-Model Behaviour
 
-The 5.5 guides describe differences from the corresponding 5.0 model and defer to the
-5.0 guide as a baseline, so both generations stay indexed. Upstream still publishes the
-5.0 guides.
+Tracked only for the models the agents run (Opus 5.5, Sonnet 5.5 and Haiku 5.5). Earlier
+generations are not mirrored.
 
 | File                                                                                                                                | Topic                                                                                                                               |
 | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | [prompt-engineering/prompting-claude-opus-5-5.md](references/build-with-claude/prompt-engineering/prompting-claude-opus-5-5.md)     | Opus 5.5: effort calibration, prompts written for thinking disabled, unattended runs, progress updates, multiagent time signals     |
 | [prompt-engineering/prompting-claude-sonnet-5-5.md](references/build-with-claude/prompt-engineering/prompting-claude-sonnet-5-5.md) | Sonnet 5.5: effort, initiative and scope, running without up-front thinking, JSON output, verification, tolerant tool-call handling |
-| [prompt-engineering/prompting-claude-opus-5.md](references/build-with-claude/prompt-engineering/prompting-claude-opus-5.md)         | Opus 5: response verbosity, agentic narration, task scoping, subagent delegation, self-correction                                   |
-| [prompt-engineering/prompting-claude-sonnet-5.md](references/build-with-claude/prompt-engineering/prompting-claude-sonnet-5.md)     | Sonnet 5: effort, adaptive thinking defaults, tool use, migration from Sonnet 4.6                                                   |
-| [prompt-engineering/prompting-claude-opus-4-8.md](references/build-with-claude/prompt-engineering/prompting-claude-opus-4-8.md)     | Opus 4.8: verbosity, effort calibration, tool use, subagents, frontend defaults                                                     |
+| [prompt-engineering/prompting-claude-haiku-5-5.md](references/build-with-claude/prompt-engineering/prompting-claude-haiku-5-5.md)   | Haiku 5.5: effort, search nudges, JSON output with own tools, early stopping in long agent prompts, verification, refusals          |
 
 ### Model Release Notes
 
-Tracked only for the two models the agents run (Opus 5.5 and Sonnet 5.5). They carry the
-breaking API changes and the per-model effort defaults that the session effort policy
-and `.kiro/settings/cli.json` depend on.
+Tracked for the same three models. They carry the breaking API changes and the per-model
+effort defaults that the session effort policy and `.kiro/settings/cli.json` depend on.
 
-| File                                                                                              | Topic                                                                                                                 |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| [models/opus-5-5/whats-new-opus-5-5.md](references/models/opus-5-5/whats-new-opus-5-5.md)         | Opus 5.5: thinking always on, forced tool use rejected, thinking-block binding, `medium` default effort               |
-| [models/sonnet-5-5/whats-new-sonnet-5-5.md](references/models/sonnet-5-5/whats-new-sonnet-5-5.md) | Sonnet 5.5: `between_tools` thinking control, forced tool use rejected, thinking-block binding, `high` default effort |
+| File                                                                                              | Topic                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [models/haiku-5-5/whats-new-haiku-5-5.md](references/models/haiku-5-5/whats-new-haiku-5-5.md)     | Haiku 5.5: adaptive thinking on by default, `effort` control, tokenizer about 30 percent heavier than Haiku 4.5, thinking blocks kept in context |
+| [models/opus-5-5/whats-new-opus-5-5.md](references/models/opus-5-5/whats-new-opus-5-5.md)         | Opus 5.5: thinking always on, forced tool use rejected, thinking-block binding, `medium` default effort                                          |
+| [models/sonnet-5-5/whats-new-sonnet-5-5.md](references/models/sonnet-5-5/whats-new-sonnet-5-5.md) | Sonnet 5.5: `between_tools` thinking control, forced tool use rejected, thinking-block binding, `high` default effort                            |
 
 ### Effort, Thinking and Context
 

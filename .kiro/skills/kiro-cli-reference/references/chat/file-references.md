@@ -94,7 +94,7 @@ src/
 
 **Compare files**:
 ```
-> What's different between @v1/handler.py and @v2/handler.py?
+> What's different between @old/handler.py and @new/handler.py?
 ```
 
 **Explore structure**:

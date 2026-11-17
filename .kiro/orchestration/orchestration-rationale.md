@@ -21,10 +21,16 @@ Source: `.kiro/steering/COMMON.md` and the header of
 lives in `.kiro/orchestration/` and is loaded by the orchestrator alone, so a specialist
 never pays for it and never has to decide whether it applies.
 
-`delegation-lifecycle.md` reaches the session through an explicit
-`file://.kiro/orchestration/delegation-lifecycle.md` entry in
-`.kiro/agents/orchestrator.json`. That entry is load-bearing — removing it strips the
-orchestrator of its delegation machinery.
+`routing.md` and `delegation-lifecycle.md` reach the session on demand: the orchestrator
+prompt names both files and the orchestrator reads them with `read`. They are
+deliberately not `file://` resources of `.kiro/agents/orchestrator.json`. Kiro CLI 3.1.0
+or later gives a subagent that declares no `file://` resources of its own the `file://`
+resources of its parent
+(`kiro-cli-reference/references/custom-agents/configuration-reference.md`, "File
+resources"). None of the nine specialists declares one, so a resource entry on the
+orchestrator charged every dispatch for roughly 10,000 tokens of routing and delegation
+rules that no specialist acts on. The pointer in the prompt is load-bearing: removing it
+strips the orchestrator of its routing tables and delegation machinery.
 
 The placement is deliberate and should not be undone. Kiro CLI loads every
 `.kiro/steering/` file into every session, subagent sessions included, regardless of an
@@ -35,9 +41,11 @@ and `routing.md` lived there, a probe of a specialist agent found their roughly 
 lines filling an estimated 70-75% of a specialist's context on every dispatch, for
 content that specialist never acts on.
 
-`driftcheck`'s `check_orchestration_placement` asserts both halves of the arrangement
-together: the two files must not sit in `.kiro/steering/`, and the orchestrator must
-still name them in its `resources`, which is now the only way they reach any session.
+`driftcheck`'s `check_orchestration_placement` asserts the three halves of the
+arrangement together: the two files must not sit in `.kiro/steering/`, no agent that
+dispatches subagents may declare a `file://` resource, and the orchestrator prompt must
+name each file. `check_orchestration_reachability` then follows pointers from the
+prompts, steering and declared resources through the orchestration files themselves.
 
 ## Combined mode as the default delivery
 
@@ -184,12 +192,46 @@ written — but it is bought where it is uncertain rather than everywhere. The
 orchestrator's plan is a hypothesis; a preflight validates the parts of it most likely
 to be wrong.
 
+## Model assignment and credit cost
+
+Source: `routing.md`, Quick Lookup (Cost column), and `.kiro/settings/cli.json`.
+
+The credit multipliers are those of `kiro-cli chat --list-models`: Opus 5.5 2.0x, Sonnet
+5.5 1.3x, Haiku 5.5 0.06x for requests up to 100K tokens (0.3x above). Haiku 5.5 is an
+Anthropic 5.5-family model that Anthropic describes as built for classification,
+routing, extraction and subagent tasks, which are the orchestrator's and the technical
+writer's workloads.
+
+| Agent                                                                                       | Model               | Multiplier |
+| ------------------------------------------------------------------------------------------- | ------------------- | ---------- |
+| orchestrator, technical-writer                                                              | `claude-haiku-5.5`  | 0.06x      |
+| senior-developer, code-reviewer, qa-engineer, platform-engineer, data-engineer, ai-engineer | `claude-sonnet-5.5` | 1.3x       |
+| software-architect, security-engineer                                                       | `claude-opus-5.5`   | 2.0x       |
+
+The orchestrator is the highest-volume session: it carries every subagent result in its
+context and issues a request per user turn, so its multiplier dominates a run's cost.
+Routing and synthesis follow written rules, which is why a Haiku orchestrator is the
+largest single lever. Opus is kept where the work is open-ended reasoning with costly
+mistakes (design and security). `senior-developer` moved to Sonnet because scoped
+implementation is the stated Sonnet 5.5 strength and the agent is the most frequently
+dispatched specialist. None of these assignments has been measured against an eval
+harness, which the project lacks: if routing quality or documentation quality degrades,
+the reversal is one line in the agent's `model` field, and `driftcheck` keeps the cost
+labels in `routing.md` consistent.
+
+Effort cannot differ per agent: it is resolved per model through `chat.modelDefaults`,
+so the three models carry the three entries in `cli.json`. Haiku 5.5 sits at `medium`
+because `low` raises early stopping under long agent prompts. Context growth is bounded
+separately by `compaction.autoCompactionThreshold`, set to 25 percent so that a 1M
+window compacts near 250K tokens instead of the default 80 percent; a Haiku request
+above 100K tokens is billed at 0.3x, so the threshold also limits that step.
+
 ## Session effort: sources, the step-down argument, and mechanics
 
 Source: `delegation-lifecycle.md`, `### Session effort policy`.
 
 Sources for the recommendation table, read against `claude-opus-5.5`, the model behind
-the three `high (2.0x)` agents; the orchestrator itself runs `claude-sonnet-5.5`:
+the two `high (2.0x)` agents; the orchestrator itself runs `claude-haiku-5.5`:
 
 - The Opus 5.5 guide ("Calibrate effort"): "Reserve `xhigh` and `max` for work where
   you've measured a quality gain", and "At a given level, Claude Opus 5.5 tends to think
@@ -226,29 +268,31 @@ running a fresh effort sweep rather than carrying settings over from the earlier
 that sweep is currently unmeasurable here, as the project has no eval harness.
 
 The committed values live in `.kiro/settings/cli.json` and are not restated here. The
-evidence behind running both 5.5 models at `medium`: Anthropic reports that Opus 5.5 at
-`medium` matched or beat Opus 5 at `high` in fewer tokens, which matters for a model
-carrying a 2.0x multiplier; for Sonnet, Anthropic's agentic starting point is "start at
-`medium` for well-specified tasks and move to `high` for harder or longer ones". The
-documented cost is that "[a]t `low` and `medium`, on long agentic tasks, it's more
-likely to stop and check in with the user before it finishes", which the carry-through
-clause in `COMMON.md` addresses at the prompt level instead of by raising effort.
-Neither value has been measured.
+evidence behind running all three 5.5 models at `medium`: Anthropic reports that Opus
+5.5 at `medium` matched or beat Opus 5 at `high` in fewer tokens, which matters for a
+model carrying a 2.0x multiplier; for Haiku, `low` makes it stop early under a long
+agent prompt and roughly halves that at `medium` (Haiku 5.5 guide, \"Prevent early
+stopping\"); for Sonnet, Anthropic's agentic starting point is "start at `medium` for
+well-specified tasks and move to `high` for harder or longer ones". The documented cost
+is that "[a]t `low` and `medium`, on long agentic tasks, it's more likely to stop and
+check in with the user before it finishes", which the carry-through clause in
+`COMMON.md` addresses at the prompt level instead of by raising effort. Neither value
+has been measured.
 
 Mechanics moved here from the policy: effort resolves per model from
 `chat.modelDefaults`, or per session via `--effort` / `/effort`, with precedence session
 → workspace → user → built-in. `use_subagent` accepts only `agent_name`, `query`, and
 `relevant_context`, and subagents inherit the session's steering, MCP, permissions, and
 file access, which is why effort cannot be a per-dispatch lever. The recommendation
-table assumes the orchestrator's session model, `claude-sonnet-5.5`; whether a
+table assumes the orchestrator's session model, `claude-haiku-5.5`; whether a
 session-level `/effort` reaches subagents running `claude-opus-5.5` is not verified, and
 the per-model lever is `chat.modelDefaults`. The `xhigh` rows are ceilings, and `max` is
 reserved for a measured quality gain.
 
 A future operator revisiting either value needs an eval harness first; without one the
 sweep both guides call for cannot be run. No agent runs `claude-haiku-4.5`, so
-`chat.modelDefaults` needs entries for the two 5.5 models only; `driftcheck` warns on a
-default configured for a model no agent uses.
+`chat.modelDefaults` needs entries for the three 5.5 models only; `driftcheck` warns on
+a default configured for a model no agent uses.
 
 ## Routing: the two disambiguation rules most often applied backwards
 

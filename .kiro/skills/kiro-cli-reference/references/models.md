@@ -20,6 +20,7 @@ Kiro gives you access to frontier and open weight AI models from OpenAI, Anthrop
 | **Claude Fable 5.1**<sup>†</sup> | 1M | 6x | US East only | | | | | |
 | **Claude Opus 5.5** | 1M | 2.0x | US, EU | | ✓ | ✓ | ✓ | ✓ |
 | **Claude Sonnet 5.5** | 1M | 1.3x | US, EU | | ✓ | ✓ | ✓ | ✓ |
+| **Claude Haiku 5.5** | 1M | 0.06x* | US, EU | | ✓ | ✓ | ✓ | ✓ |
 | **Claude Opus 5** | 1M | 2.2x | US, EU | | ✓ | ✓ | ✓ | ✓ |
 | **Claude Opus 4.8** | 1M | 2.2x | US, EU | | ✓ | ✓ | ✓ | ✓ |
 | **Claude Opus 4.7** | 1M | 2.2x | US, EU | | ✓ | ✓ | ✓ | ✓ |
@@ -31,24 +32,25 @@ Kiro gives you access to frontier and open weight AI models from OpenAI, Anthrop
 | **Claude Sonnet 4.0** | 200K | 1.3x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Auto** | — | 1.0x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Claude Haiku 4.5** | 200K | 0.4x | US, EU | | ✓ | ✓ | ✓ | ✓ |
+| **Grok 4.7** | 500K | 2.7x* | US | | ✓ | ✓ | ✓ | ✓ |
 | **Kimi K3** | 1M | 2.4x | US | | ✓ | ✓ | ✓ | ✓ |
-| **DeepSeek 3.2** | 128K | 0.25x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **DeepSeek 3.2** | 128K | 0.25x | US | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **MiniMax M2.5** | 200K | 0.25x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **GLM-5** | 200K | 0.5x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **GLM-5** | 200K | 0.5x | US | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **MiniMax M2.1** | 200K | 0.15x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **Qwen3 Coder Next** | 256K | 0.05x | US, EU | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-† Claude Fable 5.1 is rolling out in a limited Preview for Kiro Enterprise customers. Administrators enable access through model governance.
+† Claude Fable 5.1 is available to Kiro Enterprise customers. Administrators enable access through model governance.
 
-### Enterprise Preview rollout
+### Enterprise availability
 
-**Claude Fable 5.1** is rolling out gradually to Kiro Enterprise organizations with model governance enabled. It has a 1M context window and a 6x credit multiplier. Inference runs only in US East (N. Virginia) (`us-east-1`). Organizations with access can add Fable 5.1 from **Manage approved list** and make it available to their users. See [Claude Fable 5.1](https://kiro.dev/docs/models/available-models.md#claude-fable-51-preview) for capabilities and data-handling details.
+**Claude Fable 5.1** is generally available to Kiro Enterprise organizations with model governance enabled. It has a 1M context window and a 6x credit multiplier. Inference runs only in US East (N. Virginia) (`us-east-1`). Organizations with access can add Fable 5.1 from **Manage approved list** and make it available to their users. See [Claude Fable 5.1](https://kiro.dev/docs/models/available-models.md#claude-fable-51) for capabilities and data-handling details.
 
 US and EU are commercial geographies, each spanning several AWS Regions rather than a single Region. For the Regions in each geography and the endpoint that serves your requests, see [Inference endpoint regions](#inference-endpoint-regions).
 
-Cost is relative to Auto (1.0x baseline). For example, a task that costs 10 credits on Auto would cost 20 credits on Opus 5.5, 22 credits on Opus 5, 4 credits on Haiku, or 0.5 credits on Qwen3 Coder Next.
+Cost is relative to Auto (1.0x baseline). For example, a task that costs 10 credits on Auto would cost 20 credits on Opus 5.5, 22 credits on Opus 5, 0.6 credits at Haiku 5.5's 0.06x rate for a request up to 100K tokens, or 0.5 credits on Qwen3 Coder Next.
 
-\* GPT-5.6 uses OpenAI and Amazon Bedrock's two-tier context pricing model: requests up to 272K tokens use the listed short context rate, and requests over 272K tokens are billed at double that rate (Sol 8.8x, Terra 4.4x, Luna 1.2x).
+\* Two-tier context pricing applies to GPT-5.6, [Claude Haiku 5.5](https://kiro.dev/docs/models/available-models.md#claude-haiku-55), and [Grok 4.7](https://kiro.dev/docs/models/available-models.md#grok-47). GPT-5.6 requests up to 272K tokens use the listed rate; requests over 272K tokens are billed at double that rate (Sol 8.8x, Terra 4.4x, Luna 1.2x). Haiku 5.5 requests up to 100K tokens use the listed 0.06x rate; requests over 100K tokens are billed at 0.3x. Grok 4.7 requests up to 200K tokens use the listed 2.7x rate; requests over 200K tokens, through the 500K maximum, are billed at 5.4x.
 
 **ℹ️ Info:** Models that share the same credit multiplier won't necessarily consume the same number of credits per task. Actual consumption depends on factors like how many tokens the model generates, internal thinking depth, and tokenizer differences. For example, Opus 4.8 uses an updated tokenizer compared to Opus 4.6, so the same prompt and response can be counted as a different number of tokens - leading to different credit costs even though both carry a 2.2x multiplier.
 
@@ -70,6 +72,7 @@ Profile Region applies to enterprise users who sign in through IAM Identity Cent
 | **Claude Fable 5.1** | Geography | US | — |
 | **Claude Opus 5.5** | Geography | US | EU |
 | **Claude Sonnet 5.5** | Geography | US | EU |
+| **Claude Haiku 5.5** | Geography | US | EU |
 | **Claude Opus 5** | Geography | US | EU |
 | **Claude Opus 4.8** | Geography | US | EU |
 | **Claude Opus 4.7** | Geography | US | EU |
@@ -81,10 +84,11 @@ Profile Region applies to enterprise users who sign in through IAM Identity Cent
 | **Claude Sonnet 4.0** | Geography | US | EU |
 | **Auto** | Geography | US | EU |
 | **Claude Haiku 4.5** | Geography | US | EU |
-| **Kimi K3** | Global | US | — |
-| **DeepSeek 3.2** | Geography | US | EU |
+| **Grok 4.7** | Geography | US | — |
+| **Kimi K3** | Geography | US | — |
+| **DeepSeek 3.2** | Geography | US | — |
 | **MiniMax M2.5** | Geography | US | EU |
-| **GLM-5** | Geography | US | EU |
+| **GLM-5** | Geography | US | — |
 | **MiniMax M2.1** | Geography | US | EU |
 | **Qwen3 Coder Next** | Geography | US | EU |
 
@@ -136,13 +140,19 @@ Use the model dropdown in the chat input area to switch models before sending a 
 
 Use the model picker in the chat input to switch models for the current session. To choose which model new sessions use by default, open **Settings → Chat → Models**. If a newly available model does not appear, run `kirocrew restart`.
 
-Coming soon to Mobile.
+When you start a session, tap the model picker in the chat input and choose a model. **Auto** picks a model for the task. See [Start a new session](https://kiro.dev/docs/mobile/sessions.md#start-a-new-session).
 
 ## Model fallback notices
 
-In a local V3 session, Kiro can move a turn to another model when the current model declines the request or is unavailable. The transcript names the model that continued and says whether the change applies to one turn or the rest of the conversation.
+When a model is unavailable or refuses a request, Kiro can move the turn to a fallback model, and the transcript names the model that answered.
 
-In Kiro IDE, a fallback inside a sub-agent appears inside that sub-agent's activity. A retry that keeps the same model appears as a temporary retry notice. In Kiro CLI, the final notice also lists the models tried and the outcome. See [Kiro CLI model fallback notices](https://kiro.dev/docs/cli/terminal-ui.md#model-fallback-notices) for terminal behavior.
+Some models come with a vendor-recommended fallback, which Kiro uses for refusals only. A fallback you set yourself replaces it and also covers the model being unavailable. A model that is unavailable and has no fallback set ends the turn with an error.
+
+Set it once and it applies in every Kiro client:
+
+- Web: [app.kiro.dev/settings/model](https://app.kiro.dev/settings/model)
+
+A fallback for an unavailable model applies only to that turn; Kiro returns to your selected model on the next one. After a refusal, the conversation stays on the fallback model.
 
 ## Which model should you use?
 
@@ -154,7 +164,7 @@ In Kiro IDE, a fallback inside a sub-agent appears inside that sub-agent's activ
 | High-frequency agentic work | **GPT-5.6 Luna** | Fastest, lowest-cost GPT-5.6 tier for repeated tasks where throughput matters; its 0.6x Kiro credit multiplier applies to requests up to 272K tokens |
 | Demanding agentic coding | **Opus 5.5** | Strong fit for long, complex tasks that benefit from sustained tool use, self-verification, and clear communication |
 | Fast scoped coding and agents | **Sonnet 5.5** | Clear upgrade over Sonnet 5 with more than 30% faster output; strong fit for bug fixes, review, and scoped docs, slides, and spreadsheets |
-| Speed or credit savings | **Haiku 4.5** | Near-frontier intelligence at a fraction of the cost, great for quick iterations and sub-agents |
+| Speed or credit savings | **Haiku 5.5** | Best fit for high-volume work requiring quick responses; 0.06x through 100K tokens |
 | Frontier coding at low cost | **MiniMax M2.5** | Near Opus-level results at 0.25x cost, strong across the full development lifecycle |
 | Repo-scale agentic work | **GLM-5** | 200K context optimized for long-horizon workflows across large codebases |
 | Long coding sessions on a budget | **Qwen3 Coder Next** | 256K context with strong error recovery at 0.05x cost |
@@ -182,7 +192,7 @@ In the IDE, set the level with the **Effort** slider below the model list in the
 - **Use GPT-5.6 Terra or Luna** when you want strong agentic capability with throughput or cost as the primary concern. Terra for balanced performance, Luna for maximum efficiency.
 - **Use Opus 5.5** when you hit a wall on a complex problem, need sustained multi-file work, or want stronger self-verification and clearer communication across a long task.
 - **Use Sonnet 5.5** for fast, scoped coding, bug fixes, review, agent and subagent work, or focused documentation, slides, and spreadsheets.
-- **Use Haiku** for quick iterations, simple fixes, or when you want to conserve credits.
+- **Use Haiku 5.5** for high-volume work requiring quick responses.
 - **Monitor your usage** in your [account settings](https://kiro.dev/docs/billing.md) to understand how model choice affects consumption.
 - **Factor model cost into your tier:** If you primarily use Opus, consider Pro+, Pro Max, or Power for more credits. See [plans and billing](https://kiro.dev/docs/billing.md) for details.
 

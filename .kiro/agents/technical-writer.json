@@ -129,7 +129,10 @@
       }
     ]
   },
-  "resources": ["skill://.kiro/skills/spec-to-dev/SKILL.md"],
+  "resources": [
+    "skill://.kiro/skills/spec-to-dev/SKILL.md",
+    "skill://.kiro/skills/doc2md/SKILL.md"
+  ],
   "welcomeMessage": "Ready to document. What needs writing?",
-  "model": "claude-sonnet-5.5"
+  "model": "claude-haiku-5.5"
 }

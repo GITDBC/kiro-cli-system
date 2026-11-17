@@ -63,8 +63,8 @@ All CRITICAL/HIGH items must be resolved before integration.
 
 ### Phase 5 — Integration → `orchestrator`
 
-**For agents:** add to routing table in `routing.md`, add to `availableAgents` in
-`orchestrator.json`, add collaboration patterns.
+**For agents:** add to routing table in `routing.md`, add a `subagent/<name>` entry to
+the `tools` of `orchestrator.json`, add collaboration patterns.
 
 **For skills:** add a `skill://.kiro/skills/<name>/SKILL.md` entry to the `resources` of
 every agent that declares the skill (including the orchestrator when it runs the
@@ -119,5 +119,6 @@ overwrites local edits):
 - Artifact files created following conventions.
 - Review passes with no critical issues.
 - Security audit clean (no CRITICAL/HIGH open).
-- Integration complete (routing row, `skill://` entries or `availableAgents`).
+- Integration complete (routing row, `skill://` entries or the `subagent/<name>` tool
+  entry).
 - Tested with realistic prompts.

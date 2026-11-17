@@ -96,8 +96,8 @@ def test_resolve_lock_path_infers_sibling() -> None:
     pyproject.toml, keeping the CLI usable per project.
     """
 
-    result = _resolve_lock_path(Path("/repo/tools/jirafetcher/pyproject.toml"), None)
-    assert result == Path("/repo/tools/jirafetcher/uv.lock")
+    result = _resolve_lock_path(Path("/repo/project/pyproject.toml"), None)
+    assert result == Path("/repo/project/uv.lock")
 
 
 def test_resolve_lock_path_prefers_explicit() -> None:
