@@ -35,35 +35,35 @@ the registry is right. There are 27 checks.
 A check that raises is reported as an ERROR naming it, and the remaining checks still
 run, so one malformed agent config never aborts a run.
 
-| Section                            | Module                     | Severity        | Purpose                                                                                          |
-| ---------------------------------- | -------------------------- | --------------- | ------------------------------------------------------------------------------------------------ |
-| Resource references                | `checks/agents.py`         | ERROR           | Every `resources` entry resolves (root-relative).                                                |
-| Resource path form                 | `checks/agents.py`         | ERROR           | No `file://` resource written relative to the config file.                                       |
-| Agent registry consistency         | `checks/agents.py`         | ERROR / WARNING | Every agent is listed as `subagent/<name>` in the orchestrator `tools`.                          |
-| Legacy v2 agent config fields      | `checks/agents.py`         | ERROR           | No field shapes the v3 engine removed.                                                           |
-| permissions.rules validation       | `checks/permissions.py`    | ERROR           | Capabilities, effects and patterns are documented ones.                                          |
-| tools tag validation               | `checks/permissions.py`    | ERROR           | `tools` entries are documented tags.                                                             |
-| Skill routing coverage             | `checks/skills.py`         | WARNING         | Each skill has a Collaboration Patterns row in routing.md.                                       |
-| Pattern-to-resources wiring        | `checks/skills.py`         | ERROR / WARNING | A pattern's skill is declared by the agent it names.                                             |
-| State registry integrity           | `checks/state.py`          | ERROR           | `memory/state.yaml` parses and respects the entry cap.                                           |
-| Memory store framework boundary    | `checks/state.py`          | ERROR           | `memory/` holds only an empty `state.yaml` template.                                             |
-| Prompt file references             | `checks/prompts.py`        | ERROR           | Every agent `prompt` file exists.                                                                |
-| Hook script path references        | `checks/hooks.py`          | ERROR           | Hook files: `v1` schema, valid trigger and matcher, scripts exist.                               |
-| Git-safety hook coverage           | `checks/hooks.py`          | ERROR / WARNING | A `PreToolUse` hook matches the shell tools of every agent.                                      |
-| Steering/skill content duplication | `checks/steering.py`       | WARNING         | Steering does not reproduce a skill body.                                                        |
-| Orchestrator-only file placement   | `checks/steering.py`       | ERROR           | `routing.md` and `delegation-lifecycle.md` stay out of steering and out of dispatcher resources. |
-| Orchestration file reachability    | `checks/steering.py`       | ERROR           | Every `.kiro/orchestration/` file can reach a session.                                           |
-| Orphan prompt files                | `checks/prompts.py`        | WARNING         | No prompt file lacks an agent that uses it.                                                      |
-| Orphaned skill reference files     | `checks/skills.py`         | WARNING         | Each `references/` file is named by its `SKILL.md`.                                              |
-| Mirror page count                  | `checks/mirrors.py`        | WARNING         | A mirror's `.md` count equals its marker's `pages_total`.                                        |
-| Model governance (Anthropic-only)  | `checks/agents.py`         | ERROR / WARNING | `model` is in `ALLOWED_MODELS`; `auto` is rejected.                                              |
-| Workspace model defaults           | `checks/agents.py`         | ERROR / WARNING | `chat.modelDefaults` keys use approved models.                                                   |
-| routing.md cost label accuracy     | `checks/agents.py`         | WARNING         | Cost labels match each agent model's credit multiplier.                                          |
-| Agent engine (v3-only)             | `checks/agents.py`         | ERROR           | `chat.agentEngine` is `v3`; `ralph.sh` passes `--agent-engine v3`.                               |
-| Numbered markdown headers          | `checks/steering.py`       | WARNING         | No enumerated headings (`## 1. …`).                                                              |
-| Stale agent-named reference files  | `checks/skills.py`         | WARNING         | No `<role>-patterns.md` naming a retired agent.                                                  |
-| Stale skill-name mentions          | `checks/skills.py`         | WARNING         | No prose naming a skill that no longer exists.                                                   |
-| Agent prompt scope statements      | `checks/prompt_quality.py` | WARNING         | Each routed agent's prompt has a boundaries section.                                             |
+| Section                            | Module                     | Severity        | Purpose                                                                                                                                |
+| ---------------------------------- | -------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Resource references                | `checks/agents.py`         | ERROR           | Every `resources` entry resolves (root-relative).                                                                                      |
+| Resource path form                 | `checks/agents.py`         | ERROR           | No `file://` resource written relative to the config file.                                                                             |
+| Agent registry consistency         | `checks/agents.py`         | ERROR / WARNING | Every agent is listed as `subagent/<name>` in the orchestrator `tools`.                                                                |
+| Legacy v2 agent config fields      | `checks/agents.py`         | ERROR           | No field shapes the v3 engine removed.                                                                                                 |
+| permissions.rules validation       | `checks/permissions.py`    | ERROR           | Capabilities, effects and patterns are documented ones.                                                                                |
+| tools tag validation               | `checks/permissions.py`    | ERROR           | `tools` entries are documented tags.                                                                                                   |
+| Skill routing coverage             | `checks/skills.py`         | WARNING         | Each skill has a Collaboration Patterns row in `orchestrator.md`.                                                                      |
+| Pattern-to-resources wiring        | `checks/skills.py`         | ERROR / WARNING | A pattern's skill is declared by the agent it names.                                                                                   |
+| State registry integrity           | `checks/state.py`          | ERROR           | `memory/state.yaml` parses and respects the entry cap.                                                                                 |
+| Memory store framework boundary    | `checks/state.py`          | ERROR           | `memory/` holds only an empty `state.yaml` template.                                                                                   |
+| Prompt file references             | `checks/prompts.py`        | ERROR           | Every agent `prompt` file exists.                                                                                                      |
+| Hook script path references        | `checks/hooks.py`          | ERROR           | Hook files: `v1` schema, valid trigger and matcher, scripts exist.                                                                     |
+| Git-safety hook coverage           | `checks/hooks.py`          | ERROR / WARNING | A `PreToolUse` hook matches the shell tools of every agent.                                                                            |
+| Steering/skill content duplication | `checks/steering.py`       | WARNING         | Steering does not reproduce a skill body.                                                                                              |
+| Orchestrator-only file placement   | `checks/steering.py`       | ERROR           | The orchestrator prompt keeps its routing and delegation sections; nothing orchestrator-only sits in steering or dispatcher resources. |
+| Docs file reachability             | `checks/steering.py`       | ERROR           | Every `docs/` file can reach a session.                                                                                                |
+| Orphan prompt files                | `checks/prompts.py`        | WARNING         | No prompt file lacks an agent that uses it.                                                                                            |
+| Orphaned skill reference files     | `checks/skills.py`         | WARNING         | Each `references/` file is named by its `SKILL.md`.                                                                                    |
+| Mirror page count                  | `checks/mirrors.py`        | WARNING         | A mirror's `.md` count equals its marker's `pages_total`.                                                                              |
+| Model governance (Anthropic-only)  | `checks/agents.py`         | ERROR / WARNING | `model` is in `ALLOWED_MODELS`; `auto` is rejected.                                                                                    |
+| Workspace model defaults           | `checks/agents.py`         | ERROR / WARNING | `chat.modelDefaults` keys use approved models.                                                                                         |
+| Cost label accuracy                | `checks/agents.py`         | WARNING         | Orchestrator prompt's Routing Quick Lookup costs match each model's multiplier.                                                        |
+| Agent engine (v3-only)             | `checks/agents.py`         | ERROR           | `chat.agentEngine` is `v3`; `ralph.sh` passes `--agent-engine v3`.                                                                     |
+| Numbered markdown headers          | `checks/steering.py`       | WARNING         | No enumerated headings (`## 1. …`).                                                                                                    |
+| Stale agent-named reference files  | `checks/skills.py`         | WARNING         | No `<role>-patterns.md` naming a retired agent.                                                                                        |
+| Stale skill-name mentions          | `checks/skills.py`         | WARNING         | No prose naming a skill that no longer exists.                                                                                         |
+| Agent prompt scope statements      | `checks/prompt_quality.py` | WARNING         | Each routed agent's prompt has a boundaries section.                                                                                   |
 
 ### Checks that need an explanation
 
@@ -78,23 +78,24 @@ file's own directory.
 ignores them, but a maintainer reads them as authorization. It is scoped to
 `.kiro/agents/` because documentation legitimately names the removed fields.
 
-`Orchestrator-only file placement` and `Orchestration file reachability` guard the
-context budget in both directions. Kiro loads every `.kiro/steering/` file into every
-session, subagents included, so `routing.md` and `delegation-lifecycle.md` live in
-`.kiro/orchestration/`. A subagent that declares no `file://` resources also inherits
-its parent's, so the orchestrator declares none and its prompt names the two files,
-which it reads on demand. The check rejects a file back in steering, a `file://`
-resource on any agent that lists `subagent/<name>` tools, and a prompt that stops naming
-a file; the reachability check follows pointers from steering, prompts and declared
-resources through the orchestration files themselves. None of these failures is visible
-at runtime, hence ERROR.
+`Orchestrator-only file placement` and `Docs file reachability` guard the context budget
+in both directions. Kiro loads every `.kiro/steering/` file into every session,
+subagents included, so the routing and delegation rules live in sections of
+`.kiro/prompts/orchestrator.md` (`Routing`, `Delegation`, `Harness gates`, `Conductor`),
+which only the orchestrator loads. A subagent that declares no `file://` resources also
+inherits its parent's, so the orchestrator declares none. The check rejects a
+`routing.md` or `delegation-lifecycle.md` back in steering, a `file://` resource on any
+agent that lists `subagent/<name>` tools, and an orchestrator prompt that loses one of
+the four sections; the reachability check follows pointers from steering, prompts and
+declared resources through the `docs/` files themselves. None of these failures is
+visible at runtime, hence ERROR.
 
 `Memory store framework boundary` applies only when the root `.gitignore` ignores the
 contents of `memory/` (`memory/`, `memory/*` or `memory/**`); that rule declares
 "`memory/` is framework-empty here". Without it the check reports nothing: a consuming
 project's `memory/` is legitimately populated.
 
-`Model governance` and `routing.md cost label accuracy` read `ALLOWED_MODELS` and
+`Model governance` and `Cost label accuracy` read `ALLOWED_MODELS` and
 `MODEL_COST_LABELS` in `checks/agents.py`. The labels match by prefix in insertion
 order, so an exact id whose multiplier departs from its family (`claude-opus-5.5`,
 `claude-haiku-5.5`) must precede the family entry.

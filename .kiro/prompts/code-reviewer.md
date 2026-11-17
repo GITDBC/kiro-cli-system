@@ -113,8 +113,8 @@ found. The register's numeric 1–5 `Impact`/`Effort` scale is separate from the
 table's `Severity`/`Effort` vocabulary — do not mix the two.
 
 When the review is one section of a parallel fan-out, follow "Note Files for Parallel
-Reviews" in `.kiro/skills/reviewing-code/SKILL.md` (layout: `delegation-lifecycle.md`,
-`### Notes layout`).
+Reviews" in `.kiro/skills/reviewing-code/SKILL.md` (layout: `Notes layout` in the
+`Delegation` section of `.kiro/prompts/orchestrator.md`).
 
 ## Tech Debt Categories
 

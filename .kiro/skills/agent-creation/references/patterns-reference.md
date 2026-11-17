@@ -245,21 +245,21 @@ description: >
 Files under `.kiro/steering/` are always-on: Kiro CLI loads every one of them into every
 session, subagent sessions included, regardless of an agent's `resources` list. Only
 material every agent needs belongs there. Orchestrator-only instruction files live in
-`.kiro/orchestration/` and the orchestrator reads them on demand from pointers in its
-prompt. They are not `file://` resources: a subagent that declares none inherits its
-parent's, so a dispatcher's `file://` resources would be charged to every specialist.
+sections of `.kiro/prompts/orchestrator.md` (`Routing`, `Delegation`, `Harness gates`,
+`Conductor`), which only the orchestrator loads. They are not `file://` resources: a
+subagent that declares none inherits its parent's, so a dispatcher's `file://` resources
+would be charged to every specialist.
 
-| File                                    | Purpose                                  | Who loads it             |
-| --------------------------------------- | ---------------------------------------- | ------------------------ |
-| `steering/COMMON.md`                    | Behavioral rules for all agents          | All agents               |
-| `steering/code-standards-summary.md`    | Compact coding essentials                | All agents (lightweight) |
-| `steering/python-environment.md`        | uv and env rules                         | All agents               |
-| `orchestration/routing.md`              | Routing rules and collaboration patterns | Orchestrator (on demand) |
-| `orchestration/delegation-lifecycle.md` | Delegation, planning and harness gates   | Orchestrator (on demand) |
+| File                                 | Purpose                            | Who loads it             |
+| ------------------------------------ | ---------------------------------- | ------------------------ |
+| `steering/COMMON.md`                 | Behavioral rules for all agents    | All agents               |
+| `steering/code-standards-summary.md` | Compact coding essentials          | All agents (lightweight) |
+| `steering/python-environment.md`     | uv and env rules                   | All agents               |
+| `prompts/orchestrator.md`            | Routing, delegation, harness gates | Orchestrator only        |
 
 Adding a file to `.kiro/steering/` taxes every turn of every agent, so the bar is that
-all ten agents act on it. Anything narrower goes to `.kiro/orchestration/` with a
-pointer in the prompt of the agent that reads it, or into a skill loaded on demand.
+all ten agents act on it. Anything narrower goes into the prompt of the agent that reads
+it, or into a skill loaded on demand.
 
 Full coding conventions and JIRA interaction rules are deliberately NOT steering files.
 They live in the `code-standards` and `jira` skills and load on demand via `skill://`,
@@ -277,11 +277,13 @@ every turn.
 After creating an agent or skill:
 
 - [ ] Agent added to `orchestrator.json` → `subagent/<name>` entry in `tools`
-- [ ] Agent added to `routing.md` → Quick Lookup table (with Fallback)
-- [ ] Agent added to `routing.md` → Routing Rules (`trigger_when` / `never_when`)
-- [ ] Agent added to `routing.md` → Capabilities Matrix
-- [ ] Agent added to `routing.md` → Routing shortcut line + Fallback chain
-- [ ] Skill added to `routing.md` → Collaboration Patterns table (if multi-agent)
+- [ ] Agent added to `orchestrator.md` → Routing Quick Lookup table (with Fallback)
+- [ ] Agent added to `orchestrator.md` → Routing section, Routing Rules (`trigger_when`
+      / `never_when`)
+- [ ] Agent added to `orchestrator.md` → Routing section, Capabilities Matrix
+- [ ] Agent added to `orchestrator.md` → Fallback chain
+- [ ] Skill added to `orchestrator.md` → Routing section, Collaboration Patterns table
+      (if multi-agent)
 - [ ] Run `make drift-check` to validate references
 
 ## Skill Authoring Rules — detail

@@ -3,9 +3,17 @@
 On-demand reference. It holds the arguments behind rules stated elsewhere, relocated off
 the always-on path so they are not paid on every request. Read a section when a settled
 decision is being challenged, re-derived, or re-argued — never to learn what to do. The
-rules themselves live in `.kiro/steering/COMMON.md`,
-`.kiro/orchestration/delegation-lifecycle.md`, and `.kiro/orchestration/routing.md`, and
-each of them points here.
+rules themselves live in `.kiro/prompts/orchestrator.md` (sections `Orchestration core`,
+`Routing`, `Delegation`, `Harness gates` and `Conductor`), and the preflight format in
+`.kiro/skills/preflight/SKILL.md`.
+
+Update: `routing.md` and `delegation-lifecycle.md` were later merged into
+`.kiro/prompts/orchestrator.md`, the Preflight Report format moved to the on-demand
+skill `.kiro/skills/preflight/SKILL.md`, and this file moved from the former
+orchestration directory to `docs/`. The orchestrator's context budget was re-recorded at
+13,433 tokens as a deliberate trade-off: the routing and delegation rules are always in
+context. The paragraphs describing on-demand reads of the two former files record the
+arrangement that preceded the merge.
 
 Nothing in this file is optional history: every section is a decision that was made
 once, with its evidence, so that a future reader finds the reasoning instead of

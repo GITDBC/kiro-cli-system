@@ -13,15 +13,42 @@ from pathlib import Path
 # Own modules
 from driftcheck.types import Finding, Severity
 
-ROUTING_MD = """# Agent Routing Schema
+COMMON_MD = """# Common Directives
 
-## Quick Lookup
+Every agent applies these directives before doing anything else here.
+"""
 
-| Agent            | Cost        |
-| ---------------- | ----------- |
-| senior-developer | high (2.0x) |
+# The orchestrator declares no file:// resource: every subagent that
+# declares none inherits its parent's, so a dispatcher's file resources
+# would be paid again on each dispatch. Its prompt carries the routing
+# tables, the collaboration patterns and the delegation rules itself.
+ORCHESTRATOR_RESOURCES: list[str] = []
 
-## Routing Rules
+ORCHESTRATOR_PROMPT = """# Orchestrator
+
+## Orchestration core
+
+### Routing Quick Lookup
+
+| Agent            | When to pick           | Cost        | Fallback      |
+| ---------------- | ---------------------- | ----------- | ------------- |
+| senior-developer | implement, refactor    | high (2.0x) | code-reviewer |
+
+### Delivery modes
+
+| Agent            | Mode    |
+| ---------------- | ------- |
+| senior-developer | combined |
+
+## Routing
+
+### Agent Capabilities Matrix
+
+| Agent            | Capabilities      |
+| ---------------- | ----------------- |
+| senior-developer | implement, refactor |
+
+### Routing Rules
 
 ```yaml
 routing:
@@ -34,43 +61,30 @@ routing:
           - high-level architecture decisions
 ```
 
-## Collaboration Patterns
+### Collaboration Patterns
 
 | Task            | Skill              | Agents           |
 | --------------- | ------------------ | ---------------- |
 | Review          | reviewing-code     | senior-developer |
 | Autonomous      | ralph-loop         | senior-developer |
 | Security audit  | security-audit     | —                |
-"""
 
-COMMON_MD = """# Common Directives
+## Delegation
 
-Every agent applies these directives before doing anything else here.
-"""
+Orchestrator-only delegation machinery, carried by this prompt.
 
-# Minimal stand-in for the orchestrator-only delegation steering. It has
-# to exist in the synthetic tree because the orchestrator's resources
-# name it, and the placement check asserts that reference.
-DELEGATION_LIFECYCLE_MD = """# Delegation lifecycle
+## Harness gates
 
-Orchestrator-only delegation machinery, loaded through resources here.
-"""
+Orchestrator-only verification gates.
 
-# The orchestrator declares no file:// resource: every subagent that
-# declares none inherits its parent's, so a dispatcher's file resources
-# would be paid again on each dispatch. Its prompt names the two
-# orchestration files, which it reads on demand instead.
-ORCHESTRATOR_RESOURCES: list[str] = []
+## Conductor
 
-ORCHESTRATOR_PROMPT = """# Orchestrator
-
-Read `.kiro/orchestration/routing.md` before routing, and
-`.kiro/orchestration/delegation-lifecycle.md` before planning a delegation.
+Orchestrator-only ad-hoc workflow composition.
 """
 
 # Minimal prompt for a routable agent: it has to carry the boundary
-# section the prompt-quality check expects, because ROUTING_MD above
-# declares never_when entries for this agent.
+# section the prompt-quality check expects, because ORCHESTRATOR_PROMPT
+# above declares never_when entries for this agent.
 SENIOR_DEVELOPER_PROMPT = """# Senior developer
 
 ## Boundaries

@@ -50,12 +50,14 @@ use a single subtask.
 
 ### Phase 2 — Planning
 
-**Step 3** → `orchestrator`: Build the plan per `Planning phases` in
-`delegation-lifecycle.md`. **STOP for user approval before proceeding.**
+**Step 3** → `orchestrator`: Build the plan per `Planning phases` in the `Delegation`
+section of `.kiro/prompts/orchestrator.md`. **STOP for user approval before
+proceeding.**
 
 ### Phase 3 — Execution
 
-**Step 4** → `orchestrator` (Coordination Protocol in `delegation-lifecycle.md`):
+**Step 4** → `orchestrator` (Coordination Protocol in the `Delegation` section of
+`.kiro/prompts/orchestrator.md`):
 
 1. Group subtasks by `depends_on` into waves (wave 0 = parallel, wave N waits on N-1).
 2. Build the Shared Context Contract per wave.

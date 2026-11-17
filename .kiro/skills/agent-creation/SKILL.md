@@ -63,14 +63,14 @@ All CRITICAL/HIGH items must be resolved before integration.
 
 ### Phase 5 — Integration → `orchestrator`
 
-**For agents:** add to routing table in `routing.md`, add a `subagent/<name>` entry to
-the `tools` of `orchestrator.json`, add collaboration patterns.
+**For agents:** add to the Routing section of `orchestrator.md`, add a `subagent/<name>`
+entry to the `tools` of `orchestrator.json`, add collaboration patterns.
 
 **For skills:** add a `skill://.kiro/skills/<name>/SKILL.md` entry to the `resources` of
 every agent that declares the skill (including the orchestrator when it runs the
-workflow); add or update the skill's Collaboration Patterns row in `routing.md` (every
-non-direct-invoke skill needs one); verify it triggers correctly on 2+ realistic
-prompts; run `make drift-check`. The integration checklist in
+workflow); add or update the skill's Collaboration Patterns row in the Routing section
+of `orchestrator.md` (every non-direct-invoke skill needs one); verify it triggers
+correctly on 2+ realistic prompts; run `make drift-check`. The integration checklist in
 `references/patterns-reference.md` lists the remaining wiring.
 
 ## Skill Authoring Rules
@@ -87,7 +87,8 @@ to a specific draft is unclear.
   structure a report) is a no-op too: a skill earns its place only with facts the model
   cannot derive — repository paths and conventions, `tools/` invocations, safety rules,
   orchestration contracts, frozen output formats, or domain data. A workflow with none
-  of those becomes a "pattern only" row in `routing.md`, not a skill.
+  of those becomes a "pattern only" row in the Routing section of `orchestrator.md`, not
+  a skill.
 - **Positive instruction** — state the target behaviour rather than the prohibition it
   replaces. This governs skill **bodies**; skill **descriptions** keep their explicit
   `Not for ...` boundaries.

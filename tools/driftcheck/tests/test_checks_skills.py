@@ -23,12 +23,40 @@ from tests.helpers import SKILL_MD, problems, severities, write, write_agent
 
 
 def test_skill_routing_detects_uncovered_skill(valid_root: Path) -> None:
-    """A skill absent from routing.md is a warning."""
+    """A skill absent from the orchestrator prompt is a warning."""
     write(valid_root / ".kiro" / "skills" / "lonely-skill" / "SKILL.md", "# Lonely\n")
     findings = check_skill_routing(build_context(valid_root))
     warnings = problems(findings)
     assert severities(warnings) == [Severity.WARNING]
     assert "lonely-skill" in warnings[0].message
+
+
+def test_skill_routing_reads_only_the_collaboration_patterns_section(
+    valid_root: Path,
+) -> None:
+    """A table row naming the skill elsewhere in the prompt is not coverage."""
+    write(valid_root / ".kiro" / "skills" / "lonely-skill" / "SKILL.md", "# Lonely\n")
+    prompt = valid_root / ".kiro" / "prompts" / "orchestrator.md"
+    text = prompt.read_text(encoding="utf-8")
+    write(
+        prompt,
+        text.replace(
+            "### Collaboration Patterns",
+            "| lonely-skill |\n\n### Collaboration Patterns",
+        ),
+    )
+    warnings = problems(check_skill_routing(build_context(valid_root)))
+    assert severities(warnings) == [Severity.WARNING]
+    assert "lonely-skill" in warnings[0].message
+
+
+def test_skill_routing_exempts_the_preflight_reference_skill(
+    valid_root: Path,
+) -> None:
+    """The on-demand preflight template is a reference, not a workflow stage."""
+    assert "preflight" in skills.DIRECT_INVOKE_SKILLS
+    write(valid_root / ".kiro" / "skills" / "preflight" / "SKILL.md", "# Preflight\n")
+    assert problems(check_skill_routing(build_context(valid_root))) == []
 
 
 def test_skill_routing_exempts_direct_invoke_skills(valid_root: Path) -> None:
@@ -116,7 +144,7 @@ def test_pattern_wiring_ignores_rows_without_an_exact_skill_cell(
 ) -> None:
     """A prose skill cell claims nothing, keeping the parse conservative."""
     write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
+        valid_root / ".kiro" / "prompts" / "orchestrator.md",
         "## Collaboration Patterns\n\n"
         "| Task | Skill | Agents |\n"
         "| ---- | ----- | ------ |\n"
@@ -135,7 +163,7 @@ def test_pattern_wiring_ignores_tables_outside_the_section(
 ) -> None:
     """Only the Collaboration Patterns section contributes rows."""
     write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
+        valid_root / ".kiro" / "prompts" / "orchestrator.md",
         "## Quick Lookup\n\n"
         "| Agent | Skill |\n"
         "| ----- | ----- |\n"
@@ -179,6 +207,21 @@ def test_orphaned_skill_references_exclude_vendored_mirror(
     mirror = valid_root / ".kiro" / "skills" / "kiro-cli-reference"
     write(mirror / "SKILL.md", "# Kiro CLI reference mirror kept verbatim here.\n")
     write(mirror / "references" / "chat" / "subagents.md", "# Subagents\n")
+    assert problems(check_orphaned_skill_references(build_context(valid_root))) == []
+
+
+def test_orphaned_skill_references_exclude_tool_package_files(
+    valid_root: Path,
+) -> None:
+    """A moved tool package's own README and LICENSE are not skill references."""
+    skill_dir = valid_root / ".kiro" / "skills" / "deps-audit"
+    write(skill_dir / "SKILL.md", SKILL_MD + "\nSee references/tool-guide.md.\n")
+    write(skill_dir / "references" / "tool-guide.md", "# Guide\n")
+    package = skill_dir / "references" / "depschecker"
+    write(package / "pyproject.toml", "[project]\n")
+    write(package / "README.md", "# Tool\n")
+    write(package / "LICENSE.md", "MIT\n")
+    write(package / ".venv" / "lib" / "site.md", "# Vendored\n")
     assert problems(check_orphaned_skill_references(build_context(valid_root))) == []
 
 
@@ -256,6 +299,20 @@ def test_stale_skill_mentions_detects_deleted_skill_in_frontmatter(
     assert "skill 'lint-validate'" in errors[0].message
 
 
+def test_stale_skill_mentions_detects_deleted_skill_in_orchestrator_prompt(
+    valid_root: Path,
+) -> None:
+    """The orchestrator prompt is scanned like the steering files."""
+    write(
+        valid_root / ".kiro" / "prompts" / "orchestrator.md",
+        "## Routing\n\nSecurity review (use lint-validate).\n",
+    )
+    errors = problems(check_stale_skill_mentions(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "orchestrator.md" in errors[0].message
+    assert "skill 'lint-validate'" in errors[0].message
+
+
 def test_stale_skill_mentions_accepts_current_skill_reference(
     valid_root: Path,
 ) -> None:
@@ -275,7 +332,7 @@ def test_stale_skill_mentions_accepts_current_agent_cross_reference(
 ) -> None:
     """A parenthetical '(use <agent>)' cross-reference is not a skill claim."""
     write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
+        valid_root / ".kiro" / "prompts" / "orchestrator.md",
         "## Collaboration Patterns\n\n"
         "- high-level architecture decisions (use senior-developer)\n",
     )

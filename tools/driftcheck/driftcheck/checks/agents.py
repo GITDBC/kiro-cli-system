@@ -5,9 +5,9 @@ Covers resource resolution (both file:// and skill:// URIs, resolved the
 way Kiro resolves them — against the workspace root), the form those
 resource paths must take, registration in the orchestrator's
 subagent tool entries, the Anthropic-only model allow-list and the
-accuracy of the cost labels routing.md publishes for each agent. The
-workspace-level model defaults in .kiro/settings/cli.json are validated
-here too, against the same allow-list and against the set of models the
+accuracy of the cost labels the orchestrator prompt publishes for each
+agent. The workspace-level model defaults in .kiro/settings/cli.json are
+validated here too, against the same allow-list and against the set of models the
 agents actually use.
 """
 
@@ -45,7 +45,8 @@ ALLOWED_MODELS: Final[tuple[str, ...]] = (
 AUTO_MODEL: Final[str] = "auto"
 
 # Real credit multipliers per model family, mapped to the cost label
-# routing.md is expected to publish for agents backed by that family.
+# the orchestrator prompt is expected to publish for agents backed by that
+# family.
 # Matched by prefix in insertion order, so an exact id whose multiplier
 # departs from its family must precede the family entry: Kiro's
 # models.md and `kiro-cli chat --list-models` both put Claude Opus 5.5 at
@@ -60,6 +61,13 @@ MODEL_COST_LABELS: Final[dict[str, tuple[str, str]]] = {
 }
 
 COST_MULTIPLIER: Final[re.Pattern[str]] = re.compile(r"[0-9]+\.[0-9]+x")
+
+# Where the cost labels are published: the "Routing Quick Lookup" table of
+# the orchestrator prompt, which the orchestrator always has in context.
+ORCHESTRATOR_PROMPT_NAME: Final[str] = "orchestrator.md"
+QUICK_LOOKUP_HEADING: Final[str] = "Routing Quick Lookup"
+# A level-2 or level-3 heading ends the Quick Lookup section.
+SECTION_BREAK: Final[re.Pattern[str]] = re.compile(r"^#{2,3}[ \t]")
 
 # Resource URI schemes. Both a file:// and a skill:// entry in
 # `resources` resolve against the repository root and may be a glob; the
@@ -109,7 +117,7 @@ SECTION_REGISTRY: Final[str] = "Agent registry consistency"
 SECTION_V2_FIELDS: Final[str] = "Legacy v2 agent config fields"
 SECTION_MODELS: Final[str] = "Model governance (Anthropic-only)"
 SECTION_MODEL_DEFAULTS: Final[str] = "Workspace model defaults"
-SECTION_COST_LABELS: Final[str] = "routing.md cost label accuracy"
+SECTION_COST_LABELS: Final[str] = "Cost label accuracy"
 SECTION_AGENT_ENGINE: Final[str] = "Agent engine (v3-only)"
 
 # Relative label used in findings, so the message names the offending
@@ -281,7 +289,7 @@ def _resource_form_messages(config: AgentConfig) -> list[str]:
         f"{config.path.name} declares '{resource}' relative to the config "
         "file — a resources entry resolves against the workspace root, so "
         "write the path as it reads from the repository root (for example "
-        "'file://.kiro/orchestration/routing.md')"
+        "'file://.kiro/steering/COMMON.md')"
         for resource in resources
         if isinstance(resource, str)
         and resource.startswith(FILE_URI_PREFIX)
@@ -713,7 +721,12 @@ def _ralph_engine_findings(script: Path) -> list[Finding]:
 
 def check_cost_labels(ctx: DriftContext) -> list[Finding]:
     """
-    Verify routing.md cost labels match each agent's real model.
+    Verify the orchestrator's published cost labels match each agent's model.
+
+    The labels come from the "Routing Quick Lookup" table of the
+    orchestrator prompt, which the orchestrator always has in context.
+    Only that section is read: the Agent Capabilities Matrix further
+    down the same prompt lists the same agents without a cost column.
 
     Tolerant of table whitespace and of both the legacy label format
     ("high") and the corrected one ("high (2.2x)"). Warns rather than
@@ -726,34 +739,66 @@ def check_cost_labels(ctx: DriftContext) -> list[Finding]:
         Warnings for mismatched rows, plus trailing OK findings.
     """
     findings: list[Finding] = []
-    if not ctx.routing_md.is_file():
+    prompt = ctx.prompts_dir / ORCHESTRATOR_PROMPT_NAME
+    section = _quick_lookup_section(read_text(prompt)) if prompt.is_file() else None
+    if section is None:
         findings.append(
-            Finding(Severity.OK, SECTION_COST_LABELS, "No routing.md found, skipping")
+            Finding(
+                Severity.OK,
+                SECTION_COST_LABELS,
+                f"No '{QUICK_LOOKUP_HEADING}' section in "
+                f"{ORCHESTRATOR_PROMPT_NAME}, skipping",
+            )
         )
     else:
-        routing_lines = read_text(ctx.routing_md).splitlines()
         for config in ctx.agent_configs:
             if config.path == ctx.orchestrator_path:
                 continue
-            mismatch = _cost_label_mismatch(routing_lines, config)
+            mismatch = _cost_label_mismatch(section, config)
             if mismatch is not None:
                 findings.append(mismatch)
     findings.append(
         Finding(
-            Severity.OK, SECTION_COST_LABELS, "routing.md cost label accuracy checked"
+            Severity.OK,
+            SECTION_COST_LABELS,
+            f"{ORCHESTRATOR_PROMPT_NAME} cost label accuracy checked",
         )
     )
     return findings
 
 
-def _cost_label_mismatch(
-    routing_lines: list[str], config: AgentConfig
-) -> Finding | None:
+def _quick_lookup_section(text: str) -> list[str] | None:
     """
-    Compare one agent's routing.md row against its configured model.
+    Extract the lines of the Routing Quick Lookup section.
+
+    The section runs from its ``###`` heading to the next heading of
+    level 2 or 3, so rows of any other table are never considered.
 
     Args:
-        routing_lines: routing.md content split into lines.
+        text: Full orchestrator prompt text.
+
+    Returns:
+        The section's lines, or None when the heading is absent.
+    """
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if line.strip() == f"### {QUICK_LOOKUP_HEADING}":
+            body = lines[index + 1 :]
+            for offset, candidate in enumerate(body):
+                if SECTION_BREAK.match(candidate):
+                    return body[:offset]
+            return body
+    return None
+
+
+def _cost_label_mismatch(
+    section_lines: list[str], config: AgentConfig
+) -> Finding | None:
+    """
+    Compare one agent's Quick Lookup row against its configured model.
+
+    Args:
+        section_lines: Lines of the Routing Quick Lookup section.
         config: Parsed agent config.
 
     Returns:
@@ -764,23 +809,23 @@ def _cost_label_mismatch(
     if expected is None:
         return None
     label, multiplier = expected
-    row = _routing_md_row(routing_lines, config.stem)
+    row = _table_row(section_lines, config.stem)
     if row is None:
         return None
     if label not in row.lower():
         return Finding(
             Severity.WARNING,
             SECTION_COST_LABELS,
-            f"routing.md cost label for '{config.stem}' does not "
-            f"match its model ({config.model} → expected "
+            f"{ORCHESTRATOR_PROMPT_NAME} cost label for '{config.stem}' does "
+            f"not match its model ({config.model} → expected "
             f"'{label} ({multiplier})'). Row: {row}",
         )
     if COST_MULTIPLIER.search(row) and multiplier not in row:
         return Finding(
             Severity.WARNING,
             SECTION_COST_LABELS,
-            f"routing.md cost multiplier for '{config.stem}' does "
-            f"not match its model ({config.model} → expected "
+            f"{ORCHESTRATOR_PROMPT_NAME} cost multiplier for '{config.stem}' "
+            f"does not match its model ({config.model} → expected "
             f"'{multiplier}'). Row: {row}",
         )
     return None
@@ -802,12 +847,12 @@ def _expected_cost(model: str) -> tuple[str, str] | None:
     return None
 
 
-def _routing_md_row(lines: list[str], name: str) -> str | None:
+def _table_row(lines: list[str], name: str) -> str | None:
     """
-    Find the routing.md table row whose first cell names an agent.
+    Find the table row whose first cell names an agent.
 
     Args:
-        lines: routing.md content split into lines.
+        lines: Lines to search.
         name: Agent slug to look for.
 
     Returns:

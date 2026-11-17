@@ -19,7 +19,7 @@ from driftcheck.checks.agents import (
     check_v2_config_fields,
 )
 from driftcheck.types import Severity, build_context
-from tests.helpers import ROUTING_MD, problems, severities, write, write_agent
+from tests.helpers import ORCHESTRATOR_PROMPT, problems, severities, write, write_agent
 
 
 def test_resource_references_detect_missing_file(valid_root: Path) -> None:
@@ -342,12 +342,26 @@ def test_model_governance_warns_on_missing_model(valid_root: Path) -> None:
     assert "no 'model' field set" in warnings[0].message
 
 
+def write_lookup(root: Path, cost: str) -> Path:
+    """
+    Write an orchestrator prompt whose Quick Lookup publishes one cost.
+
+    Args:
+        root: Repository root.
+        cost: Cost cell replacing the default "high (2.0x)".
+
+    Returns:
+        Path to the written orchestrator prompt.
+    """
+    return write(
+        root / ".kiro" / "prompts" / "orchestrator.md",
+        ORCHESTRATOR_PROMPT.replace("high (2.0x)", cost),
+    )
+
+
 def test_cost_labels_detect_wrong_label(valid_root: Path) -> None:
     """An opus agent documented as low cost is a warning."""
-    write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.0x)", "low (0.4x)"),
-    )
+    write_lookup(valid_root, "low (0.4x)")
     findings = check_cost_labels(build_context(valid_root))
     warnings = problems(findings)
     assert severities(warnings) == [Severity.WARNING]
@@ -356,10 +370,7 @@ def test_cost_labels_detect_wrong_label(valid_root: Path) -> None:
 
 def test_cost_labels_detect_wrong_multiplier(valid_root: Path) -> None:
     """A right label with a wrong multiplier is a warning."""
-    write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.0x)", "high (1.3x)"),
-    )
+    write_lookup(valid_root, "high (1.3x)")
     findings = check_cost_labels(build_context(valid_root))
     warnings = problems(findings)
     assert severities(warnings) == [Severity.WARNING]
@@ -370,10 +381,7 @@ def test_cost_labels_hold_opus_five_point_five_at_two_point_zero(
     valid_root: Path,
 ) -> None:
     """Opus 5.5 is 2.0x, so the 2.2x of the rest of its family is wrong."""
-    write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.0x)", "high (2.2x)"),
-    )
+    write_lookup(valid_root, "high (2.2x)")
     warnings = problems(check_cost_labels(build_context(valid_root)))
     assert severities(warnings) == [Severity.WARNING]
     assert "expected '2.0x'" in warnings[0].message
@@ -384,10 +392,7 @@ def test_cost_labels_keep_other_opus_models_at_two_point_two(
 ) -> None:
     """The 5.5 exception does not leak to the rest of the Opus family."""
     write_agent(valid_root, "senior-developer", model="claude-opus-5")
-    write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.0x)", "high (2.2x)"),
-    )
+    write_lookup(valid_root, "high (2.2x)")
     assert problems(check_cost_labels(build_context(valid_root))) == []
 
 
@@ -396,10 +401,9 @@ def test_cost_labels_hold_haiku_five_point_five_at_six_hundredths(
 ) -> None:
     """Haiku 5.5 is 0.06x, so the 0.4x of Haiku 4.5 is wrong for it."""
     write_agent(valid_root, "senior-developer", model="claude-haiku-5.5")
-    routing = valid_root / ".kiro" / "orchestration" / "routing.md"
-    write(routing, ROUTING_MD.replace("high (2.0x)", "low (0.06x)"))
+    write_lookup(valid_root, "low (0.06x)")
     assert problems(check_cost_labels(build_context(valid_root))) == []
-    write(routing, ROUTING_MD.replace("high (2.0x)", "low (0.4x)"))
+    write_lookup(valid_root, "low (0.4x)")
     warnings = problems(check_cost_labels(build_context(valid_root)))
     assert severities(warnings) == [Severity.WARNING]
     assert "expected '0.06x'" in warnings[0].message
@@ -416,23 +420,56 @@ def test_cost_labels_accept_legacy_label_without_multiplier(
     valid_root: Path,
 ) -> None:
     """A bare label is tolerated when no multiplier is published."""
-    write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
-        ROUTING_MD.replace("high (2.0x)", "high"),
-    )
+    write_lookup(valid_root, "high")
     assert problems(check_cost_labels(build_context(valid_root))) == []
 
 
 def test_cost_labels_skip_agents_without_a_row(valid_root: Path) -> None:
-    """An agent with no routing.md row is not flagged."""
+    """An agent with no Quick Lookup row is not flagged."""
     write_agent(valid_root, "undocumented-analyst")
     findings = check_cost_labels(build_context(valid_root))
     assert problems(findings) == []
 
 
-def test_cost_labels_tolerate_absent_routing_md(valid_root: Path) -> None:
-    """A missing routing.md skips the check."""
-    (valid_root / ".kiro" / "orchestration" / "routing.md").unlink()
+def test_cost_labels_ignore_the_capabilities_matrix(
+    valid_root: Path,
+) -> None:
+    """A Capabilities Matrix row with no cost label does not affect the result."""
+    prompt = valid_root / ".kiro" / "prompts" / "orchestrator.md"
+    matrix = prompt.read_text(encoding="utf-8").split("### Agent Capabilities Matrix")[
+        1
+    ]
+    assert "| senior-developer |" in matrix
+    assert problems(check_cost_labels(build_context(valid_root))) == []
+    write_lookup(valid_root, "low (0.4x)")
+    warnings = problems(check_cost_labels(build_context(valid_root)))
+    assert severities(warnings) == [Severity.WARNING]
+    assert "orchestrator.md" in warnings[0].message
+
+
+def test_cost_labels_ignore_rows_outside_the_quick_lookup(
+    valid_root: Path,
+) -> None:
+    """A wrong row in a later table of the prompt is not read."""
+    prompt = valid_root / ".kiro" / "prompts" / "orchestrator.md"
+    text = prompt.read_text(encoding="utf-8")
+    write(prompt, text + "\n## Elsewhere\n\n| senior-developer | low (0.4x) |\n")
+    assert problems(check_cost_labels(build_context(valid_root))) == []
+
+
+def test_cost_labels_tolerate_absent_quick_lookup(valid_root: Path) -> None:
+    """A prompt without the Quick Lookup section skips the check."""
+    write(valid_root / ".kiro" / "prompts" / "orchestrator.md", "# Orchestrator\n")
+    findings = check_cost_labels(build_context(valid_root))
+    assert problems(findings) == []
+    assert "skipping" in findings[0].message
+
+
+def test_cost_labels_tolerate_absent_orchestrator_prompt(
+    valid_root: Path,
+) -> None:
+    """A missing orchestrator prompt skips the check."""
+    (valid_root / ".kiro" / "prompts" / "orchestrator.md").unlink()
     findings = check_cost_labels(build_context(valid_root))
     assert problems(findings) == []
     assert "skipping" in findings[0].message

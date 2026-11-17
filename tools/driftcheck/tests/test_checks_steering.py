@@ -5,15 +5,15 @@ from pathlib import Path
 
 # Own modules
 from driftcheck.checks.steering import (
+    check_docs_reachability,
     check_numbered_headers,
     check_orchestration_placement,
-    check_orchestration_reachability,
     check_steering_duplication,
 )
 from driftcheck.types import Severity, build_context
 from tests.helpers import (
     COMMON_MD,
-    DELEGATION_LIFECYCLE_MD,
+    ORCHESTRATOR_PROMPT,
     problems,
     severities,
     write,
@@ -122,7 +122,7 @@ def test_numbered_headers_exclude_vendored_mirror(valid_root: Path) -> None:
 
 
 def test_orchestration_placement_accepts_the_valid_tree(valid_root: Path) -> None:
-    """Both files under .kiro/orchestration/ and referenced is clean."""
+    """A prompt with every section and nothing in steering is clean."""
     assert problems(check_orchestration_placement(build_context(valid_root))) == []
 
 
@@ -135,16 +135,38 @@ def test_orchestration_placement_detects_file_back_in_steering(
     errors = problems(findings)
     assert severities(errors) == [Severity.ERROR]
     assert ".kiro/steering/routing.md re-imposes" in errors[0].message
+    assert ".kiro/prompts/orchestrator.md" in errors[0].message
 
 
-def test_orchestration_placement_detects_unnamed_file_in_prompt(
+def test_orchestration_placement_detects_missing_prompt_sections(
     valid_root: Path,
 ) -> None:
-    """A prompt that stops naming a file leaves the orchestrator unable to read it."""
+    """A prompt that loses a section leaves the orchestrator without its rules."""
     write(valid_root / ".kiro" / "prompts" / "orchestrator.md", "# Orchestrator\n")
     errors = problems(check_orchestration_placement(build_context(valid_root)))
-    assert severities(errors) == [Severity.ERROR, Severity.ERROR]
-    assert "prompt no longer names .kiro/orchestration/routing.md" in errors[0].message
+    assert severities(errors) == [Severity.ERROR] * 4
+    assert "orchestrator prompt has no '## Routing' section" in errors[0].message
+
+
+def test_orchestration_placement_detects_a_single_dropped_section(
+    valid_root: Path,
+) -> None:
+    """Only the dropped section is reported."""
+    prompt = valid_root / ".kiro" / "prompts" / "orchestrator.md"
+    write(prompt, ORCHESTRATOR_PROMPT.replace("## Conductor", "## Composition"))
+    errors = problems(check_orchestration_placement(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
+    assert "'## Conductor' section" in errors[0].message
+
+
+def test_orchestration_placement_rejects_demoted_section_heading(
+    valid_root: Path,
+) -> None:
+    """A level-3 heading does not stand in for a required level-2 section."""
+    prompt = valid_root / ".kiro" / "prompts" / "orchestrator.md"
+    write(prompt, ORCHESTRATOR_PROMPT.replace("## Conductor", "### Conductor"))
+    errors = problems(check_orchestration_placement(build_context(valid_root)))
+    assert severities(errors) == [Severity.ERROR]
 
 
 def test_orchestration_placement_rejects_dispatcher_file_resources(
@@ -155,7 +177,7 @@ def test_orchestration_placement_rejects_dispatcher_file_resources(
         valid_root,
         "orchestrator",
         model="claude-sonnet-5.5",
-        resources=["file://.kiro/orchestration/routing.md"],
+        resources=["file://.kiro/steering/COMMON.md"],
         tools=["subagent/senior-developer"],
     )
     errors = problems(check_orchestration_placement(build_context(valid_root)))
@@ -178,69 +200,74 @@ def test_orchestration_placement_allows_skill_resources_on_dispatchers(
     assert problems(check_orchestration_placement(build_context(valid_root))) == []
 
 
-def test_orchestration_reachability_accepts_the_valid_tree(valid_root: Path) -> None:
-    """Both files are named by the orchestrator prompt, so both are reachable."""
-    assert problems(check_orchestration_reachability(build_context(valid_root))) == []
+def test_docs_reachability_accepts_the_valid_tree(valid_root: Path) -> None:
+    """With no docs/ directory there is nothing to strand."""
+    assert problems(check_docs_reachability(build_context(valid_root))) == []
 
 
-def test_orchestration_reachability_detects_unreferenced_file(
+def test_docs_reachability_accepts_pointer_from_the_orchestrator_prompt(
     valid_root: Path,
 ) -> None:
-    """An on-demand file no always-on text names is unreachable."""
-    write(valid_root / ".kiro" / "orchestration" / "rationale.md", "# Rationale\n")
-    findings = check_orchestration_reachability(build_context(valid_root))
+    """A document named by an agent prompt is reachable."""
+    write(valid_root / "docs" / "rationale.md", "# Rationale\n")
+    write(
+        valid_root / ".kiro" / "prompts" / "orchestrator.md",
+        f"{ORCHESTRATOR_PROMPT}\nSee `docs/rationale.md` when challenged.\n",
+    )
+    assert problems(check_docs_reachability(build_context(valid_root))) == []
+
+
+def test_docs_reachability_detects_unreferenced_file(
+    valid_root: Path,
+) -> None:
+    """A document no always-on text names is unreachable."""
+    write(valid_root / "docs" / "rationale.md", "# Rationale\n")
+    findings = check_docs_reachability(build_context(valid_root))
     errors = problems(findings)
     assert severities(errors) == [Severity.ERROR]
-    assert ".kiro/orchestration/rationale.md is in no agent's resources" in (
-        errors[0].message
-    )
+    assert "docs/rationale.md is in no agent's resources" in errors[0].message
 
 
-def test_orchestration_reachability_accepts_pointer_from_steering(
+def test_docs_reachability_accepts_pointer_from_steering(
     valid_root: Path,
 ) -> None:
     """A steering pointer is enough, since steering is always loaded."""
-    write(valid_root / ".kiro" / "orchestration" / "rationale.md", "# Rationale\n")
+    write(valid_root / "docs" / "rationale.md", "# Rationale\n")
     write(
         valid_root / ".kiro" / "steering" / "COMMON.md",
-        f"{COMMON_MD}\nSee `.kiro/orchestration/rationale.md` when challenged.\n",
+        f"{COMMON_MD}\nSee `docs/rationale.md` when challenged.\n",
     )
-    assert problems(check_orchestration_reachability(build_context(valid_root))) == []
+    assert problems(check_docs_reachability(build_context(valid_root))) == []
 
 
-def test_orchestration_reachability_follows_pointers_between_files(
+def test_docs_reachability_follows_pointers_between_files(
     valid_root: Path,
 ) -> None:
-    """A pointer inside a reachable orchestration file reaches the next one."""
-    write(valid_root / ".kiro" / "orchestration" / "rationale.md", "# Rationale\n")
+    """A pointer inside a reachable docs file reaches the next one."""
+    write(valid_root / "docs" / "overview.md", "Argument: `rationale.md`.\n")
+    write(valid_root / "docs" / "rationale.md", "# Rationale\n")
     write(
-        valid_root / ".kiro" / "orchestration" / "delegation-lifecycle.md",
-        f"{DELEGATION_LIFECYCLE_MD}\nArgument: `rationale.md`.\n",
+        valid_root / ".kiro" / "steering" / "COMMON.md",
+        f"{COMMON_MD}\nSee `docs/overview.md`.\n",
     )
-    assert problems(check_orchestration_reachability(build_context(valid_root))) == []
+    assert problems(check_docs_reachability(build_context(valid_root))) == []
 
 
-def test_orchestration_reachability_rejects_mutually_pointing_islands(
+def test_docs_reachability_rejects_mutually_pointing_islands(
     valid_root: Path,
 ) -> None:
     """Two files naming only each other are still unreachable from a session."""
-    write(
-        valid_root / ".kiro" / "orchestration" / "island-a.md",
-        "See `island-b.md`.\n",
-    )
-    write(
-        valid_root / ".kiro" / "orchestration" / "island-b.md",
-        "See `island-a.md`.\n",
-    )
-    errors = problems(check_orchestration_reachability(build_context(valid_root)))
+    write(valid_root / "docs" / "island-a.md", "See `island-b.md`.\n")
+    write(valid_root / "docs" / "island-b.md", "See `island-a.md`.\n")
+    errors = problems(check_docs_reachability(build_context(valid_root)))
     assert severities(errors) == [Severity.ERROR, Severity.ERROR]
 
 
-def test_orchestration_reachability_rejects_self_reference(valid_root: Path) -> None:
+def test_docs_reachability_rejects_self_reference(valid_root: Path) -> None:
     """A file naming its own path does not vouch for itself."""
     write(
-        valid_root / ".kiro" / "orchestration" / "rationale.md",
-        "# Rationale\n\nThis is `.kiro/orchestration/rationale.md`.\n",
+        valid_root / "docs" / "rationale.md",
+        "# Rationale\n\nThis is `docs/rationale.md`.\n",
     )
-    findings = check_orchestration_reachability(build_context(valid_root))
+    findings = check_docs_reachability(build_context(valid_root))
     assert len(problems(findings)) == 1

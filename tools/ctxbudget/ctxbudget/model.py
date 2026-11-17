@@ -84,7 +84,7 @@ CALIBRATION_BASIS: Final[str] = (
 CALIBRATION_RESIDUAL: Final[str] = (
     "the per-file figures do not reconcile with any single factor: on the "
     "orchestrator observation the implied per-file factors span 0.89 "
-    "(`tools/TOOLS_OVERVIEW.md`) to 1.41 (`.kiro/orchestration/routing.md`), a "
+    "(`tools/TOOLS_OVERVIEW.md`) to 1.41 (the former orchestration routing file), a "
     "spread too wide for the display's rounding to explain. A constant "
     "per-file framing overhead does not explain it either: no tokens*f+c fits "
     "all three rows inside display precision, since the two larger rows alone "

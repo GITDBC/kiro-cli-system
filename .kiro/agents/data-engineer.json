@@ -129,7 +129,10 @@
       }
     ]
   },
-  "resources": ["skill://.kiro/skills/code-standards/SKILL.md"],
+  "resources": [
+    "skill://.kiro/skills/code-standards/SKILL.md",
+    "skill://.kiro/skills/preflight/SKILL.md"
+  ],
   "welcomeMessage": "Ready for data engineering. What pipeline or schema needs work?",
   "model": "claude-sonnet-5.5"
 }

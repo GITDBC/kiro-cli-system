@@ -47,7 +47,7 @@ def test_prompt_boundaries_fall_back_to_the_conventional_path(
 ) -> None:
     """A routable agent with no config is resolved by convention."""
     write(
-        valid_root / ".kiro" / "orchestration" / "routing.md",
+        valid_root / ".kiro" / "prompts" / "orchestrator.md",
         "# Routing\n\n      - id: technical-writer\n",
     )
     write(valid_root / ".kiro" / "prompts" / "technical-writer.md", "# Writer\n")

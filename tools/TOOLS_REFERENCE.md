@@ -81,10 +81,11 @@ providing the `setup`, `clean`, `lint`, `code-check`, `test` and `all` targets.
 - The check list is `CHECKS` in `registry.py`; the README table mirrors it and the
   registry wins on any disagreement.
 - `ALLOWED_MODELS` and `MODEL_COST_LABELS` in `checks/agents.py` hold the approved model
-  ids and the cost label `routing.md` must publish for each. `MODEL_COST_LABELS` matches
-  by prefix in insertion order, so the exact id `claude-opus-5.5` (`high (2.0x)`) must
-  precede the `claude-opus-` family entry (`high (2.2x)`), and `claude-haiku-5.5`
-  (`low (0.06x)`) precedes `claude-haiku-` (`low (0.4x)`).
+  ids and the cost label the orchestrator prompt's Quick Lookup must publish for each.
+  `MODEL_COST_LABELS` matches by prefix in insertion order, so the exact id
+  `claude-opus-5.5` (`high (2.0x)`) must precede the `claude-opus-` family entry
+  (`high (2.2x)`), and `claude-haiku-5.5` (`low (0.06x)`) precedes `claude-haiku-`
+  (`low (0.4x)`).
 - The `prompt_quality` recall check (`check_severity_filtering`) was removed: its claim
   was sourced only to guides no longer mirrored, and the 5.5 guides do not restate it.
 - The one lifecycle hook, `driftcheck-hook-refs-freshness`, is a workspace hook in

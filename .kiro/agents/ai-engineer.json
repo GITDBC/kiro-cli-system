@@ -129,7 +129,10 @@
       }
     ]
   },
-  "resources": ["skill://.kiro/skills/code-standards/SKILL.md"],
+  "resources": [
+    "skill://.kiro/skills/code-standards/SKILL.md",
+    "skill://.kiro/skills/preflight/SKILL.md"
+  ],
   "welcomeMessage": "Ready for AI/ML work. What model or feature needs building?",
   "model": "claude-sonnet-5.5"
 }

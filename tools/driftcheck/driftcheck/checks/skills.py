@@ -1,7 +1,7 @@
 """
 Checks over the skill tree.
 
-Covers collaboration-pattern coverage in routing.md, the wiring of those
+Covers collaboration-pattern coverage in the orchestrator prompt, the wiring of those
 patterns into the agents' own resources, reference files no SKILL.md can
 reach, reference files named after an agent that no longer exists, and
 prose mentions of a skill that no longer exists.
@@ -26,6 +26,7 @@ DIRECT_INVOKE_SKILLS: Final[frozenset[str]] = frozenset(
         "code-standards",
         "kiro-cli-reference",
         "claude-prompting-reference",
+        "preflight",
     }
 )
 
@@ -102,8 +103,9 @@ SKILL_MENTION: Final[tuple[re.Pattern[str], ...]] = (
 
 def check_skill_routing(ctx: DriftContext) -> list[Finding]:
     """
-    Verify each skill has a collaboration pattern in routing.md.
+    Verify each skill has a collaboration pattern in the orchestrator prompt.
 
+    Only the Collaboration Patterns section of the prompt is searched.
     Both the YAML form (``skill: name``) and the table form
     (``| name |``) count as coverage. Direct-invoke utility skills are
     exempt, and that exemption list is itself validated: an entry naming
@@ -116,19 +118,20 @@ def check_skill_routing(ctx: DriftContext) -> list[Finding]:
         A warning per uncovered skill, plus a trailing OK finding.
     """
     findings: list[Finding] = []
-    routing_md = read_text(ctx.routing_md)
+    patterns = "\n".join(_collaboration_section(read_text(ctx.orchestrator_prompt)))
     for skill_dir in ctx.skill_dirs():
         skill_name = skill_dir.name
         if skill_name in DIRECT_INVOKE_SKILLS:
             continue
         escaped = re.escape(skill_name)
         pattern = rf"(skill: {escaped}|\|[ \t]*{escaped}[ \t]*\|)"
-        if re.search(pattern, routing_md) is None:
+        if re.search(pattern, patterns) is None:
             findings.append(
                 Finding(
                     Severity.WARNING,
                     SECTION_SKILL_ROUTING,
-                    f"Skill '{skill_name}' has no collaboration pattern in routing.md",
+                    f"Skill '{skill_name}' has no collaboration pattern in "
+                    "orchestrator.md",
                 )
             )
     findings.extend(
@@ -152,8 +155,8 @@ def check_pattern_resource_wiring(ctx: DriftContext) -> list[Finding]:
     That is an ERROR: the workflow is published but silently disabled.
 
     Parsing assumption, deliberately conservative to avoid false
-    accusations: only rows of a markdown table inside the routing.md
-    "Collaboration Patterns" section are considered, a row contributes a
+    accusations: only rows of a markdown table inside the orchestrator
+    prompt's "Collaboration Patterns" section are considered, a row contributes a
     skill only when one of its cells is *exactly* the name of an existing
     skill directory, and it contributes an agent only when a current
     agent slug appears in the row as a whole word. Rows whose skill cell
@@ -184,7 +187,7 @@ def check_pattern_resource_wiring(ctx: DriftContext) -> list[Finding]:
     findings: list[Finding] = []
     skills = {skill_dir.name for skill_dir in ctx.skill_dirs()}
     configs = {config.stem: config for config in ctx.agent_configs}
-    pairs = _pattern_pairs(read_text(ctx.routing_md), skills, sorted(configs))
+    pairs = _pattern_pairs(read_text(ctx.orchestrator_prompt), skills, sorted(configs))
     for skill, slug in pairs:
         if skill in ORCHESTRATOR_ONLY_SKILLS:
             continue
@@ -194,7 +197,7 @@ def check_pattern_resource_wiring(ctx: DriftContext) -> list[Finding]:
             Finding(
                 Severity.ERROR,
                 SECTION_PATTERN_WIRING,
-                f"routing.md pairs skill '{skill}' with agent '{slug}' but "
+                f"orchestrator.md pairs skill '{skill}' with agent '{slug}' but "
                 f"{slug}.json does not declare it in resources — a custom "
                 "agent cannot discover a skill it is not given",
             )
@@ -278,20 +281,20 @@ def declares_skill(config: AgentConfig, skill: str) -> bool:
 
 
 def _pattern_pairs(
-    routing_md: str, skills: set[str], slugs: list[str]
+    prompt_text: str, skills: set[str], slugs: list[str]
 ) -> Iterator[tuple[str, str]]:
     """
     Iterate the (skill, agent) pairs the pattern table claims.
 
     Args:
-        routing_md: Full routing.md text.
+        prompt_text: Full orchestrator prompt text.
         skills: Names of the existing skill directories.
         slugs: Slugs of the current agent configs.
 
     Yields:
         One pair per skill and agent named in the same row.
     """
-    for cells in _collaboration_rows(routing_md):
+    for cells in _collaboration_rows(prompt_text):
         yield from _row_pairs(cells, skills, slugs)
 
 
@@ -317,24 +320,24 @@ def _row_pairs(
             yield skill, slug
 
 
-def _collaboration_rows(routing_md: str) -> Iterator[list[str]]:
+def _collaboration_rows(prompt_text: str) -> Iterator[list[str]]:
     """
     Iterate the table rows of the Collaboration Patterns section.
 
     Args:
-        routing_md: Full routing.md text.
+        prompt_text: Full orchestrator prompt text.
 
     Yields:
         The stripped cells of each data row, header rule excluded.
     """
-    for line in _collaboration_section(routing_md):
+    for line in _collaboration_section(prompt_text):
         stripped = line.strip()
         if not stripped.startswith("|") or TABLE_SEPARATOR.match(stripped):
             continue
         yield [cell.strip() for cell in stripped.strip("|").split("|")]
 
 
-def _collaboration_section(routing_md: str) -> Iterator[str]:
+def _collaboration_section(prompt_text: str) -> Iterator[str]:
     """
     Iterate the lines under the Collaboration Patterns heading.
 
@@ -342,13 +345,13 @@ def _collaboration_section(routing_md: str) -> Iterator[str]:
     so nested subsections such as "### Pattern details" stay inside it.
 
     Args:
-        routing_md: Full routing.md text.
+        prompt_text: Full orchestrator prompt text.
 
     Yields:
         Each line of the section, headings excluded.
     """
     level = 0
-    for line in routing_md.splitlines():
+    for line in prompt_text.splitlines():
         heading = MARKDOWN_HEADING.match(line)
         if heading is None:
             if level:
@@ -368,7 +371,9 @@ def check_orphaned_skill_references(ctx: DriftContext) -> list[Finding]:
     Kiro loads references/*.md only when a SKILL.md directs it to, so an
     unmentioned reference file is unreachable. The vendored
     kiro-cli-reference mirror is excluded: it is indexed differently and
-    its pages are not cited individually.
+    its pages are not cited individually. Files inside a tool package
+    (a directory holding a pyproject.toml, such as a moved CLI with its
+    own virtualenv) are the tool's own material, not skill references.
 
     Args:
         ctx: Shared check context.
@@ -386,7 +391,7 @@ def check_orphaned_skill_references(ctx: DriftContext) -> list[Finding]:
             continue
         skill_text = read_text(skill_md)
         for ref_file in sorted(ref_dir.rglob("*.md")):
-            if not ref_file.is_file():
+            if not ref_file.is_file() or _inside_tool_package(ref_file, ref_dir):
                 continue
             if ref_file.name not in skill_text:
                 findings.append(
@@ -404,6 +409,25 @@ def check_orphaned_skill_references(ctx: DriftContext) -> list[Finding]:
         )
     )
     return findings
+
+
+def _inside_tool_package(ref_file: Path, ref_dir: Path) -> bool:
+    """
+    Report whether a reference file sits inside a tool package under references/.
+
+    Args:
+        ref_file: Markdown file found under the references directory.
+        ref_dir: The skill's references directory.
+
+    Returns:
+        True when an ancestor between the file and ref_dir holds a
+        pyproject.toml, marking it as the tool's own source tree.
+    """
+    return any(
+        (parent / "pyproject.toml").is_file()
+        for parent in ref_file.parents
+        if ref_dir in parent.parents
+    )
 
 
 def check_stale_agent_references(ctx: DriftContext) -> list[Finding]:
@@ -545,12 +569,11 @@ def _mentionable_files(ctx: DriftContext) -> Iterator[Path]:
 
     Every skill's SKILL.md (frontmatter and body alike, since the
     negative-boundary sentences that name other skills are almost always
-    in the body) plus every always-on steering file and every
-    orchestrator-only file under .kiro/orchestration/. The latter matter
-    most of the three: routing.md names every skill in its Collaboration
-    Patterns table, so a deleted skill leaves a stale mention there
-    first. The vendored kiro-cli-reference mirror is excluded, matching
-    the other prose-scanning checks in this module.
+    in the body) plus every always-on steering file and the orchestrator
+    prompt. The latter matters most of the three: its Collaboration
+    Patterns table names every skill, so a deleted skill leaves a stale
+    mention there first. The vendored kiro-cli-reference mirror is
+    excluded, matching the other prose-scanning checks in this module.
 
     Args:
         ctx: Shared check context.
@@ -564,9 +587,10 @@ def _mentionable_files(ctx: DriftContext) -> Iterator[Path]:
         skill_md = skill_dir / "SKILL.md"
         if skill_md.is_file():
             yield skill_md
-    for directory in (ctx.steering_dir, ctx.orchestration_dir):
-        if directory.is_dir():
-            yield from sorted(directory.glob("*.md"))
+    if ctx.steering_dir.is_dir():
+        yield from sorted(ctx.steering_dir.glob("*.md"))
+    if ctx.orchestrator_prompt.is_file():
+        yield ctx.orchestrator_prompt
 
 
 def _mentioned_slugs(line: str) -> Iterator[str]:

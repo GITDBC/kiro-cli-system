@@ -137,7 +137,7 @@ One reviewer per section, one file per reviewer, no shared write target:
 `notes/reviewing-code_<YYYY-MM-DD>/<section-id>.md` plus a single
 `IMPROVEMENT_ANALYSIS.md` consolidation in the same directory — the
 `notes/<skill>_<YYYY-MM-DD>/<section-id>.md` shape in the "Notes layout" section of
-`.kiro/orchestration/delegation-lifecycle.md`. `<section-id>` is the module path with
+`.kiro/prompts/orchestrator.md` (`Delegation`). `<section-id>` is the module path with
 `/` replaced by `-` (e.g. `pipeline-transforms`), which makes `<section-id>/F3` a
 stable, greppable finding reference.
 

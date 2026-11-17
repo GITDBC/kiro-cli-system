@@ -3,9 +3,9 @@ Checks over the quality of the instruction artifacts themselves.
 
 The remaining check encodes one documented agent-prompt practice: an
 agent prompt with no stated boundary invites out-of-scope work.
-routing.md already publishes a ``never_when`` list per routable agent;
-the prompt is what the agent actually loads, so the boundary has to be
-there too.
+The orchestrator prompt already publishes a ``never_when`` list per
+routable agent in its Routing Rules; an agent's own prompt is what that
+agent actually loads, so the boundary has to be there too.
 
 The check is deterministic and run by a tool, and that is the point:
 it adds no text to any prompt and only reads.
@@ -22,7 +22,8 @@ from driftcheck.types import DriftContext, Finding, Severity
 
 SECTION_PROMPT_BOUNDARIES: Final[str] = "Agent prompt scope statements"
 
-# A routing-YAML agent entry in routing.md ("      - id: code-reviewer").
+# A routing-YAML agent entry in the orchestrator prompt
+# ("      - id: code-reviewer").
 # Every such entry carries a never_when list, which is the boundary this
 # check expects the agent's own prompt to mirror. The orchestrator has
 # no entry because it is not a delegation target, so its prompt is not
@@ -46,9 +47,9 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
     """
     Verify every routable agent's prompt states its own boundaries.
 
-    routing.md publishes a ``never_when`` list per routable agent, but
-    routing lives with the orchestrator while the prompt is what the
-    specialist itself loads. Without the boundary in the prompt, an
+    The orchestrator prompt publishes a ``never_when`` list per routable
+    agent, but routing lives with the orchestrator while the specialist
+    loads its own prompt. Without the boundary in the prompt, an
     agent invoked directly — or handed a task that drifted during a
     workflow — has nothing telling it to hand the work back.
 
@@ -64,7 +65,7 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
         OK finding.
     """
     findings: list[Finding] = []
-    for slug in sorted(_routable_agents(read_text(ctx.routing_md))):
+    for slug in sorted(_routable_agents(read_text(ctx.orchestrator_prompt))):
         prompt = _prompt_path(ctx, slug)
         if prompt is None:
             continue
@@ -75,7 +76,7 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
                 Severity.WARNING,
                 SECTION_PROMPT_BOUNDARIES,
                 f"{prompt.relative_to(ctx.root)} has no boundary section — "
-                f"routing.md declares never_when entries for '{slug}' that the "
+                f"orchestrator.md declares never_when entries for '{slug}' that the "
                 "prompt never states, so the agent itself cannot tell when to "
                 "hand work back",
             )
@@ -90,17 +91,17 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
     return findings
 
 
-def _routable_agents(routing_md: str) -> set[str]:
+def _routable_agents(prompt_text: str) -> set[str]:
     """
     Collect the agent slugs the routing YAML declares.
 
     Args:
-        routing_md: Full routing.md text.
+        prompt_text: Full orchestrator prompt text.
 
     Returns:
         Every slug appearing as a routing-YAML ``- id:`` entry.
     """
-    return {match.group("slug") for match in ROUTABLE_AGENT.finditer(routing_md)}
+    return {match.group("slug") for match in ROUTABLE_AGENT.finditer(prompt_text)}
 
 
 def _prompt_path(ctx: DriftContext, slug: str) -> Path | None:

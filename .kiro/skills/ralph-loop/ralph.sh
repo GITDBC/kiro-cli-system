@@ -8,7 +8,7 @@ set -euo pipefail
 # --- Defaults ---
 TIME_BUDGET=""
 MAX_ITERATIONS=0
-AGENT="senior-developer"  # routing.md: Autonomous loop → senior-developer
+AGENT="senior-developer"  # orchestrator.md Routing: Autonomous loop → senior-developer
 PROMISE="DONE"
 MODEL=""   # empty = the agent's own model
 EFFORT=""  # empty = the saved per-model default
@@ -273,8 +273,8 @@ RULES
 }
 
 # --- Helper: autonomous mode (injected into every iteration prompt) ---
-# delegation-lifecycle.md mandates `mode: autonomous` for non-interactive workflows and
-# `.kiro/orchestration/preflight-report-format.md` (`## Autonomous Mode`) defines the
+# orchestrator.md (`Delegation`) mandates `mode: autonomous` for non-interactive workflows
+# and `.kiro/skills/preflight/SKILL.md` (`## Autonomous Mode`) defines the
 # resolution rules, but neither reaches the agent on its own, so
 # they are compressed inline alongside the non-stop conditions. Decisions are routed to
 # "Blockers & Lessons" because that is the only progress-file section this script

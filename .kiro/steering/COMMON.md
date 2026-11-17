@@ -1,9 +1,8 @@
 # Common Directives for All Agents
 
 Behavioral rules for every agent. Coding standards and every numeric threshold:
-`.kiro/steering/code-standards-summary.md`. Rationale and the `.kiro/orchestration/`
-layout: `.kiro/orchestration/orchestration-rationale.md`, read only when a settled
-decision is challenged.
+`.kiro/steering/code-standards-summary.md`. Rationale for orchestration decisions:
+`docs/orchestration-rationale.md`, read only when a settled decision is challenged.
 
 ## Technology Stack
 
@@ -38,11 +37,11 @@ Every agent runs a preflight analysis before implementing. The orchestrator stat
 | Execute       | Implement the approved preflight plan; report the files modified.   |
 | Combined      | Open with a 2-3 line preflight, then implement in the same turn.    |
 
-The report's shape is in `.kiro/orchestration/preflight-report-format.md`: read it first
-in a separate preflight turn; combined mode does not need it. Report blockers clearly
-instead of working around them silently; escalate high-risk assumptions, document
-low-risk ones and proceed. When the dispatch says `mode: autonomous`, follow
-`## Autonomous Mode` in the same file (the rules also arrive inline in `ralph.sh`
+The report's shape is in the `preflight` skill (`.kiro/skills/preflight/SKILL.md`): load
+it first in a separate preflight turn; combined mode does not need it. Report blockers
+clearly instead of working around them silently; escalate high-risk assumptions,
+document low-risk ones and proceed. When the dispatch says `mode: autonomous`, follow
+`## Autonomous Mode` in the same skill (the rules also arrive inline in `ralph.sh`
 prompts).
 
 ## Verification First

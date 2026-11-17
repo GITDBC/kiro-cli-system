@@ -64,9 +64,10 @@ Each iteration writes `.kiro/ralph-state.json` atomically, runs
 `kiro-cli chat --no-interactive --trust-all-tools --agent-engine v3` with a fresh
 prompt, and compares the text of the last `<promise>…</promise>` in the log literally
 (whitespace normalised) with the promise phrase. The default agent is
-`senior-developer`, per the Autonomous loop row of `routing.md`. Arguments are validated
-strictly (`--time` grammar `1h30m`/`45m`/`90s`/bare minutes, numeric `--max`, the
-`--effort` levels, non-empty prompt and promise).
+`senior-developer`, per the Autonomous loop row of the Routing section of
+`orchestrator.md`. Arguments are validated strictly (`--time` grammar
+`1h30m`/`45m`/`90s`/bare minutes, numeric `--max`, the `--effort` levels, non-empty
+prompt and promise).
 
 Safety mechanisms:
 

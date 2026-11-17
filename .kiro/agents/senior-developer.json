@@ -149,7 +149,9 @@
     "skill://.kiro/skills/spec-to-dev/SKILL.md",
     "skill://.kiro/skills/jira/SKILL.md",
     "skill://.kiro/skills/agent-creation/SKILL.md",
-    "skill://.kiro/skills/deps-audit/SKILL.md"
+    "skill://.kiro/skills/deps-audit/SKILL.md",
+    "skill://.kiro/skills/front-end-practices/SKILL.md",
+    "skill://.kiro/skills/preflight/SKILL.md"
   ],
   "welcomeMessage": "Ready to implement. What are we building?",
   "model": "claude-sonnet-5.5"

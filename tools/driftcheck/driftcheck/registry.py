@@ -77,13 +77,13 @@ from driftcheck.checks.state import (
     check_state_registry,
 )
 from driftcheck.checks.steering import (
+    SECTION_DOCS_REACHABILITY,
     SECTION_DUPLICATION,
     SECTION_NUMBERED_HEADERS,
     SECTION_ORCHESTRATION_PLACEMENT,
-    SECTION_ORCHESTRATION_REACHABILITY,
+    check_docs_reachability,
     check_numbered_headers,
     check_orchestration_placement,
-    check_orchestration_reachability,
     check_steering_duplication,
 )
 from driftcheck.types import CheckFunction, DriftContext, Finding, Severity
@@ -104,7 +104,7 @@ CHECKS: Final[tuple[tuple[str, CheckFunction], ...]] = (
     (SECTION_GIT_SAFETY, check_git_safety_hook),
     (SECTION_DUPLICATION, check_steering_duplication),
     (SECTION_ORCHESTRATION_PLACEMENT, check_orchestration_placement),
-    (SECTION_ORCHESTRATION_REACHABILITY, check_orchestration_reachability),
+    (SECTION_DOCS_REACHABILITY, check_docs_reachability),
     (SECTION_ORPHAN_PROMPTS, check_orphan_prompts),
     (SECTION_ORPHAN_REFS, check_orphaned_skill_references),
     # Vendored mirrors hold as many pages as their marker's pages_total.
