@@ -21,7 +21,7 @@ Run both in **parallel**:
    quality-adjacent findings with security consequences.
 
 Why two dispatches rather than four: "Security audit" section of
-`.kiro/orchestration/orchestration-rationale.md`.
+`docs/orchestration-rationale.md`.
 
 #### Coverage instruction (paste verbatim into the security-engineer dispatch)
 
@@ -52,6 +52,20 @@ format, and severity scoring are in `references/three-perspective-audit-checklis
 When the audit target is a skill, agent prompt, bundled script, or MCP configuration
 rather than application code, the report contract is in
 `references/skill-audit-report-format.md`.
+
+For perspective C, load the infrastructure references when the target includes them:
+
+- `references/container-security.md` for Dockerfiles, container images and container
+  runtime configuration (48 checks, each with a stable Check ID).
+- `references/kubernetes-security.md` for Kubernetes manifests and cluster configuration
+  (19 checks). The upstream does not cover Helm charts, so audit rendered manifests with
+  these checks. Load `references/kubernetes-cloud-notes.md` as well when the cluster is
+  provisioned with kops (6 provider-specific checks).
+
+Each check ID is cited in the findings so that a gap is traceable to its check.
+Container severities are assignments, because the upstream states none. Kubernetes and
+kops severities follow the topic markers of the upstream README (Critical, High, Medium,
+Low). The upstream sources are attributed in [PROVENANCE.md](PROVENANCE.md).
 
 #### When a third dispatch is justified
 
