@@ -17,14 +17,15 @@ One **security-engineer** dispatch covers freshness and vulnerabilities:
 
    ```bash
    export WORK_AGENTS_CONFIG="<repo>/config.toml"
-   uv run --project <repo>/tools/depschecker depschecker \
+   uv run --project <repo>/.kiro/skills/deps-audit/references/depschecker depschecker \
      --lock <abs-project>/uv.lock \
      -o <repo>/tmp/deps-report.md \
      <abs-project>/pyproject.toml
    ```
 
-   Without a `uv.lock`, the scan exits 1; pass `--freshness-only` and state that
-   vulnerabilities were not checked.
+   The tool cannot parse `requirements.txt`, `setup.py`, or `Pipfile`. Without a
+   `uv.lock`, the scan exits 1; pass `--freshness-only` and state that vulnerabilities
+   were not checked.
 
 2. Read the report and highlight packages whose major/minor updates require migration
    effort.

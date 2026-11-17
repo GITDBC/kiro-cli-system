@@ -43,6 +43,7 @@ def test_opus_five_is_a_one_million_token_window() -> None:
 def test_two_hundred_thousand_token_models_are_not_inflated() -> None:
     """Keep the smaller windows small: the table is not a single value."""
     assert window_for_model("claude-haiku-4.5") == 200_000
+    assert window_for_model("claude-haiku-5.5") == 1_000_000
     assert window_for_model("glm-5") == 200_000
     assert window_for_model("claude-opus-4.5") == 200_000
 

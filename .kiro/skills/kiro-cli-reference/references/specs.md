@@ -12,12 +12,14 @@ Specs or specifications are structured artifacts that formalize the development 
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Feature Specs | ✓ | ✓ | ✓ | — |
-| Bugfix Specs | ✓ | ✓ | ✓ | — |
-| Quick Spec | ✓ | ✓ | ✓ | — |
-| Parallel task execution | ✓ | ✓ | ✓ | — |
+| Feature Specs | ✓ | ✓ | ✓ | ✓ |
+| Bugfix Specs | ✓ | ✓ | ✓ | ✓ |
+| Quick Spec | ✓ | ✓ | ✓ | ✓ |
+| Parallel task execution | ✓ | ✓ | ✓ | ✓ |
 | [Analyze Requirements](https://kiro.dev/docs/specs/analyze-requirements.md) | ✓ | ✓ | — | — |
 | [Correctness](https://kiro.dev/docs/specs/correctness.md) (property-based testing) | ✓ | — | — | — |
+
+On Mobile, the spec view shows `requirements.md`, `design.md`, and `tasks.md`. To read a Bugfix Spec's `bugfix.md`, use Kiro Web or ask the agent in the session.
 
 With Kiro's specs, you can:
 

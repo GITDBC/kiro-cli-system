@@ -31,6 +31,8 @@ Skills solve this with progressive disclosure:
 2. **Activation** - When your request matches a skill's description, Kiro loads the full instructions
 3. **Execution** - Kiro follows the instructions, loading scripts or reference files only as needed
 
+In Kiro IDE 1.4.178 or later, a skill of 30,000 characters or more loads in full when there is room for it, instead of as a shortened preview. A skill whose instructions are already in the conversation is not added again.
+
 This keeps context focused while giving Kiro access to extensive specialized knowledge on demand.
 
 ## Using skills
@@ -80,7 +82,7 @@ Skills can activate in two ways:
     > /context show
     ```
 
-    Kiro Web loads project Skills from `.kiro/skills/` in your repository. Personal Skills are available from **Settings > Skills**. The agent activates a Skill when your request matches its description.
+    Kiro Web loads project Skills from `.kiro/skills/` in your repository. Personal Skills are available from **Agent Config > Skills**. The agent activates a Skill when your request matches its description.
 
 ## Skill scope
 
@@ -131,7 +133,7 @@ The `skill://` URI scheme supports specific paths, glob patterns, and home direc
 
     Skills are discovered automatically when you start a new chat session.
 
-    In Kiro Web, open **Settings > Skills** and choose **Add skill**. Create a Skill manually from a `SKILL.md` template, or upload a zip archive. Uploading a zip with the exact name of an existing Skill updates it to match the archive. From the Skills list you can also edit a Skill's content, download it as a zip, or delete it.
+    In Kiro Web, open **Agent Config > Skills** and choose **Add skill**. Create a Skill manually from a `SKILL.md` template, or upload a zip archive. Uploading a zip with the exact name of an existing Skill updates it to match the archive. From the Skills list you can also edit a Skill's content, download it as a zip, or delete it.
 
 ## Creating a skill
 

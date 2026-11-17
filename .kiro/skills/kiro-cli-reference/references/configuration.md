@@ -11,7 +11,7 @@ Kiro uses a layered configuration system with three scopes. Configuration closer
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
 | Global scope (`~/.kiro/`) | ✓ | ✓ | — | — |
-| [Cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | — |
+| [Cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) | Opt-in | Opt-in | ✓ | ✓ |
 | Project scope (`.kiro/`) | ✓ | ✓ | ✓ | ✓ |
 | Agent scope (`.kiro/agents/` or `~/.kiro/agents/`) | ✓ | ✓ | — | — |
 
@@ -112,16 +112,16 @@ Since MCP servers can be configured in three scopes and agents have an `includeM
 
 ## Web and Mobile
 
-Web and Mobile read the project configuration listed below from cloned repositories, but their coverage differs. Mobile reads project Steering and Skills, while Kiro Web additionally reads project MCP servers, custom agents, and Hooks. Neither surface reads global `~/.kiro/` configuration, since there is no local filesystem.
+Web and Mobile read the project configuration listed below from cloned repositories. Sessions you start from Mobile are Kiro Web cloud sessions, so both surfaces load the same configuration. Neither surface reads global `~/.kiro/` configuration, since there is no local filesystem.
 
 | Configuration | Web | Mobile |
 |---------------|:---:|:------:|
 | Project steering (`.kiro/steering/`) | ✓ | ✓ |
 | Project skills (`.kiro/skills/`) | ✓ | ✓ |
-| Project MCP servers (`.kiro/settings/mcp.json`) | ✓ | — |
-| Project custom agents (`.kiro/agents/`, sub-agent delegation) | ✓ | — |
-| Project Hooks (`.kiro/hooks/`) | ✓ | — |
-| Sandbox MCP (configured via Web settings) | ✓ | — |
+| Project MCP servers (`.kiro/settings/mcp.json`) | ✓ | ✓ |
+| Project custom agents (`.kiro/agents/`, sub-agent delegation) | ✓ | ✓ |
+| Project Hooks (`.kiro/hooks/`) | ✓ | ✓ |
+| Sandbox MCP (configured via Web settings) | ✓ | ✓ |
 | Permissions YAML and interactive approvals | — | — |
 
 ### Account-uploaded workflows
@@ -130,10 +130,10 @@ Workflows use a separate account-upload path in Kiro Web:
 
 | Method | Web | Mobile |
 |---|:---:|:---:|
-| Upload one recipe through **Settings > Workflows** | ✓ | Not documented |
-| Import `.kiro/workflows/` through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md) | ✓ | Not documented |
+| Upload one recipe through **Agent Config > Workflows** | ✓ | — |
+| Import `.kiro/workflows/` through [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md) | ✓ | — |
 
-For cloud sessions, open **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config) to upload personal Steering, custom agents, Hooks, Skills, Powers, MCP settings, or a complete `.kiro/workflows/` folder. Manage the uploaded items from their feature-specific settings pages. This managed cloud configuration is separate from the `~/.kiro/` directory on your computer and does not modify your local files.
+For cloud sessions, open **Agent Config > Cloud Config** in [Kiro Web](https://app.kiro.dev/settings/cloud-config) to upload personal Steering, custom agents, Hooks, Skills, Powers, MCP settings, or a complete `.kiro/workflows/` folder. Manage the uploaded items from their feature-specific settings pages. This managed cloud configuration is separate from the `~/.kiro/` directory on your computer and does not modify your local files.
 
 See [Custom agents: surface behavior](https://kiro.dev/docs/custom-agents.md#surface-behavior) for details on Web and Mobile limitations.
 

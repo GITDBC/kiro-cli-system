@@ -13,9 +13,9 @@ comparison" -- and carries only models whose window that table states
 and whose id spelling is confirmed, either by the same documentation set
 (``claude-opus-4.8``, ``claude-sonnet-4``) or by the ids that
 ``kiro-cli chat --list-models`` reports (``claude-opus-5.5``,
-``claude-sonnet-5.5``, which the agent configs in this repository use,
-and ``claude-haiku-4.5``). The vendored docs name the 5.x models only by
-display name ("Claude Opus 5.5", 1M), never by id. The 5.0 ids
+``claude-sonnet-5.5``, ``claude-haiku-5.5``, which the agent configs in
+this repository use, and ``claude-haiku-4.5``). The vendored docs name
+the 5.x models only by display name ("Claude Opus 5.5", 1M), never by id. The 5.0 ids
 (``claude-opus-5``, ``claude-sonnet-5``) and ``claude-haiku-4.5`` stay
 listed although no agent runs them: all remain selectable, and a config
 pinned to one must not lose its window.
@@ -51,6 +51,7 @@ MODEL_WINDOWS: Final[dict[str, int]] = {
     "claude-sonnet-4.6": 1_000_000,
     "claude-sonnet-4.5": 200_000,
     "claude-sonnet-4": 200_000,
+    "claude-haiku-5.5": 1_000_000,
     "claude-haiku-4.5": 200_000,
     "glm-5": 200_000,
 }

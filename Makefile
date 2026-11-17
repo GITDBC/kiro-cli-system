@@ -1,4 +1,10 @@
+# Python packages under the lint and test gates. Maintenance tools live in tools/;
+# tools used by a skill live in .kiro/skills/<skill>/references/. Each directory
+# name must equal its module name.
 TOOLS := jirafetcher depschecker doc2md driftcheck docsync ctxbudget
+
+# Resolve a tool name to its directory, whichever location holds it.
+tool_dir = $(firstword $(wildcard tools/$(1) .kiro/skills/*/references/$(1)))
 
 .PHONY: fmt fmt-check drift-check hook-test lint-all test-all \
 	clean all sync-docs sync-docs-check sync-agentskills sync-agentskills-check \
@@ -43,23 +49,26 @@ context-budget-check:
 hook-test:
 	.kiro/hooks/git-safety.test.sh
 	.kiro/hooks/ralph-stop.test.sh
+	.kiro/skills/ralph-loop/ralph.test.sh
 
 lint-%:
-	@echo "=== Linting tools/$* ==="
-	@( cd tools/$* && uv run ruff check . && uv run ruff format --check . && uv run isort --check-only . && uv run mypy $* && uv run complexipy -f . )
+	@test -n "$(call tool_dir,$*)" || { echo "Unknown tool: $*" >&2; exit 1; }
+	@echo "=== Linting $(call tool_dir,$*) ==="
+	@( cd $(call tool_dir,$*) && uv run ruff check . && uv run ruff format --check . && uv run isort --check-only . && uv run mypy $* && uv run complexipy -f . )
 
 lint-all: $(TOOLS:%=lint-%)
 
 test-%:
-	@echo "=== Testing tools/$* ==="
-	@$(MAKE) --no-print-directory -C tools/$* test
+	@test -n "$(call tool_dir,$*)" || { echo "Unknown tool: $*" >&2; exit 1; }
+	@echo "=== Testing $(call tool_dir,$*) ==="
+	@$(MAKE) --no-print-directory -C $(call tool_dir,$*) test
 
 test-all: $(TOOLS:%=test-%)
 
 clean:
-	@for t in $(TOOLS); do \
-		echo "=== Cleaning tools/$$t ==="; \
-		$(MAKE) -C tools/$$t clean; \
+	@for d in $(foreach t,$(TOOLS),$(call tool_dir,$(t))); do \
+		echo "=== Cleaning $$d ==="; \
+		$(MAKE) -C $$d clean; \
 	done
 	@echo "=== Cleaning coverage and root caches ==="
 	@find . \( -type d \( -name .pytest_cache -o -name .ruff_cache -o -name .mypy_cache -o -name htmlcov \) \
@@ -69,4 +78,4 @@ clean:
 print-tools:
 	@echo $(TOOLS)
 
-all: fmt-check drift-check lint-all test-all hook-test
+all: fmt-check drift-check context-budget-check lint-all test-all hook-test

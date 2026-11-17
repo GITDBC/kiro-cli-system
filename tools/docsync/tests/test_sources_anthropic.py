@@ -18,7 +18,7 @@ import docsync.net as net_module
 from docsync.sources.anthropic import (
     CATALOGUE_URL,
     DOCS_PREFIX,
-    EXCLUDED_PAGES,
+    MODEL_GUIDE_PREFIX,
     TRACKED_PAGES,
     AnthropicSource,
     catalogue_slugs,
@@ -31,11 +31,18 @@ from docsync.sync import sync
 from docsync.types import MirrorPaths
 
 # Slugs the fixture catalogue advertises on top of every tracked page:
-# two prompting-subtree pages, and two out-of-scope pages standing for
-# the rest of the upstream documentation.
+# two general prompting-subtree pages, per-model guides no agent runs,
+# and out-of-scope pages standing for the rest of the upstream
+# documentation.
 SUBTREE_SLUGS = (
     "build-with-claude/prompt-engineering/overview",
-    "build-with-claude/prompt-engineering/prompting-claude-opus-5-5",
+    "build-with-claude/prompt-engineering/claude-prompting-best-practices",
+)
+UNTRACKED_GUIDES = (
+    f"{MODEL_GUIDE_PREFIX}fable-5-2",
+    f"{MODEL_GUIDE_PREFIX}opus-4-8",
+    f"{MODEL_GUIDE_PREFIX}opus-5",
+    f"{MODEL_GUIDE_PREFIX}sonnet-5",
 )
 FOREIGN_SLUGS = (
     "build-with-claude/embeddings",
@@ -74,7 +81,7 @@ def catalogue_text(slugs: tuple[str, ...]) -> str:
 
 
 FULL_CATALOGUE = catalogue_text(
-    (*SUBTREE_SLUGS, *sorted(TRACKED_PAGES), *FOREIGN_SLUGS, *sorted(EXCLUDED_PAGES))
+    (*SUBTREE_SLUGS, *sorted(TRACKED_PAGES), *FOREIGN_SLUGS, *UNTRACKED_GUIDES)
 )
 EXPECTED_PATHS = sorted(f"{slug}.md" for slug in (*SUBTREE_SLUGS, *TRACKED_PAGES))
 
@@ -164,9 +171,34 @@ def test_a_foreign_or_unsuffixed_url_yields_no_slug(url: str) -> None:
     assert slug_for(url) is None
 
 
-def test_the_prompting_subtree_is_in_scope_by_prefix() -> None:
-    """A new per-model guide needs no catalogue edit."""
-    assert is_in_scope("build-with-claude/prompt-engineering/prompting-claude-x-9")
+def test_a_general_subtree_page_is_in_scope_by_prefix() -> None:
+    """A new general guide needs no code edit."""
+    assert is_in_scope("build-with-claude/prompt-engineering/a-new-technique-guide")
+
+
+@pytest.mark.parametrize(
+    "slug",
+    [
+        f"{MODEL_GUIDE_PREFIX}haiku-5-5",
+        f"{MODEL_GUIDE_PREFIX}opus-5-5",
+        f"{MODEL_GUIDE_PREFIX}sonnet-5-5",
+    ],
+)
+def test_the_prompting_guide_of_each_agent_model_is_tracked(slug: str) -> None:
+    """The per-model guides of the models the agents run are mirrored."""
+    assert slug in TRACKED_PAGES
+    assert is_in_scope(slug)
+
+
+@pytest.mark.parametrize("slug", UNTRACKED_GUIDES)
+def test_an_untracked_per_model_guide_is_out_of_scope(slug: str) -> None:
+    """Earlier generations and unused models stay out of the mirror."""
+    assert not is_in_scope(slug)
+
+
+def test_a_new_per_model_guide_needs_a_deliberate_edit() -> None:
+    """An upstream release never widens the mirror on its own."""
+    assert not is_in_scope(f"{MODEL_GUIDE_PREFIX}opus-6")
 
 
 def test_a_tracked_page_is_in_scope_by_slug() -> None:
@@ -182,6 +214,7 @@ def test_a_sibling_of_a_tracked_page_is_out_of_scope() -> None:
 @pytest.mark.parametrize(
     "slug",
     [
+        "models/haiku-5-5/whats-new-haiku-5-5",
         "models/opus-5-5/whats-new-opus-5-5",
         "models/sonnet-5-5/whats-new-sonnet-5-5",
     ],
@@ -196,24 +229,12 @@ def test_the_whats_new_page_of_each_agent_model_is_tracked(slug: str) -> None:
     [
         "models/opus-5-5/migration-guide",
         "models/opus-5-5/overview",
-        "models/haiku-5-5/whats-new-haiku-5-5",
+        "models/haiku-5-5/overview",
     ],
 )
 def test_other_model_pages_stay_out_of_scope(slug: str) -> None:
     """Tracking a what's-new page does not pull in its model section."""
     assert not is_in_scope(slug)
-
-
-@pytest.mark.parametrize("slug", sorted(EXCLUDED_PAGES))
-def test_an_excluded_subtree_page_is_out_of_scope(slug: str) -> None:
-    """An exclusion overrides the prefix rule for that page only."""
-    assert slug.startswith("build-with-claude/prompt-engineering/")
-    assert not is_in_scope(slug)
-
-
-def test_an_exclusion_never_shadows_a_tracked_page() -> None:
-    """The two sets are disjoint, so no deliberate choice is undone."""
-    assert not EXCLUDED_PAGES & TRACKED_PAGES
 
 
 def test_the_evaluation_guide_is_no_longer_tracked() -> None:
@@ -228,8 +249,8 @@ def test_catalogue_parsing_ignores_non_documentation_links() -> None:
     assert all(not slug.startswith("http") for slug in slugs)
 
 
-def test_selection_keeps_the_subtree_and_the_tracked_pages() -> None:
-    """Scope is the prompting subtree plus the tracked slugs, sorted."""
+def test_selection_keeps_the_general_pages_and_the_tracked_pages() -> None:
+    """Scope is the general subtree pages plus the tracked slugs, sorted."""
     pages = select_pages(FULL_CATALOGUE)
     assert [page.relative_path for page in pages] == EXPECTED_PATHS
 
@@ -362,13 +383,14 @@ def test_a_dry_run_reports_orphans_without_deleting(
     assert stale.is_file()
 
 
-def test_prune_removes_a_local_copy_of_an_excluded_page(
+def test_prune_removes_a_local_copy_of_an_untracked_guide(
     source: AnthropicSource, paths: MirrorPaths, offline: None
 ) -> None:
-    """An excluded page is never discovered, so pruning treats it as an orphan."""
+    """An untracked guide is never discovered, so pruning calls it an orphan."""
     sync(source, paths)
-    excluded = paths.refs_dir / f"{sorted(EXCLUDED_PAGES)[0]}.md"
-    excluded.write_text("# Excluded\n", encoding="utf-8")
+    retired = paths.refs_dir / f"{UNTRACKED_GUIDES[0]}.md"
+    retired.parent.mkdir(parents=True, exist_ok=True)
+    retired.write_text("# Retired\n", encoding="utf-8")
     counts = sync(source, paths, prune=True)
     assert counts.orphans == 1
-    assert not excluded.exists()
+    assert not retired.exists()

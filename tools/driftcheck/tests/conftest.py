@@ -7,17 +7,15 @@ from pathlib import Path
 import pytest
 
 # Own modules
-from driftcheck.checks.prompt_quality import REVIEW_ORIENTED_SKILLS
 from driftcheck.checks.skills import DIRECT_INVOKE_SKILLS, ORCHESTRATOR_ONLY_SKILLS
 from driftcheck.types import DriftContext, build_context
 from tests.helpers import (
     COMMON_MD,
-    DELEGATION_LIFECYCLE_MD,
     DRIFTCHECK_PYPROJECT,
     EMPTY_STATE_YAML,
     GITIGNORE,
+    ORCHESTRATOR_PROMPT,
     ORCHESTRATOR_RESOURCES,
-    ROUTING_MD,
     SENIOR_DEVELOPER_PROMPT,
     SKILL_MD,
     write,
@@ -39,9 +37,9 @@ def valid_root(tmp_path: Path) -> Path:
     that declares memory/ framework-empty and thereby makes the
     memory-store check applicable.
 
-    Orchestrator-only instruction files are placed under
-    .kiro/orchestration/ and named in the orchestrator's resources,
-    which is the layout the placement check asserts.
+    The orchestrator-only routing and delegation rules are sections of
+    the orchestrator prompt, which is the layout the placement check
+    asserts.
 
     Args:
         tmp_path: Pytest-provided temporary directory.
@@ -51,21 +49,16 @@ def valid_root(tmp_path: Path) -> Path:
     """
     root = tmp_path / "repo"
     write(root / ".gitignore", GITIGNORE)
-    write(root / ".kiro" / "orchestration" / "routing.md", ROUTING_MD)
-    write(
-        root / ".kiro" / "orchestration" / "delegation-lifecycle.md",
-        DELEGATION_LIFECYCLE_MD,
-    )
     write(root / ".kiro" / "steering" / "COMMON.md", COMMON_MD)
     allowlisted = DIRECT_INVOKE_SKILLS | ORCHESTRATOR_ONLY_SKILLS
-    for skill in allowlisted | REVIEW_ORIENTED_SKILLS:
+    for skill in allowlisted:
         write(root / ".kiro" / "skills" / skill / "SKILL.md", f"# {skill}\n")
     write(root / ".kiro" / "skills" / "reviewing-code" / "SKILL.md", SKILL_MD)
     write(
         root / ".kiro" / "prompts" / "senior-developer.md",
         SENIOR_DEVELOPER_PROMPT,
     )
-    write(root / ".kiro" / "prompts" / "orchestrator.md", "# Orchestrator\n")
+    write(root / ".kiro" / "prompts" / "orchestrator.md", ORCHESTRATOR_PROMPT)
     write(root / "memory" / "state.yaml", EMPTY_STATE_YAML)
     write(root / "tools" / "driftcheck" / "pyproject.toml", DRIFTCHECK_PYPROJECT)
     write_agent(root, "senior-developer")
@@ -74,7 +67,7 @@ def valid_root(tmp_path: Path) -> Path:
         "orchestrator",
         model="claude-sonnet-5.5",
         resources=ORCHESTRATOR_RESOURCES,
-        toolsSettings={"subagent": {"availableAgents": ["senior-developer"]}},
+        tools=["subagent/senior-developer"],
     )
     return root
 

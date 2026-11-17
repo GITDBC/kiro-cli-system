@@ -10,10 +10,13 @@ Model Context Protocol (MCP) extends Kiro's capabilities by connecting to specia
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Local (stdio) MCP servers | ✓ | ✓ | ✓ | — |
-| Remote (HTTP/SSE) MCP servers | ✓ | ✓ | ✓ | — |
-| MCP config file (JSON) | ✓ | ✓ | ✓ | — |
+| Local (stdio) MCP servers | ✓ | ✓ | ✓ | ✓ |
+| Remote (HTTP/SSE) MCP servers | ✓ | ✓ | ✓ | ✓ |
+| OAuth sign-in for remote MCP servers | ✓ | ✓ | Powers only | Powers only |
+| MCP config file (JSON) | ✓ | ✓ | ✓ | ✓ |
 | Server-provided prompts and resources | ✓ | ✓ | ✓ | — |
+
+In Kiro Web and in sessions you start from Kiro Mobile, remote MCP servers connect with a URL and optional headers, such as an `Authorization` header that uses a [secret](https://kiro.dev/docs/web/sandbox/environment-variables.md). The `oauth` settings in `mcp.json` aren't used. To connect a service that needs an OAuth sign-in, install its [Power](https://kiro.dev/docs/web/sandbox/mcp.md#power-authentication-oauth) and select **Authorize**. Kiro Mobile has no `#` mention menu, so it can't insert server-provided prompts or resources.
 
 ## What is MCP?
 
@@ -93,13 +96,13 @@ In an interactive session, use the `/mcp` slash command to see loaded servers:
         /mcp
         ```
 
-    Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. Use the same JSON structure shown in the IDE and CLI examples, configure servers from the sandbox settings panel, or upload your personal `~/.kiro/settings/mcp.json` to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md). See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for detailed Web instructions.
+    Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. Use the same JSON structure shown in the IDE and CLI examples, configure servers from **Agent Config > Powers & MCP**, or upload your personal `~/.kiro/settings/mcp.json` to [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md). See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for detailed Web instructions.
 
     
       
 ### Open Settings
 
-Go to [Settings](https://app.kiro.dev/settings/agent) and select the **Agent** tab.
+Go to [Agent Config > Powers & MCP](https://app.kiro.dev/settings/powers).
 
       
 ### Add a server
@@ -174,6 +177,7 @@ If you see "The following tools have large descriptions which may impact agent p
 ## Next steps
 
 - **[Configuration](https://kiro.dev/docs/mcp/configuration.md)** - Detailed configuration options and file structure
-- **[Server directory](https://kiro.dev/docs/mcp/servers.md)** - Browse available MCP servers
+- **[MCP server directory](https://kiro.dev/mcp)** - Browse curated MCP servers and add them to Kiro
+- **[Share MCP servers](https://kiro.dev/docs/mcp/share.md)** - Create install links and an Add to Kiro badge for your server
 - **[Tools](https://kiro.dev/docs/mcp/usage.md)** - Learn how to use MCP tools effectively
 - **[Best practices](https://kiro.dev/docs/mcp/security.md)** - Security best practices for MCP usage

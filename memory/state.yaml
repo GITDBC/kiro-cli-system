@@ -5,8 +5,7 @@
 # artefacts). Ships empty in this framework tree; consuming projects fill it.
 # Every entry: `id`, `date` (ISO), `scope`; `agent_feedback` entries add
 # `agent`, `pattern`, `mitigation`. Max 20 entries per section, ids unique;
-# run `make drift-check` after writing. Rationale:
-# .kiro/orchestration/orchestration-rationale.md, "State registry".
+# run `make drift-check` after writing.
 
 decisions: []
 

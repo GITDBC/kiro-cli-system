@@ -47,7 +47,7 @@ Open `/model`, then choose **Thinking** or **Effort** for the selected model. Th
 - **Thinking** controls whether a supported model uses extended reasoning.
 - **Effort** controls how much reasoning the model applies.
 
-The **Thinking** setting in `/model` changes model behavior. It is separate from **Show thinking** in `/settings display`, which only controls whether reasoning blocks appear in the terminal, and from the experimental [Thinking tool](https://kiro.dev/docs/cli/experimental/thinking.md).
+The **Thinking** setting in `/model` changes model behavior. It is separate from the thinking display in `/settings output-details` (Kiro CLI 3.2.1 or later; **Show thinking** in `/settings display` before that), which only controls whether reasoning blocks appear in the terminal, and from the experimental [Thinking tool](https://kiro.dev/docs/cli/experimental/thinking.md).
 
 You can also use `/effort` directly:
 

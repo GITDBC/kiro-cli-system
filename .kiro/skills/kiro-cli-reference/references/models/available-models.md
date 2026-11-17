@@ -22,19 +22,19 @@ Choose Luna for high-frequency agentic tasks where speed, throughput, and Kiro c
 
 All three GPT-5.6 tiers have a 1M token context window in the IDE, CLI, and Web. You can include longer codebases, documents, and multi-turn agent histories in a request.
 
-Experimental support is rolling out to Pro, Pro+, Pro Max, and Power.
+GPT-5.6 Sol, Terra, and Luna are generally available with full Kiro support across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers in the US and EU geographies. Expanded capacity supports more dependable access for production workloads. GPT-5.6 Sol now has [Active](#model-lifecycle) lifecycle status.
 
 GPT-5.6 pricing follows the two-tier context model used by OpenAI and Amazon Bedrock: requests up to 272K tokens are billed at the short context rate listed above, and requests over 272K tokens are billed at double that rate (Sol 8.8x, Terra 4.4x, Luna 1.2x). [Learn more](https://openai.com/index/previewing-gpt-5-6-sol/).
 
-## Claude Fable 5.1 (Preview)
+## Claude Fable 5.1
 
-Anthropic's most capable agentic coding model for long-running, context-heavy work. Fable 5.1 traces problems to root causes, maintains context and intent across complex tasks, and improves reliability for multi-file refactors, long autonomous runs, and security or systems work. It has a 1M context window and a 6x credit multiplier. Inference runs only in US East (N. Virginia) (`us-east-1`).
+Anthropic's most capable agentic coding model for long-running, context-heavy work. Fable 5.1 has moved beyond Preview and is generally available to Kiro Enterprise organizations with full Kiro support. Fable 5.1 traces problems to root causes, maintains context and intent across complex tasks, and improves reliability for multi-file refactors, long autonomous runs, and security or systems work. It has a 1M context window and a 6x credit multiplier. Inference runs only in US East (N. Virginia) (`us-east-1`).
 
 ### Security tasks and safeguards
 
 Fable 5.1 can help discover software vulnerabilities with safeguards tuned to reduce interruptions during legitimate defensive security work. Requests for exploit generation, binary-based vulnerability scanning, and penetration testing continue to use Opus-class models in Kiro.
 
-Fable 5.1 is rolling out gradually to Kiro Enterprise organizations with [model governance](https://kiro.dev/docs/enterprise/governance/model.md) enabled. Availability is limited during Preview. Organizations with access can add Fable 5.1 from **Manage approved list** and make it available to their users. Users must restart the IDE or CLI, or refresh Kiro Web, before it appears in the model selector.
+Enterprise users cannot see Fable 5.1 until an administrator enables [model access management](https://kiro.dev/docs/enterprise/governance/model.md), selects Fable 5.1 in **Manage approved list**, and saves the list. Users must restart the IDE or CLI, or refresh Kiro Web, before it appears in the model selector.
 
 All Fable 5.1 traffic is retained for up to 30 days (unless otherwise required by law) for automated offline abuse detection. Classifier-flagged traffic will be subject to potential human review performed by AWS, and we may review flagged traffic for abuse. See [Data protection](https://kiro.dev/docs/privacy-and-security/data-protection.md#kiro-abuse-detection).
 
@@ -46,7 +46,7 @@ Auto is treated as its own selectable option under model governance: administrat
 
 ## Claude Opus 5.5
 
-Anthropic's latest Opus model for demanding agentic coding and knowledge work. Anthropic reports stronger performance on long, complex coding tasks, self-verification described by early testers, and clearer communication that puts the most important information first. It performs at the level of Claude Fable 5.1 on most work, according to Anthropic. Claude Opus 5.5 is available now with [experimental support](#model-lifecycle) across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers. The model has a 1M-token context window and a 2.0x Kiro credit multiplier. [Learn more](https://kiro.dev/blog/opus-5-5/).
+Anthropic's latest Opus model for demanding agentic coding and knowledge work. Anthropic reports stronger performance on long, complex coding tasks, self-verification described by early testers, and clearer communication that puts the most important information first. It performs at the level of Claude Fable 5.1 on most work, according to Anthropic. Claude Opus 5.5 is generally available with full Kiro support and [Active](#model-lifecycle) lifecycle status across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers in the US and EU geographies. The model has a 1M-token context window and a 2.0x Kiro credit multiplier. [Learn more](https://kiro.dev/blog/opus-5-5/).
 
 ## Claude Opus 5
 
@@ -70,7 +70,7 @@ Handles tradeoffs and ambiguity well when working across multiple systems. Stron
 
 ## Claude Sonnet 5.5
 
-Anthropic's fastest Sonnet model to date and a clear upgrade over Sonnet 5. Anthropic reports more than 30% faster output, performance close to Opus 5.5 on real-world knowledge work, and clearer writing that early testers describe as a better partner for collaboration. Well suited for scoped coding, bug fixes, code review, agents and subagents, and scoped work on documentation, slides, and spreadsheets. Claude Sonnet 5.5 is available now with [experimental support](#model-lifecycle) across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers. The model has a 1M-token context window, adaptive thinking on by default, and a 1.3x Kiro credit multiplier. Cybersecurity safeguards are similar to Opus 5.5: routine development work is unaffected, while some narrow, high-risk requests may be refused.
+Anthropic's fastest Sonnet model to date and a clear upgrade over Sonnet 5. Anthropic reports more than 30% faster output, performance close to Opus 5.5 on real-world knowledge work, and clearer writing that early testers describe as a better partner for collaboration. Well suited for scoped coding, bug fixes, code review, agents and subagents, and scoped work on documentation, slides, and spreadsheets. Claude Sonnet 5.5 is generally available across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers. The model has a 1M-token context window, adaptive thinking on by default, and a 1.3x Kiro credit multiplier. Cybersecurity safeguards are similar to Opus 5.5: routine development work is unaffected, while some narrow, high-risk requests may be refused.
 
 ## Claude Sonnet 5
 
@@ -88,17 +88,29 @@ Strong agentic coding with extended autonomous operation - can work independentl
 
 Direct access to Anthropic's Claude Sonnet 4.0 for users who prefer consistent model selection. Same model for all interactions with no routing or optimization layers. Full control and complete transparency, with predictable behavior for workflows that depend on specific model characteristics. Claude Sonnet 4.0 reaches [end of life](#model-lifecycle) on October 14, 2026. [Learn more](https://www.anthropic.com/news/claude-4).
 
+## Claude Haiku 5.5
+
+Choose Haiku 5.5 for high-volume work requiring quick responses. It has a 1M-token context window. Claude Haiku 5.5 is generally available with full Kiro support and [Active](#model-lifecycle) lifecycle status across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers in the US and EU geographies. Requests up to 100K tokens have a 0.06x Kiro credit multiplier. Requests that exceed 100K tokens are billed at a 0.3x multiplier.
+
+Haiku 5.5 uses [cross-region inference](https://kiro.dev/docs/privacy-and-security/data-protection.md#cross-region-inference) within the selected geography: US-profile requests stay within the US, and EU-profile requests stay within the EU.
+
 ## Claude Haiku 4.5
 
 Anthropic's fastest model with near-frontier performance. Matches Sonnet 4 performance across reasoning and coding at more than twice the speed. Near-frontier intelligence at one-third the cost, and the first Haiku model with extended thinking capabilities. [Learn more](https://www.anthropic.com/news/claude-haiku-4-5).
 
-## Kimi K3 (Experimental)
+## Grok 4.7
 
-Moonshot AI's experimental open-weight model for long-running coding and knowledge work. Kimi K3 accepts text and images and has a 1M-token context window. It has a 2.4x credit multiplier and is available only through Kiro's US geography. As an [experimental model](https://kiro.dev/docs/privacy-and-security/data-protection.md#global-cross-region-inference-for-experimental-features), requests may be processed in commercial AWS Regions worldwide. See the [Amazon Bedrock model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3.html).
+Grok 4.7 is xAI's most capable model for coding and knowledge work, built to stay focused through hard, multi-hour tasks and check its work before moving on. Grok 4.7 is available with [experimental support](#model-lifecycle) across the Kiro IDE, CLI, Crew, and Web for Pro, Pro+, Pro Max, and Power customers. It is not available on the Free tier. Grok 4.7 has a 500K-token context window. Requests up to 200K tokens have a 2.7x Kiro credit multiplier. Requests that exceed 200K tokens, up to the 500K-token maximum, are billed at a 5.4x multiplier, twice the short context rate. Keep a request under 200K tokens when it does not need the longer context.
+
+## Kimi K3
+
+Moonshot AI's open-weight model for long-running coding and knowledge work. Kimi K3 accepts text and images and has a 1M-token context window. It has a 2.4x credit multiplier. Kimi K3 is generally available with full Kiro support and [Active](#model-lifecycle) lifecycle status across the Kiro IDE, CLI, Crew, and Web for customers using Kiro's US geography. It uses [cross-region inference](https://kiro.dev/docs/privacy-and-security/data-protection.md#cross-region-inference) within the US geography, so requests stay in supported US AWS Regions. See the [Amazon Bedrock model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-moonshot-ai-kimi-k3.html).
 
 **⚠️ Warning:** Kimi K3 is a Kiro Excluded Model. Review [Kiro Excluded Models](#kiro-excluded-models) before using or enabling it.
 
-Kimi K3 appears in the model selector for Pro, Pro+, Pro Max, and Power subscribers using Kiro's US geography. It is not available on the Free tier. Enterprise users see it only after an administrator enables model access management and adds Kimi K3 to the approved list. See [Model governance](https://kiro.dev/docs/enterprise/governance/model.md#kimi-k3).
+Kimi K3 appears in the model picker for Pro, Pro+, Pro Max, and Power subscribers using Kiro's US geography. It is not available on the Free tier.
+
+Enterprise users cannot see Kimi K3 until an administrator enables [model access management](https://kiro.dev/docs/enterprise/governance/model.md), selects Kimi K3 in **Manage approved list**, and saves the list. Users must restart the IDE or CLI, run `kirocrew restart` for Crew, or refresh Kiro Web before Kimi K3 appears in the model picker.
 
 ## MiniMax M2.5
 
@@ -169,7 +181,7 @@ Kiro publishes known end-of-life dates here when announced.
 The following models are "Kiro Excluded Models":
 
 - Moonshot Kimi K3
-- Models designated as "experimental," "pre-release," "preview," or "beta"
+- Models designated as "experimental", "pre-release", "preview", or "beta"
 
 When you elect to use a Kiro Excluded Model, the output indemnity provided in Section 50.10 of the [AWS Service Terms](https://aws.amazon.com/service-terms/) does not apply.
 
@@ -179,13 +191,16 @@ The model selector and the [model lifecycle](#model-lifecycle) table show which 
 
 | Model | Launched | Status |
 |-------|----------|--------|
-| Kimi K3 | October 15, 2026 | Experimental |
-| Claude Opus 5.5 | September 28, 2026 | Experimental |
-| Claude Sonnet 5.5 | October 2, 2026 | Experimental |
+| Grok 4.7 | November 10, 2026 | Experimental |
+| Claude Haiku 5.5 | October 23, 2026 | Active |
+| Kimi K3 | October 15, 2026 | Active |
+| Claude Opus 5.5 | September 28, 2026 | Active |
+| Claude Sonnet 5.5 | October 2, 2026 | Active |
 | Claude Opus 5 | July 24, 2026 | Active |
-| GPT-5.6 Sol | July 13, 2026 | Experimental |
-| GPT-5.6 Terra | July 13, 2026 | Experimental |
-| GPT-5.6 Luna | July 13, 2026 | Experimental |
+| Claude Fable 5.1 | September 16, 2026 | Active |
+| GPT-5.6 Sol | July 13, 2026 | Active |
+| GPT-5.6 Terra | July 13, 2026 | Active |
+| GPT-5.6 Luna | July 13, 2026 | Active |
 | Claude Sonnet 5 | June 30, 2026 | Active |
 | Claude Opus 4.8 | May 28, 2026 | Active |
 | Claude Opus 4.7 | April 16, 2026 | Active |

@@ -8,8 +8,10 @@ set -euo pipefail
 # --- Defaults ---
 TIME_BUDGET=""
 MAX_ITERATIONS=0
-AGENT="senior-developer"  # routing.md: Autonomous loop → senior-developer
+AGENT="senior-developer"  # orchestrator.md Routing: Autonomous loop → senior-developer
 PROMISE="DONE"
+MODEL=""   # empty = the agent's own model
+EFFORT=""  # empty = the saved per-model default
 STATE_FILE=".kiro/ralph-state.json"
 PROGRESS_FILE=".kiro/ralph-progress.md"
 LOG_DIR=".kiro/ralph-logs"
@@ -25,6 +27,10 @@ Options:
                     Required unless --max is set.
   --max N           Maximum iterations (0=unlimited). Default: 0.
   --agent NAME      Kiro agent name. Default: senior-developer.
+  --model ID        Model id for every iteration (e.g. claude-sonnet-5.5).
+                    Default: the agent's own model.
+  --effort LEVEL    Reasoning effort: low, medium, high, xhigh or max.
+                    Default: the saved per-model default.
   --promise PHRASE  Completion signal phrase. Default: DONE.
   -h, --help        Show this help.
 
@@ -32,6 +38,7 @@ Examples:
   ralph.sh --time 3h "Implement user authentication with tests"
   ralph.sh --max 10 "Fix the parsing bug in src/parser.py"
   ralph.sh --time 2h --max 15 "Build data pipeline"
+  ralph.sh --max 10 --effort low "Rename the config keys and update the tests"
 EOF
   exit "${1:-0}"
 }
@@ -77,6 +84,8 @@ while [[ $# -gt 0 ]]; do
     --time) require_value "$@"; TIME_BUDGET="$2"; shift 2 ;;
     --max) require_value "$@"; MAX_ITERATIONS="$2"; shift 2 ;;
     --agent) require_value "$@"; AGENT="$2"; shift 2 ;;
+    --model) require_value "$@"; MODEL="$2"; shift 2 ;;
+    --effort) require_value "$@"; EFFORT="$2"; shift 2 ;;
     --promise) require_value "$@"; PROMISE="$2"; shift 2 ;;
     -h|--help) usage ;;
     -*) die "unknown option: $1" ;;
@@ -106,6 +115,16 @@ fi
 MAX_ITERATIONS=$((10#$MAX_ITERATIONS))  # "010" must not be read as octal
 
 [[ "$AGENT" =~ ^[A-Za-z0-9_.-]+$ ]] || die "--agent contains unsupported characters."
+[[ -z "$MODEL" || "$MODEL" =~ ^[A-Za-z0-9_.-]+$ ]] || die "--model contains unsupported characters."
+case "$EFFORT" in
+  ""|low|medium|high|xhigh|max) ;;
+  *) die "--effort must be low, medium, high, xhigh or max, got '$EFFORT'." ;;
+esac
+
+# Optional per-run overrides. Kept in an array so an empty value adds no argument.
+KIRO_EXTRA_ARGS=()
+[[ -z "$MODEL" ]] || KIRO_EXTRA_ARGS+=(--model "$MODEL")
+[[ -z "$EFFORT" ]] || KIRO_EXTRA_ARGS+=(--effort "$EFFORT")
 
 PROMISE="$(normalise "$PROMISE")"
 [[ -n "$PROMISE" ]] || die "--promise must not be empty."
@@ -254,8 +273,8 @@ RULES
 }
 
 # --- Helper: autonomous mode (injected into every iteration prompt) ---
-# delegation-lifecycle.md mandates `mode: autonomous` for non-interactive workflows and
-# `.kiro/orchestration/preflight-report-format.md` (`## Autonomous Mode`) defines the
+# orchestrator.md (`Delegation`) mandates `mode: autonomous` for non-interactive workflows
+# and `.kiro/skills/preflight/SKILL.md` (`## Autonomous Mode`) defines the
 # resolution rules, but neither reaches the agent on its own, so
 # they are compressed inline alongside the non-stop conditions. Decisions are routed to
 # "Blockers & Lessons" because that is the only progress-file section this script
@@ -489,7 +508,8 @@ while true; do
     --agent "$AGENT" \
     --no-interactive \
     --trust-all-tools \
-    --v3 \
+    --agent-engine v3 \
+    ${KIRO_EXTRA_ARGS[@]+"${KIRO_EXTRA_ARGS[@]}"} \
     "$ITER_PROMPT" 2>&1 | tee "$LOGFILE"
   CLI_STATUS=${PIPESTATUS[0]}
   set -e

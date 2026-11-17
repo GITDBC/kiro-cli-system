@@ -38,7 +38,7 @@ kiro-cli chat --list-sessions
 kiro-cli chat --delete-session <SESSION_ID>
 ```
 
-In V3, `--resume` selects the newest session that matches how the current launch is placed: local launches resume the newest matching local session, while cloud launches resume the newest matching cloud session.
+In V3, `--resume` selects the newest session that matches how the current launch is placed: local launches resume the newest matching local session, while cloud launches resume the newest matching cloud session. In Kiro CLI 3.3.0 or later, a local launch passes over a newer session that holds no prompt or turn, such as one left by opening and quitting Kiro without sending anything, and opens the newest session that has a conversation; it opens an empty session only when no other session exists. The same rule applies to `--no-interactive --resume`.
 
 In the terminal UI, if `--resume-id` doesn't match a local session, Kiro no longer silently starts a replacement conversation. When cloud sessions are enabled and you provide a full session ID, Kiro checks the remote session store before reporting that the ID couldn't be resolved.
 
@@ -57,16 +57,16 @@ In the terminal UI, if `--resume-id` doesn't match a local session, Kiro no long
 # Print the current session ID
 /session-id
 
-# Save to file
-/chat save <path>
+# Save a V3 session archive
+/chat save backup.zip
 
-# Load from file
-/chat load <path>
+# Load a V3 session archive
+/chat load backup.zip
 ```
 
 **ℹ️ Resume hint on exit:** When you exit a session, Kiro CLI prints the session ID along with the command to resume it (`kiro-cli chat --resume-id <ID>`). Use `/session-id` mid-session to print the same ID on demand.
 
-**ℹ️ File extension:** The `.json` extension is optional when loading sessions.
+**ℹ️ Session archive format:** In V3, `/chat save` writes a zip session archive. Use a `.zip` name. If you omit that extension, Kiro still identifies the saved file as a zip archive. `/chat load` checks the archive and explains when it was altered after saving. CLI 2.x uses JSON session files, where the `.json` extension is optional when loading.
 
 ### Workflow step sessions
 
@@ -174,9 +174,9 @@ git notes --ref=kiro/notes show "$COMMIT"
 
 ## Session storage
 
-**Database**: Sessions auto-saved per-directory  
-**Files**: Manual export via `/chat save`  
-**Custom**: Script-based integration
+- **Database:** Sessions auto-saved per-directory
+- **Files:** V3 zip archives (2.x: JSON) via `/chat save`
+- **Custom:** Script-based integration
 
 **Session ID**: UUID format (e.g., `f2946a26-3735-4b08-8d05-c928010302d5`)
 
@@ -198,13 +198,13 @@ kiro-cli chat --resume-picker
 
 Shows a list of sessions to choose from.
 
-### Export to file
+### Export a V3 archive
 
-```
-/chat save backup.json
+```bash
+/chat save backup.zip
 ```
 
-Exports current session to file.
+Saves the current V3 session as a zip archive.
 
 ### Version control integration
 

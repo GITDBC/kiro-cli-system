@@ -3,14 +3,16 @@ Checks over the always-on steering layer.
 
 Covers steering files that reproduce a skill body, the
 enumerated-heading convention COMMON.md forbids, and the two
-arrangements that keep ``.kiro/orchestration/`` honest: the
-orchestrator-only files staying out of always-on steering, and every
-file in that directory remaining reachable from somewhere.
+arrangements that keep the orchestrator-only material honest: the
+orchestrator prompt keeping its routing and delegation sections while
+nothing orchestrator-only sits in always-on steering or in any
+dispatcher's inherited resources, and every file in ``docs/`` remaining
+reachable from somewhere.
 
 The last two are shipped as separate checks, matching this codebase's
-one-concern-per-check convention: a file drifting back into steering and
-a file no session can arrive at are unrelated failure modes with
-unrelated remedies.
+one-concern-per-check convention: orchestrator content drifting back
+into steering and a document no session can arrive at are unrelated
+failure modes with unrelated remedies.
 """
 
 # Standard libraries
@@ -62,26 +64,38 @@ ENUMERATED_HEADING: Final[re.Pattern[str]] = re.compile(r"^#{1,6} [0-9]+[.)] ")
 SECTION_DUPLICATION: Final[str] = "Steering/skill content duplication"
 SECTION_NUMBERED_HEADERS: Final[str] = "Numbered markdown headers"
 SECTION_ORCHESTRATION_PLACEMENT: Final[str] = "Orchestrator-only file placement"
-SECTION_ORCHESTRATION_REACHABILITY: Final[str] = "Orchestration file reachability"
+SECTION_DOCS_REACHABILITY: Final[str] = "Docs file reachability"
 
-# The orchestrator-only instruction files. They were moved out of
-# .kiro/steering/ because Kiro CLI loads every steering file into every
-# session, subagent sessions included, regardless of an agent's
-# resources list: a probe measured their roughly 1,118 lines filling an
-# estimated 70-75% of a specialist's context on every dispatch, for
-# content no specialist acts on. Neither half of the arrangement fails
-# visibly at runtime — a file back in steering silently re-imposes that
-# cost, and a dropped resources entry silently leaves the orchestrator
-# without its routing tables — so both are asserted here.
+# The orchestrator-only instruction files. Their content now lives in
+# the orchestrator prompt, which only the orchestrator loads. They must
+# not come back as separate files in .kiro/steering/, because Kiro CLI
+# loads every steering file into every session, subagent sessions
+# included, regardless of an agent's resources list: a probe measured
+# their roughly 1,118 lines filling an estimated 70-75% of a
+# specialist's context on every dispatch, for content no specialist acts
+# on. They are also kept out of the orchestrator's own file:// resources,
+# because a subagent that declares none inherits its parent's
+# (custom-agents/configuration-reference.md, "File resources"): the same
+# cost, paid on every dispatch. Neither half of the arrangement fails
+# visibly at runtime — a file back in steering or in the dispatcher's
+# resources silently re-imposes the cost — so both are asserted here.
 ORCHESTRATION_FILES: Final[tuple[str, ...]] = (
     "routing.md",
     "delegation-lifecycle.md",
 )
 
-# Resource URI prefix an agent config uses, and the workspace-root
-# relative directory the orchestrator-only files must be declared from.
+# The sections the orchestrator prompt must keep. A section dropped from
+# the prompt silently leaves the orchestrator without its routing tables
+# or delegation machinery, since nothing else carries them any more.
+ORCHESTRATOR_SECTIONS: Final[tuple[str, ...]] = (
+    "Routing",
+    "Delegation",
+    "Harness gates",
+    "Conductor",
+)
+
+# Resource URI prefix an agent config uses.
 FILE_URI_PREFIX: Final[str] = "file://"
-ORCHESTRATION_PREFIX: Final[str] = ".kiro/orchestration/"
 
 
 def check_steering_duplication(ctx: DriftContext) -> list[Finding]:
@@ -218,10 +232,12 @@ def check_orchestration_placement(ctx: DriftContext) -> list[Finding]:
     """
     Verify the orchestrator-only files stay out of always-on steering.
 
-    Two halves of one arrangement, so they are asserted together: the
-    files must not sit in .kiro/steering/, where every agent would pay
-    for them on every turn, and the orchestrator must still name them in
-    its resources, which is now the only way they reach any session.
+    Three halves of one arrangement, so they are asserted together: the
+    former orchestrator-only files must not sit in .kiro/steering/,
+    where every agent would pay for them on every turn; no agent that
+    dispatches subagents may declare a file:// resource, which every
+    subagent without its own would inherit; and the orchestrator prompt
+    must keep the sections that now carry that content.
 
     Args:
         ctx: Shared check context.
@@ -231,7 +247,11 @@ def check_orchestration_placement(ctx: DriftContext) -> list[Finding]:
     """
     findings: list[Finding] = [
         Finding(Severity.ERROR, SECTION_ORCHESTRATION_PLACEMENT, message)
-        for message in _misplaced_messages(ctx) + _unreferenced_messages(ctx)
+        for message in (
+            _misplaced_messages(ctx)
+            + _missing_section_messages(ctx)
+            + _inherited_resource_messages(ctx)
+        )
     ]
     findings.append(
         Finding(
@@ -255,56 +275,120 @@ def _misplaced_messages(ctx: DriftContext) -> list[str]:
     """
     return [
         f".kiro/steering/{name} re-imposes orchestrator-only content on "
-        "every agent — it belongs in .kiro/orchestration/"
+        "every agent — it belongs in .kiro/prompts/orchestrator.md"
         for name in ORCHESTRATION_FILES
         if (ctx.steering_dir / name).is_file()
     ]
 
 
-def _unreferenced_messages(ctx: DriftContext) -> list[str]:
+def _missing_section_messages(ctx: DriftContext) -> list[str]:
     """
-    Report each orchestrator-only file the orchestrator no longer loads.
+    Report each required section the orchestrator prompt lacks.
 
-    The expected form is workspace-root-relative, which is how Kiro
-    resolves a ``resources`` entry: the config-relative
-    ``../orchestration/routing.md`` this once accepted resolved outside
-    the repository, so the orchestrator declared the file and received
-    nothing.
+    The prompt is the single source of the routing and delegation
+    rules, so a missing section leaves the orchestrator without them.
 
     Args:
         ctx: Shared check context.
 
     Returns:
-        Finding messages, empty when both files are referenced.
+        Finding messages, empty when the prompt has every section.
     """
-    orchestrator = ctx.orchestrator
-    if orchestrator is None or orchestrator.data is None:
+    text = _orchestrator_prompt_text(ctx)
+    if text is None:
         return []
-    resources = orchestrator.data.get("resources") or []
-    declared = {
-        resource.removeprefix(FILE_URI_PREFIX)
-        for resource in resources
-        if isinstance(resource, str)
+    headings = {
+        line.removeprefix("## ").strip()
+        for line in text.splitlines()
+        if line.startswith("## ")
     }
     return [
-        f"orchestrator.json no longer references {ORCHESTRATION_PREFIX}{name} — "
-        "the orchestrator loses it entirely, since it is not always-on"
-        for name in ORCHESTRATION_FILES
-        if f"{ORCHESTRATION_PREFIX}{name}" not in declared
+        f"orchestrator prompt has no '## {name}' section — the orchestrator "
+        "would run without it, since no other file carries that content"
+        for name in ORCHESTRATOR_SECTIONS
+        if name not in headings
     ]
 
 
-def check_orchestration_reachability(ctx: DriftContext) -> list[Finding]:
+def _orchestrator_prompt_text(ctx: DriftContext) -> str | None:
     """
-    Verify every .kiro/orchestration/ file can still be reached.
+    Read the orchestrator's prompt file.
+
+    Args:
+        ctx: Shared check context.
+
+    Returns:
+        The prompt text, or None when there is no orchestrator or the
+        prompt is inline or missing, which other checks report.
+    """
+    orchestrator = ctx.orchestrator
+    if orchestrator is None or orchestrator.data is None:
+        return None
+    prompt = orchestrator.data.get("prompt")
+    if not isinstance(prompt, str) or not prompt.startswith(FILE_URI_PREFIX):
+        return None
+    path = orchestrator.path.parent / prompt.removeprefix(FILE_URI_PREFIX)
+    if not path.is_file():
+        return None
+    return read_text(path)
+
+
+def _inherited_resource_messages(ctx: DriftContext) -> list[str]:
+    """
+    Report file:// resources declared by an agent that dispatches subagents.
+
+    A subagent that declares no file:// resource inherits its parent's,
+    so every such resource of a dispatcher is loaded again into each
+    dispatched session.
+
+    Args:
+        ctx: Shared check context.
+
+    Returns:
+        One message per offending dispatcher resource.
+    """
+    messages: list[str] = []
+    for config in ctx.agent_configs:
+        if not _dispatches_subagents(config):
+            continue
+        messages.extend(
+            f"{config.path.name} declares file:// resource {target} — every "
+            "subagent without its own file:// resources inherits it on each "
+            "dispatch; read the file on demand instead"
+            for target in _file_resource_targets(config)
+        )
+    return messages
+
+
+def _dispatches_subagents(config: AgentConfig) -> bool:
+    """
+    Tell whether an agent lists spawnable subagents in its tools.
+
+    Args:
+        config: Parsed agent config.
+
+    Returns:
+        True when any ``tools`` entry is a ``subagent/<name>`` selector.
+    """
+    tools = (config.data or {}).get("tools")
+    if not isinstance(tools, list):
+        return False
+    return any(isinstance(tool, str) and tool.startswith("subagent/") for tool in tools)
+
+
+def check_docs_reachability(ctx: DriftContext) -> list[Finding]:
+    """
+    Verify every docs/ file can still be reached.
 
     A file in that directory arrives in a session one of two ways: an
-    agent declares it in ``resources``, or an always-on file names it and
-    sends a reader there on demand. A file doing neither is content
-    nothing can arrive at, and no other check notices — the orphaned
-    skill-reference check walks a skill's own ``references/`` directory
-    and never looks here, so deleting a single pointer line silently
-    strands a whole decision archive.
+    agent declares it in ``resources``, or a file the session already
+    holds names it and sends a reader there on demand. Files read on
+    demand pass the pointer on: a file named by a reachable docs file is
+    reachable too. A file doing neither is content nothing can
+    arrive at, and no other check notices — the orphaned skill-reference
+    check walks a skill's own ``references/`` directory and never looks
+    here, so deleting a single pointer line silently strands a whole
+    decision archive.
 
     ERROR rather than WARNING, matching the placement check beside it:
     both guard content whose loss is invisible at runtime, which is
@@ -317,29 +401,79 @@ def check_orchestration_reachability(ctx: DriftContext) -> list[Finding]:
         One ERROR per unreachable file, plus a trailing OK finding.
     """
     findings: list[Finding] = []
-    if ctx.orchestration_dir.is_dir():
-        declared = _declared_resource_paths(ctx)
-        corpus = _always_on_corpus(ctx, declared)
-        for path in sorted(ctx.orchestration_dir.glob("*.md")):
+    if ctx.docs_dir.is_dir():
+        reachable = _reachable_docs_files(ctx)
+        for path in sorted(ctx.docs_dir.glob("*.md")):
             relative = path.relative_to(ctx.root).as_posix()
-            if relative in declared or _is_named_in(corpus, path, relative):
+            if relative in reachable:
                 continue
             findings.append(
                 Finding(
                     Severity.ERROR,
-                    SECTION_ORCHESTRATION_REACHABILITY,
+                    SECTION_DOCS_REACHABILITY,
                     f"{relative} is in no agent's resources and named by no "
-                    "always-on file — nothing can reach it",
+                    "reachable file — nothing can reach it",
                 )
             )
     findings.append(
         Finding(
             Severity.OK,
-            SECTION_ORCHESTRATION_REACHABILITY,
-            "Orchestration file reachability checked",
+            SECTION_DOCS_REACHABILITY,
+            "Docs file reachability checked",
         )
     )
     return findings
+
+
+def _reachable_docs_files(ctx: DriftContext) -> set[str]:
+    """
+    Compute the docs files a session can arrive at.
+
+    Starts from the files that reach a session unprompted and follows
+    every pointer to a docs file, including pointers written inside the
+    docs files reached on the way.
+
+    Args:
+        ctx: Shared check context.
+
+    Returns:
+        Root-relative POSIX paths of the reachable docs files.
+    """
+    declared = _declared_resource_paths(ctx)
+    texts = [text for _, text in _always_on_corpus(ctx, declared)]
+    files = {
+        path.relative_to(ctx.root).as_posix(): path
+        for path in ctx.docs_dir.glob("*.md")
+    }
+    found = {relative for relative in files if relative in declared}
+    found |= _named_among(texts, files, set())
+    reachable: set[str] = set()
+    while found:
+        reachable |= found
+        texts.extend(read_text(files[relative]) for relative in found)
+        found = _named_among(texts, files, reachable)
+    return reachable
+
+
+def _named_among(
+    texts: list[str], files: dict[str, Path], reached: set[str]
+) -> set[str]:
+    """
+    Pick the not-yet-reached files that some text names.
+
+    Args:
+        texts: Texts of the files already reached.
+        files: Every docs file, keyed by root-relative path.
+        reached: Root-relative paths already known reachable.
+
+    Returns:
+        The newly named root-relative paths.
+    """
+    return {
+        relative
+        for relative, path in files.items()
+        if relative not in reached and _is_named(texts, relative, path.name)
+    }
 
 
 def _declared_resource_paths(ctx: DriftContext) -> set[str]:
@@ -405,10 +539,11 @@ def _always_on_corpus(ctx: DriftContext, declared: set[str]) -> list[tuple[Path,
     """
     Read every file whose text reaches a session unprompted.
 
-    Two sources qualify: the ``.kiro/steering/`` files Kiro loads into
-    every session, and any file an agent declares as a ``file://``
-    resource, which that agent loads on every turn. A pointer sitting in
-    either is followed by whoever is reading.
+    Three sources qualify: the ``.kiro/steering/`` files Kiro loads into
+    every session, the agent prompts, which their agent receives on
+    every turn, and any file an agent declares as a ``file://``
+    resource. A pointer sitting in any of them is followed by whoever is
+    reading.
 
     Args:
         ctx: Shared check context.
@@ -418,6 +553,8 @@ def _always_on_corpus(ctx: DriftContext, declared: set[str]) -> list[tuple[Path,
         One (path, text) pair per always-on file, deduplicated.
     """
     paths: list[Path] = sorted(ctx.steering_dir.glob("*.md"))
+    if ctx.prompts_dir.is_dir():
+        paths.extend(sorted(ctx.prompts_dir.glob("*.md")))
     seen = set(paths)
     for relative in sorted(declared):
         path = ctx.root / relative
@@ -427,25 +564,21 @@ def _always_on_corpus(ctx: DriftContext, declared: set[str]) -> list[tuple[Path,
     return [(path, read_text(path)) for path in paths]
 
 
-def _is_named_in(corpus: list[tuple[Path, str]], target: Path, relative: str) -> bool:
+def _is_named(texts: list[str], relative: str, name: str) -> bool:
     """
-    Report whether any always-on file points at a target file.
+    Report whether any text points at a target file.
 
     Both the root-relative path and the bare filename count, because a
     pointer written either way still sends a reader to the right file.
-    The target never vouches for itself: a file naming its own path
-    proves nothing about how anyone gets to it.
+    A file never vouches for itself: the caller only offers the texts of
+    files already reached, and the target is not among them.
 
     Args:
-        corpus: Always-on (path, text) pairs.
-        target: File whose reachability is in question.
+        texts: Texts of the files already reached.
         relative: The target's root-relative POSIX path.
+        name: The target's bare filename.
 
     Returns:
-        True when at least one other always-on file names it.
+        True when at least one text names the target.
     """
-    return any(
-        relative in text or target.name in text
-        for path, text in corpus
-        if path != target
-    )
+    return any(relative in text or name in text for text in texts)

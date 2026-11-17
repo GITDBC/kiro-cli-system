@@ -120,16 +120,15 @@ class DriftContext:
         return self.kiro_dir / "steering"
 
     @property
-    def orchestration_dir(self) -> Path:
+    def docs_dir(self) -> Path:
         """
-        Return the .kiro/orchestration directory.
+        Return the docs directory.
 
-        Orchestrator-only instruction files live here rather than in
-        steering_dir because Kiro CLI loads every steering file into
-        every session, subagent sessions included. The two directories
-        are distinct places and must not be conflated.
+        Reference documents that no session loads unprompted live here,
+        outside .kiro/: a pointer in an always-on file is the only way
+        a session arrives at them.
         """
-        return self.kiro_dir / "orchestration"
+        return self.root / "docs"
 
     @property
     def prompts_dir(self) -> Path:
@@ -142,9 +141,14 @@ class DriftContext:
         return self.agents_dir / "orchestrator.json"
 
     @property
-    def routing_md(self) -> Path:
-        """Return the .kiro/orchestration/routing.md agent-routing table."""
-        return self.orchestration_dir / "routing.md"
+    def orchestrator_prompt(self) -> Path:
+        """
+        Return the .kiro/prompts/orchestrator.md prompt file.
+
+        It is the single source of the routing tables, the collaboration
+        patterns and the delegation rules.
+        """
+        return self.prompts_dir / "orchestrator.md"
 
     @property
     def state_yaml(self) -> Path:

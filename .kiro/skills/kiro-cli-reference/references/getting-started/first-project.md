@@ -64,7 +64,15 @@ Before starting, ensure you have:
        - Click **New session** to start working with the agent on your project
        - Describe what you'd like to accomplish
 
-Coming soon to Mobile.
+    1. **Open Kiro Mobile** on your phone and sign in. See [Setup & First Run](https://kiro.dev/docs/mobile/setup.md).
+
+    2. **Connect a repository**:
+       - If you haven't already, connect your [GitHub](https://kiro.dev/docs/web/github.md) or [GitLab](https://kiro.dev/docs/web/gitlab.md) account in Kiro Web
+       - Start a new session, tap **Add repository**, and select the repository you want to work with
+
+    3. **Describe your task**:
+       - Describe what you'd like to accomplish
+       - Follow the agent's progress, or close the app and check back later
 
 ## Set up steering files
 
@@ -98,7 +106,7 @@ Steering files provide context about your project, helping Kiro understand your 
     2. The agent analyzes your repository and creates the steering documents
     3. Changes are committed to a branch in your repository
 
-Coming soon to Mobile.
+    Kiro Mobile uses the same steering files as Kiro Web. When a session works in a connected repository, the agent reads existing steering files from `.kiro/steering/` in that repository. To create or update them, ask the agent in a session: "Generate steering files for this project". The agent commits the changes to a branch in your repository.
 
 Learn more about steering in the [Steering documentation](https://kiro.dev/docs/steering.md).
 
@@ -164,7 +172,16 @@ Specs transform high-level feature ideas into detailed implementation plans thro
 
     When you're ready, the agent implements the tasks and opens a pull request. You can continue to provide feedback and have the agent push updates.
 
-Coming soon to Mobile.
+    ### Create your first spec
+
+    1. In Kiro Mobile, tap the new session button and select one or more repositories with **Add repository**
+    2. Turn on **Build with spec**, then describe what you want to build
+    3. When the agent finishes the requirements, the spec opens. Review it, then tap **Generate design** or **Generate design & tasks**
+    4. If you chose **Generate design**, review the design, then tap **Generate tasks**
+
+    ### Execute spec tasks
+
+    When the tasks are ready, tap **Run all tasks** on the **Tasks** tab. The agent implements the tasks and opens a pull request. See [Work with specs](https://kiro.dev/docs/mobile/sessions.md#work-with-specs).
 
 Learn more about specs in the [Specs documentation](https://kiro.dev/docs/specs.md).
 
@@ -196,9 +213,9 @@ Agent hooks eliminate manual work by automatically executing predefined actions 
 
     You can ask the agent to create hooks conversationally, or define them directly in your agent configuration file. See [Hook triggers](https://kiro.dev/docs/hooks/types.md) for available event types and the [Agent Configuration Reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#hooks-field) for the complete syntax.
 
-    Kiro Web can store personal Hook configuration through **Settings > Sync**. Apply that cloud configuration to new local IDE or CLI sessions to use the Hooks without copying files into your local `.kiro` directory. Kiro Web sessions do not run event-driven Hooks or Hook command actions.
+    Kiro Web sessions run Hooks committed to `.kiro/hooks/` in your repository and Hooks you add under **Agent Config > Hooks**. You can also ask the agent to create a Hook in a session. See [Hooks](https://kiro.dev/docs/hooks.md).
 
-Hooks aren't available on Mobile.
+    Sessions you start from Kiro Mobile run the same Hooks as Kiro Web: Hooks in `.kiro/hooks/` in your repository and Hooks you add under **Agent Config > Hooks** in Kiro Web. You can't manage Hooks from the app.
 
 Learn more in the [Hooks documentation](https://kiro.dev/docs/hooks.md).
 
@@ -253,7 +270,7 @@ Model Context Protocol (MCP) allows Kiro to access specialized tools, APIs, know
 
     Kiro Web loads MCP servers from `.kiro/settings/mcp.json` in your repository, and you can add more through the sandbox settings or [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md). See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for setup instructions.
 
-Coming soon to Mobile.
+    Sessions you start from Kiro Mobile use the same MCP servers as Kiro Web: servers in `.kiro/settings/mcp.json` in your repository, plus any you add through the sandbox settings or [cloud configuration](https://kiro.dev/docs/web/cloud-configuration.md) in Kiro Web. You can't add or change MCP servers from the app. See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md).
 
 Learn more in the [MCP documentation](https://kiro.dev/docs/mcp.md).
 

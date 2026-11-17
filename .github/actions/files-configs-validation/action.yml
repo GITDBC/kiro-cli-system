@@ -1,7 +1,7 @@
 name: Files and Configuration Validation
 description: >
   Validate repository files and configuration (VERSION, agent JSON, skills, drift,
-  formatting, hooks). Requires Node.js dependencies installed and uv available.
+  context budget, formatting, hooks). Requires Node.js dependencies installed and uv available.
 
 runs:
   using: composite
@@ -31,6 +31,10 @@ runs:
     - name: Drift check
       shell: bash
       run: make drift-check
+
+    - name: Context budget
+      shell: bash
+      run: make context-budget-check
 
     - name: Format check
       shell: bash

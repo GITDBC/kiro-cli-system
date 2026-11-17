@@ -35,7 +35,7 @@ there as an orphan.
 | Documentation | https://kiro.dev/docs/                       |
 | Discovery     | https://kiro.dev/sitemap.xml                 |
 | Page form     | `https://kiro.dev/docs/<slug>.md` (Markdown) |
-| Fetch date    | 2026-10-16                                   |
+| Fetch date    | 2026-11-16                                   |
 | Sync tool     | `tools/docsync` (`make sync-docs`)           |
 | Sync marker   | `.last-sync.json` at the skill root          |
 | Page count    | 84 after the scope reduction of 2026-10-16   |

@@ -37,7 +37,8 @@ The following URLs are required by all Kiro products (IDE, CLI, and Web):
     | URL | Purpose |
     |-----|---------|
     | `prod.us-east-1.auth.desktop.kiro.dev` | Token exchange, refresh, and logout |
-    | `prod.us-east-1.telemetry.desktop.kiro.dev` | Telemetry |
+    | `prod.us-east-1.telemetry.desktop.kiro.dev` | Telemetry (US East), Kiro 1.4.61 and earlier only |
+    | `prod.eu-central-1.telemetry.desktop.kiro.dev` | Telemetry (Europe), Kiro 1.4.61 and earlier only |
     | `prod.download.desktop.kiro.dev` | Auto-updates, Powers registry, and icons |
     | `q.us-east-1.amazonaws.com` | Kiro service (US East) |
     | `q.eu-central-1.amazonaws.com` | Kiro service (Europe) |
@@ -93,11 +94,14 @@ If your network policy allows wildcard rules, you can allowlist `*.kiro.dev` and
 
 ## Social sign-in
 
-If you sign in with Google or GitHub, allowlist this additional endpoint for the Cognito identity federation flow.
+If you sign in with Google or GitHub, allowlist the Cognito endpoint below. GitHub sign-in also loads an AWS WAF CAPTCHA from `*.awswaf.com`. If your firewall or proxy blocks this domain, GitHub sign-in fails.
 
 | URL | Purpose |
 |-----|---------|
 | `cognito-identity.us-east-1.amazonaws.com` | Federated identity for social sign-in |
+| `*.awswaf.com` | CAPTCHA for GitHub sign-in |
+
+Some firewalls and proxies match a wildcard at only one subdomain level. If yours does, also allowlist `*.captcha.awswaf.com` and `*.token.awswaf.com`.
 
 ## IAM Identity Center
 
@@ -197,6 +201,8 @@ You only need these if you use the corresponding Kiro feature. Skip any that don
 
 If some users can connect to Kiro but others cannot, see [Network connectivity issues](https://kiro.dev/docs/ide/troubleshooting.md#network-connectivity-issues) in the troubleshooting guide.
 
+If your network performs TLS inspection and Kiro IDE requests fail with `read ECONNRESET`, see [TLS inspection compatibility](https://kiro.dev/docs/enterprise/tls-inspection.md).
+
 ## Data perimeters
 
 If you use [data perimeters on AWS](https://aws.amazon.com/identity/data-perimeters-on-aws/) to restrict access to trusted identities and resources, make sure your policies allow Kiro's service principals to reach the endpoints listed on this page. For VPC-level controls, see [VPC endpoints (AWS PrivateLink)](https://kiro.dev/docs/privacy-and-security/vpc-endpoints.md).
@@ -211,5 +217,8 @@ If your network policy allows wildcard rules, you can simplify the allowlist:
 | `*.app.kiro.dev` | Application and CDN assets |
 | `*.kiro.aws.dev` | Telemetry endpoints |
 | `*.amazonaws.com` | All AWS service endpoints (Kiro service, RUM, OIDC, SSO, Cognito) |
+| `*.awswaf.com` | AWS WAF CAPTCHA for GitHub sign-in |
+| `*.captcha.awswaf.com` | Nested CAPTCHA hosts for GitHub sign-in; add if your firewall matches only one wildcard level |
+| `*.token.awswaf.com` | Nested CAPTCHA hosts for GitHub sign-in; add if your firewall matches only one wildcard level |
 | `*.shortbread.aws.dev` | Cookie consent |
 | `*.signin.aws` | IAM Identity Center sign-in |

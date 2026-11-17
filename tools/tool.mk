@@ -1,7 +1,8 @@
-# Shared recipe body for every tool under tools/. Included by each tool's
-# Makefile, which contributes only its module name via CURDIR. The directory
-# name must equal the module name, since the root lint-<tool> target runs
-# `mypy <tool>` inside tools/<tool>.
+# Shared recipe body for every tool, whether it lives in tools/ or in a skill's
+# references/ directory. Included by each tool's Makefile by relative path, which
+# contributes only its module name via CURDIR. The directory name must equal the
+# module name, since the root lint-<tool> target runs `mypy <tool>` inside the
+# tool directory (resolved by `tool_dir` in the root Makefile).
 MODULE := $(notdir $(patsubst %/,%,$(CURDIR)))
 
 .PHONY: setup clean lint code-check test all

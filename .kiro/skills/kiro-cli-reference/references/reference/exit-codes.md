@@ -37,6 +37,8 @@ A non-interactive run (`--no-interactive`, V2 or V3) exits with code 4 when its 
 - On V3, a fresh session also names the `chat.defaultAgent` setting. If that configured default is unavailable, the run exits 4.
 - A run with no named agent is not gated. This includes resumed sessions without `--agent`.
 
+On V3, a named agent that exists only in the V2 format also counts as unavailable. In Kiro CLI 2.37 or later, a stopped run says `stopping (exit 4)` and, for a V2-format agent, names the `kiro-cli agent upgrade <directory>` command for that agent's directory. Run it, then retry. See [Upgrading agent configs](https://kiro.dev/docs/cli/v3/upgrade-agent.md#upgrade-one-directory-from-the-shell).
+
 Exit code 4 applies regardless of `--trust-all-tools`.
 
 **⚠️ Warning:** Kiro can detect the missing agent after the turn has started. In that case, the built-in default agent may already have done some work, including tool calls, before the run stops with exit code 4. Any output already written to stdout stays there.

@@ -12,7 +12,13 @@ The `/knowledge` command provides persistent knowledge base functionality for Ki
 
 ### Enable knowledge feature
 
-Knowledge management is experimental and must be enabled before use:
+V3 enables knowledge by default. To turn it off, set `chat.enableKnowledge` to `false`:
+
+```bash
+kiro-cli settings chat.enableKnowledge false
+```
+
+In the V1 and V2 agent harnesses, knowledge is experimental and must be enabled before use:
 
 ```bash
 kiro-cli settings chat.enableKnowledge true

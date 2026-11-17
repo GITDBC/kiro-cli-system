@@ -50,7 +50,7 @@ Some tools aren't available on every surface or agent engine yet. CLI V3 has no 
 | `control_bash_process` / `control_pwsh_process` | ✓ | — | — | — | GA |
 | `get_process_output` | ✓ | — | — | — | GA |
 | `list_processes` | ✓ | — | — | — | GA |
-| `kiro_powers` | ✓ | — | ✓ | — | GA |
+| `kiro_powers` | ✓ | — | ✓ | ✓ | GA |
 | `createHook` | ✓ | ✓ | — | — | GA |
 | `code` | — | ✓ | — | — | GA |
 | `session` | — | 2.x | — | — | CLI 2.x only |
@@ -84,7 +84,7 @@ Common category mappings include:
 | `web` | web_fetch, remote_web_search |
 | `subagent` | Per-agent dispatch tools (displayed as `subagent/<agent>`) |
 
-Some built-ins are selected directly by tool ID rather than a category tag, including `knowledge` and `invoke_sub_agent`.
+Some built-ins have no category tag, including `knowledge` and `invoke_sub_agent`. Select them by tool ID, or with `@builtin` or `*`. `invoke_sub_agent` can start any agent, so an agent with `@builtin` or `*` in its `tools` can start any sub-agent.
 
 Special values:
 

@@ -330,7 +330,8 @@ entry point calls.
 
 ## Commit Messages
 
-Follow the `commit-message` skill. One logical change per commit.
+Use Conventional Commits (`type(scope): summary`, imperative mood, summary under 72
+characters). One logical change per commit.
 
 ## Documentation
 

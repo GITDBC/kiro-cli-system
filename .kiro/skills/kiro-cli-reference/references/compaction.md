@@ -24,6 +24,8 @@ When your conversation approaches the model's context limit, compaction triggers
 
 In V3 CLI sessions, the active response and Thinking indicator remain visible while automatic compaction runs. Prompts already queued continue automatically when compaction finishes.
 
+In Kiro CLI 3.1.0 or later, V3 sessions run `PreCompact` Hooks before compaction and `PostCompact` Hooks after it. A `PreCompact` Hook can refuse the compaction; a `PostCompact` Hook receives the summary. See [Hook types](https://kiro.dev/docs/hooks/types.md#pre-compaction).
+
 Your goals, decisions, file modifications, and stated constraints survive compaction. What gets compressed is intermediate output - tool call details, exploratory discussion, and resolved error messages.
 
 **💡 Tip:** If the agent seems to have lost a specific detail from earlier in the session, restate it. The agent will incorporate it immediately.
@@ -45,6 +47,8 @@ The agent continues immediately. It knows what's done, what's next, and what you
 | Key decisions and constraints | Code snippets in earlier messages |
 | Next steps | Error details from resolved issues |
 | Your stated intent and requirements | Exploratory discussion |
+
+In Kiro IDE 1.4.178 or later, Kiro tells the agent which loaded skills and steering files the summary dropped, and the agent reloads the ones you asked for. A skill or steering file of 30,000 characters or more loads in full when there is room for it after a summary, instead of as a shortened preview.
 
 ## Triggering compaction
 
@@ -71,14 +75,17 @@ Compaction is automatic on Mobile. There is no manual trigger.
 
 ## Configuration
 
-The CLI exposes two settings that control how much context is retained during compaction:
+The CLI exposes settings that control when automatic compaction starts and how much context is retained:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
+| `compaction.autoCompactionThreshold` | 80 | Context usage percentage at which automatic compaction starts in a V3 session (Kiro CLI 3.3.0 or later). A number from 0 to 100 with at most two decimal places |
 | `compaction.excludeMessages` | 2 | Minimum number of recent message pairs to retain verbatim |
 | `compaction.excludeContextWindowPercent` | 2 | Minimum percentage of the context window to keep as recent messages |
 
-Both settings are evaluated, and the more conservative (larger) value wins. This ensures enough recent context is always available for the agent to maintain continuity.
+The two exclusion settings are evaluated together, and the more conservative (larger) value wins. This ensures enough recent context is always available for the agent to maintain continuity.
+
+In Kiro CLI 3.3.0 or later, a V3 session can also set the threshold from `/settings`. Open **Compaction** to turn automatic compaction on or off, see the threshold the current session uses, and edit the **Global default**. The editor shows the range the agent harness accepts and its default; the value you save applies to the next session you start or load. `kiro-cli settings compaction.autoCompactionThreshold <value>` accepts 0 to 100, and an interactive session applies the range the agent harness advertises. A `compaction.autoCompactionThreshold` value in a workspace `.kiro/settings/cli.json` overrides the global default for that workspace. See [In-session settings](https://kiro.dev/docs/cli/chat/settings.md#compaction).
 
 ## Limitations
 

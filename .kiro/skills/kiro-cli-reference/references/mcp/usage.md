@@ -126,7 +126,7 @@ This format specifies both the server (`aws-docs`) and the tool (`search_documen
 
     See [Tool Search](https://kiro.dev/docs/mcp/tool-search.md) for V2 thresholds and how on-demand loading works.
 
-In Kiro Web, MCP tools are managed from the sandbox settings panel. Go to [Settings > Agent](https://app.kiro.dev/settings/agent) to configure which MCP servers are loaded into your sessions.
+In Kiro Web, MCP tools are managed from **Agent Config > Powers & MCP**. Go to [Powers & MCP](https://app.kiro.dev/settings/powers) to configure which MCP servers are loaded into your sessions.
 
 Tools from configured servers are available automatically - the agent can invoke them without additional setup. See [Sandbox > Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for configuration details.
 
@@ -271,7 +271,7 @@ For example, a documentation server might expose a template like `docs:///`. You
 
 ## MCP elicitation
 
-During tool execution, an MCP server may need additional information from you to complete its task. This is called [elicitation](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation). Rather than failing or guessing, the server pauses and asks you directly.
+During tool execution, an MCP server may need additional information from you to complete its task. This is called [elicitation](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation). Rather than failing or guessing, the server pauses and asks you directly. Kiro CLI supports elicitation in local V3 sessions starting with version 2.34.
 
 ### Form-based elicitation
 
@@ -347,4 +347,4 @@ If you encounter issues when using MCP tools:
 
 ---
 
-*For information on available MCP servers, see the [Server directory](https://kiro.dev/docs/mcp/servers.md) page.*
+*For information on available MCP servers, see the [MCP server directory](https://kiro.dev/mcp).*

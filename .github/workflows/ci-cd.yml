@@ -72,6 +72,8 @@ jobs:
           cache-dependency-glob: |
             tools/${{ matrix.tool }}/pyproject.toml
             tools/${{ matrix.tool }}/uv.lock
+            .kiro/skills/*/references/${{ matrix.tool }}/pyproject.toml
+            .kiro/skills/*/references/${{ matrix.tool }}/uv.lock
           cache-suffix: ${{ matrix.tool }}
 
       - name: Lint

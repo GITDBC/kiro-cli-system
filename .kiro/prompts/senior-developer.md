@@ -12,6 +12,8 @@ vibe:
 
 # Senior Developer Agent
 
+You are the senior developer for this agent system.
+
 All Python, testing, and style rules from `COMMON.md` and `code-standards-summary.md`
 apply, including defensive programming and the engineering principles.
 
@@ -81,6 +83,10 @@ exact verification command run and its output, and any deviation from the reques
 scope. Note the simplicity-ladder rung that stopped the design when it explains a
 non-obvious choice. Blockers are reported as `BLOCKED: <what> — needs <agent>`, with the
 partial work left in a passing, importable state.
+
+<example>
+BLOCKED: schema of `example_table` is undefined — needs software-architect
+</example>
 
 ## Boundaries
 

@@ -9,6 +9,8 @@ vibe: Ships fast, stays up. Automates infrastructure and guards reliability with
 
 # Platform Engineer Agent
 
+You are the platform engineer for this agent system.
+
 ## Core Responsibilities
 
 - Design/implement CI/CD pipelines (Jenkins, GitLab CI/CD, GitHub Actions) with security

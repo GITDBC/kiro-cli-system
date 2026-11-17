@@ -79,7 +79,7 @@ These foundation files are included in every interaction by default, forming the
 
     The agent automatically looks for steering files in the `.kiro/steering/` folder at the root of your repository. Create or edit project steering markdown files there, and the agent picks them up in every session.
 
-    To use personal steering in cloud sessions without committing it to the repository, upload it from **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit the cloud copy under **Settings > Steering**. Cloud steering applies across all your cloud sessions.
+    To use personal steering in cloud sessions without committing it to the repository, upload it from **Agent Config > Cloud Config** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit the cloud copy under **Agent Config > Steering**. Cloud steering applies across all your cloud sessions.
 
 ## Creating custom steering files
 
@@ -111,7 +111,7 @@ Extend Kiro's understanding with specialized guidance tailored to your project's
     2. Choose a descriptive filename (e.g., `api-standards.md`)
     3. Write your guidance using standard markdown syntax
 
-    For personal steering used by cloud sessions, upload files from **Settings > Sync** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit them under **Settings > Steering**.
+    For personal steering used by cloud sessions, upload files from **Agent Config > Cloud Config** in [Kiro Web](https://app.kiro.dev/settings/cloud-config), then create or edit them under **Agent Config > Steering**.
 
     The agent picks up new steering files automatically in subsequent sessions.
 

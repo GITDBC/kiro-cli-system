@@ -44,7 +44,9 @@ kiro-cli settings --global chat.defaultAgent default
 kiro-cli settings --workspace chat.defaultAgent my-project-agent
 ```
 
-When both scopes define a workspace-overridable setting, the workspace value takes precedence in that project's terminal UI sessions. Delete the workspace value to reveal the global value again. Some settings are global-only — including `chat.uiMode` — and cannot be overridden per workspace.
+When both scopes define a workspace-overridable setting, the workspace value takes precedence in that project's terminal UI sessions. Delete the workspace value to reveal the global value again. Some settings are global-only — including `chat.agentEngine`, `chat.uiMode`, and `chat.terminalTitle` — and cannot be overridden per workspace.
+
+In Kiro CLI 3.1.0 or later on macOS and Linux, a root-owned file named by the `KIRO_DEFAULT_SETTINGS` environment variable supplies defaults below both scopes. Any value in your global or workspace `cli.json` overrides it. See [Environment variables](#environment-variables).
 
 ### Output formats
 
@@ -61,6 +63,8 @@ kiro-cli settings list --format json-pretty
 
 ## Settings reference
 
+**ℹ️ Info:** Settings marked **classic only** configured the Classic interface. In Kiro CLI 3.0.0 or later, Classic no longer runs for interactive chat, so these settings have no effect in a terminal UI session. See [If a launch still selects Classic](https://kiro.dev/docs/cli/agent-harness.md#if-a-launch-still-selects-classic).
+
 ### Telemetry and privacy
 
 | Setting | Type | Description | Example |
@@ -74,6 +78,7 @@ kiro-cli settings list --format json-pretty
 |---------|------|-------------|---------|
 | `chat.defaultModel` | string | Default AI model for conversations | `kiro-cli settings chat.defaultModel "claude-sonnet-4.6"` |
 | `chat.defaultAgent` | string | Default agent configuration | `kiro-cli settings chat.defaultAgent "my-agent"` |
+| `chat.agentEngine` | string | Agent harness for `kiro-cli` and `kiro-cli chat`: `v3`, `v2`, or `v1`. In Kiro CLI 3.0.0 or later, unset starts V3 for interactive chat on a machine that can run it; `v1` selected the retired Classic interface and now opens the Classic upgrade prompt. The `--v3`, `--v2`, and `--agent-engine` flags override it for one run. Global only; a workspace's `.kiro/settings/cli.json` cannot override it. Does not apply to `kiro-cli acp`. See [Choose an agent harness](https://kiro.dev/docs/cli/agent-harness.md) | `kiro-cli settings chat.agentEngine v2` |
 | `chat.diffTool` | string | External diff tool for viewing code changes (classic only) | `kiro-cli settings chat.diffTool "delta"` |
 | `chat.greeting.enabled` | boolean | Show greeting message on chat start | `kiro-cli settings chat.greeting.enabled false` |
 | `chat.editMode` | boolean | Enable Vi edit mode (classic only) | `kiro-cli settings chat.editMode true` |
@@ -82,17 +87,18 @@ kiro-cli settings list --format json-pretty
 | `chat.disableMarkdownRendering` | boolean | Disable markdown formatting (classic only) | `kiro-cli settings chat.disableMarkdownRendering false` |
 | `chat.disableWrap` | boolean | Emit chat output without hard line breaks for clean copy-paste; terminal soft-wrap still applies. | `kiro-cli settings chat.disableWrap true` |
 | `chat.disableAutoCompaction` | boolean | Disable automatic conversation summarization | `kiro-cli settings chat.disableAutoCompaction true` |
+| `compaction.autoCompactionThreshold` | number | Context usage percentage at which automatic compaction starts in a V3 session (Kiro CLI 3.3.0 or later). `kiro-cli settings` accepts 0 to 100 with at most two decimal places; interactive sessions apply the range the agent harness advertises | `kiro-cli settings compaction.autoCompactionThreshold 70` |
 | `compaction.excludeMessages` | number | Minimum message pairs to retain during compaction | `kiro-cli settings compaction.excludeMessages 2` |
 | `compaction.excludeContextWindowPercent` | number | Minimum % of context window to retain during compaction | `kiro-cli settings compaction.excludeContextWindowPercent 2` |
 | `chat.enablePromptHints` | boolean | Show startup hints with tips and shortcuts (v1.26.0+, default: true) | `kiro-cli settings chat.enablePromptHints false` |
 | `chat.enableHistoryHints` | boolean | Show conversation history hints (classic only) | `kiro-cli settings chat.enableHistoryHints true` |
-| `chat.uiMode` | string | UI mode: `structured` for classic sessions or `tui` for public modern sessions; `lite` is not generally available | `kiro-cli settings chat.uiMode "tui"` |
+| `chat.uiMode` | string | Legacy message-rendering mode: `tui` (default) renders terminal UI messages; `structured` shaped Classic output and has no effect in Kiro CLI 3.0.0 or later. This setting does not choose the interface or the harness | `kiro-cli settings chat.uiMode "tui"` |
 | `chat.historyMode` | string | Prompt history scope: `session` (per-session, default) or `global` (shared across sessions). Set via `/settings history`; applies on next session | `kiro-cli settings chat.historyMode global` |
 | `chat.sessionDashboard.scope` | string | V3 `/sessions` directory scope: `current` lists sessions from the current directory, `all` lists every workspace (default: `current`). Kiro updates it when you toggle the `current workspace only` filter | `kiro-cli settings chat.sessionDashboard.scope all` |
 | `chat.sessionDashboard.indexResponses` | boolean | `/sessions` search scope: `true` for **Prompts and agent responses**, `false` for **Prompts only** (default: `true`). Titles and your prompts are always indexed and tool output never is. Set via `/settings` → **Session search** | `kiro-cli settings chat.sessionDashboard.indexResponses false` |
-| `chat.ui` | string | Terminal UI implementation: `tui` (default) or `classic` | `kiro-cli settings chat.ui "classic"` |
+| `chat.ui` | string | Interface: `tui` (default) or `classic`. In Kiro CLI 3.0.0 or later, `classic` no longer runs for interactive chat; a launch that selects it is offered V3 instead | `kiro-cli settings chat.ui "tui"` |
 | `chat.disableGranularTrust` | boolean | Disable tiered trust options for tool approvals (terminal UI only) | `kiro-cli settings chat.disableGranularTrust true` |
-| `chat.autoExpandToolOutput` | boolean | Auto-expand tool output instead of collapsed previews. File-write cards otherwise show up to 40 diff rows; press `Ctrl+O` or enable this setting to reveal the complete diff while it continues updating | `kiro-cli settings chat.autoExpandToolOutput true` |
+| `chat.autoExpandToolOutput` | boolean | Auto-expand tool output instead of collapsed previews. File-write cards otherwise show up to 40 diff rows; press `Ctrl+O` or enable this setting to reveal the complete diff while it continues updating. In Kiro CLI 3.2.1 or later, a file-write card waiting for approval always shows the complete diff; for finished writes, an output line cap set above 40 in `/settings output-details` raises the row limit | `kiro-cli settings chat.autoExpandToolOutput true` |
 | `chat.modelDefaults` | object | Per-model default settings (e.g., effort level) that apply across new sessions | See [Effort](https://kiro.dev/docs/models/effort.md) |
 | `chat.enableContextUsageIndicator` | boolean | Show context usage percentage in prompt (classic only) | `kiro-cli settings chat.enableContextUsageIndicator true` |
 
@@ -108,11 +114,12 @@ These settings control how the terminal UI renders output. You can toggle animat
 | `chat.allowAnimations` | boolean | `true` | Animated spinners and shimmers. When `false`, indicators show static frames | `kiro-cli settings chat.allowAnimations false` |
 | `chat.allowAsciiArt` | boolean | `true` | Unicode/braille symbols and box-drawing. When `false`, falls back to plain ASCII | `kiro-cli settings chat.allowAsciiArt false` |
 | `chat.allowIcons` | boolean | `true` | Status indicator icons (●, ○, ⚠). When `false`, uses text-only labels | `kiro-cli settings chat.allowIcons false` |
-| `chat.showThinking` | boolean | `true` | Show the agent's reasoning (thinking) blocks in chat output (v2.5.0+). Startup-only | `kiro-cli settings chat.showThinking false` |
+| `chat.showThinking` | string | `expanded` | How the agent's reasoning (thinking) blocks appear in chat output (v2.5.0+): `expanded`, `collapsed`, or `off`; `true` and `false` still mean `collapsed` and `off`. A command-line change applies at the next session start. In Kiro CLI 3.2.1 or later, the **Thinking** row in `/settings output-details` writes this key and applies in the current session | `kiro-cli settings chat.showThinking off` |
+| `chat.terminalTitle` | boolean | `false` | Set the terminal window title: a name given with `/title`, else the session's title, else the workspace folder name. In Kiro CLI 2.33 or later, a V3 session shows its session title; before 2.33, a V3 session fell back to the workspace folder name. Global only; also toggled from `/settings display` → **Terminal title** | `kiro-cli settings chat.terminalTitle true` |
 | `chat.preserveScrollback` | boolean | `true` | Preserve terminal history when the interface redraws. Set to `false` to restore clear-and-repaint behavior | `kiro-cli settings chat.preserveScrollback false` |
 | `chat.screenReader` | string | `auto` | Full terminal UI screen reader support: `auto`, `on`, or `off`. `auto` turns on only when VoiceOver is detected on a local Mac. Global only. When active, IME input may move. See [Screen reader support](https://kiro.dev/docs/cli/chat/settings.md#screen-reader-support) | `kiro-cli settings chat.screenReader on` |
 
-**ℹ️ Info:** Setting the `KIRO_ASCII_MODE=1` environment variable forces ASCII mode regardless of `chat.allowAsciiArt`. See [Thinking display](https://kiro.dev/docs/cli/chat/settings.md#thinking-display) for more on `chat.showThinking`. The terminal title feature is toggled from `/settings display` → **Terminal title** (not available as a CLI setting).
+**ℹ️ Info:** Setting the `KIRO_ASCII_MODE=1` environment variable forces ASCII mode regardless of `chat.allowAsciiArt`. See [Thinking display](https://kiro.dev/docs/cli/chat/settings.md#thinking-display) for more on `chat.showThinking`. The **Terminal title** toggle in `/settings display` writes `chat.terminalTitle`; see [In-session settings](https://kiro.dev/docs/cli/chat/settings.md#settings-display) for the toggle.
 
 ### Busy indicators
 
@@ -153,7 +160,7 @@ Use `append` to add your verbs to Kiro's built-in pool. Use `replace` to use onl
 | `knowledge.chunkOverlap` | number | Overlap between text chunks | `kiro-cli settings knowledge.chunkOverlap 50` |
 | `knowledge.indexType` | string | Type of knowledge index | `kiro-cli settings knowledge.indexType "fast"` |
 
-**ℹ️ Info:** V3 enables knowledge and code intelligence by default. Set `chat.enableKnowledge` or `chat.enableCodeIntelligence` to `false` to turn either tool off. The V1 and V2 engines keep their existing knowledge behavior.
+**ℹ️ Info:** V3 enables knowledge and code intelligence by default. Set `chat.enableKnowledge` or `chat.enableCodeIntelligence` to `false` to turn either tool off. The V1 and V2 agent harnesses keep their existing knowledge behavior.
 
 ### Key bindings (classic only)
 
@@ -168,13 +175,14 @@ These key bindings apply to the classic interface only and have no effect in the
 
 ### Key bindings (terminal UI)
 
-Override the terminal UI shortcuts for cancelling a response, closing overlay menus, and quitting the session. Values use `ctrl+`, `shift+`, and `alt+`/`meta+` modifiers with a single key (for example `ctrl+shift+q`, `esc`). Invalid values fall back to the built-in default.
+Override the terminal UI shortcuts for cancelling a response, closing overlay menus, quitting the session, and opening the diagram viewer. Values use `ctrl+`, `shift+`, and `alt+`/`meta+` modifiers with a single key (for example `ctrl+shift+q`, `esc`). Invalid values fall back to the built-in default.
 
 | Setting | Type | Default | Description | Example |
 |---------|------|---------|-------------|---------|
 | `chat.keybindings.cancelStream` | string | `esc` | Cancel the current agent response while it streams | `kiro-cli settings chat.keybindings.cancelStream "ctrl+x"` |
 | `chat.keybindings.closeMenu` | string | `esc` | Close overlay panels and pickers | `kiro-cli settings chat.keybindings.closeMenu "ctrl+["` |
 | `chat.keybindings.quit` | string | `ctrl+c` | Exit the chat session | `kiro-cli settings chat.keybindings.quit "ctrl+shift+q"` |
+| `chat.keybindings.viewDiagram` | string | `ctrl+]` | Open a Mermaid diagram too wide for the terminal on its own screen (Kiro CLI 3.2.0 or later) | `kiro-cli settings chat.keybindings.viewDiagram "ctrl+shift+d"` |
 
 ### Tool Search
 
@@ -196,9 +204,12 @@ V3 loads MCP tools on demand by default. It reads saved `toolSearch.*` values in
 | `chat.enableTodoList` | boolean | Enable the todo list feature in Classic; V3 does not provide `todo_list`, so this setting has no effect there | `kiro-cli settings chat.enableTodoList true` |
 | `chat.enableCheckpoint` | boolean | Enable checkpoint feature (classic only) | `kiro-cli settings chat.enableCheckpoint true` |
 | `chat.enableDelegate` | boolean | Enable delegate tool (classic only) | `kiro-cli settings chat.enableDelegate true` |
-| `chat.enableWorkflows` | boolean | Enable declarative workflows when available for your account; restart Kiro CLI after changing it | `kiro-cli settings chat.enableWorkflows true` |
-| `chat.enableMainAgentSubagentTool` | boolean | Keep direct main-chat sub-agent delegation when Workflows are enabled in V3 (default: `true`); set to `false` to delegate from main chat only through Workflows | `kiro-cli settings chat.enableMainAgentSubagentTool false` |
+| `chat.enableWorkflows` | boolean | Enable declarative [Workflows](https://kiro.dev/docs/workflows.md) in V3 sessions; restart Kiro CLI after changing it | `kiro-cli settings chat.enableWorkflows true` |
+| `chat.workflowLaunch` | string | Choose when V3 starts Workflows: `when-asked` (default), `large-tasks`, or `delegate-all` | `kiro-cli settings chat.workflowLaunch large-tasks` |
+| `chat.enableSessionRecap` | boolean | Show a session recap above the prompt in a V3 session (Kiro CLI 3.1.0 or later). Off by default; start a new session after changing it. When enabled, Kiro makes one extra billed model call after each completed turn, and the full terminal UI displays the recap after three idle seconds. Lite mode does not display it, but the call still runs. See [Session recap](https://kiro.dev/docs/cli/chat/settings.md#settings-features) | `kiro-cli settings chat.enableSessionRecap true` |
+| `chat.enableAutoAgentUpgrade` | boolean | Upgrade V2-format agents in the scanned agent directories to the V3 format when a V3 session starts. In Kiro CLI 2.37 or later, unset means on; an explicit `false` turns it off, and interactive V3 launches then show a notice while any agents still need upgrading. Global only; a workspace's `.kiro/settings/cli.json` cannot override it | `kiro-cli settings chat.enableAutoAgentUpgrade false` |
 | `app.disableAutoupdates` | boolean | Disable background auto-updates | `kiro-cli settings app.disableAutoupdates true` |
+| `app.warnOnElevatedPrivileges` | boolean | Show a warning when Kiro CLI starts as root (macOS and Linux) or as Administrator (Windows). This setting is on by default and is global; a workspace's `.kiro/settings/cli.json` cannot override it | `kiro-cli settings app.warnOnElevatedPrivileges false` |
 
 ### API and service
 
@@ -218,6 +229,12 @@ Transient request failures — throttling, 5xx errors, and connection drops (inc
 | `mcp.initTimeout` | number | MCP server initialization timeout in milliseconds (default `5000`) | `kiro-cli settings mcp.initTimeout 10000` |
 | `mcp.noInteractiveTimeout` | number | MCP initialization timeout in milliseconds for non-interactive runs (default `30000`) | `kiro-cli settings mcp.noInteractiveTimeout 60000` |
 | `mcp.loadedBefore` | boolean | Track previously loaded MCP servers | `kiro-cli settings mcp.loadedBefore true` |
+
+### Agent Client Protocol (ACP)
+
+| Setting | Type | Description | Example |
+|---------|------|-------------|---------|
+| `acp.agentEngine` | string | Agent harness for `kiro-cli acp`: `v3`, `v2`, or `v1` (Kiro CLI 2.36 or later). The `--agent-engine` flag overrides it. In Kiro CLI 3.0.0 or later, unset starts V3 on a machine that can run it, unless the launch line carries a V2-only flag or Kiro recognizes the client as one that still needs V2. Global only; a workspace's `.kiro/settings/cli.json` cannot override it. `chat.agentEngine` does not apply to `kiro-cli acp`. See [ACP clients](https://kiro.dev/docs/cli/agent-harness.md#acp-clients) | `kiro-cli settings acp.agentEngine v3` |
 
 ## Common configuration examples
 
@@ -350,10 +367,10 @@ You can edit this file directly, but using `kiro-cli settings` commands is recom
 | Variable | Description |
 |----------|-------------|
 | `KIRO_HOME` | Set an absolute path to keep separate Kiro profiles, such as work and personal. In V3, it overrides the global Kiro directory for configuration, sign-ins, sessions, and agent state. A filesystem root, your home directory, one of its ancestors, or a relative path falls back to `~/.kiro`. |
+| `KIRO_DEFAULT_SETTINGS` | Absolute path to a file of default settings (Kiro CLI 3.1.0 or later, macOS and Linux). The file must be a regular file owned by root, not writable by group or others, 1 MiB or smaller, and contain a JSON object. Its values form the lowest settings layer; `~/.kiro/settings/cli.json` and workspace settings override them. `kiro-cli settings` and `/settings` name the file as the source of a value that comes from it, and `kiro-cli settings` cannot set or remove values in it. If the path is relative or the file fails a check, Kiro shows one warning and ignores the file. |
 | `KIRO_LOG_NO_COLOR` | Set to `1` to disable colored log output |
 | `NO_COLOR` | Set to any value to disable all color output in the terminal UI |
 | `KIRO_SCREEN_READER` | Set to `auto`, `on`, or `off` to override `chat.screenReader` for one launch |
-| `KIRO_ACP_RECORD_PATH` | Path to a JSONL file for recording TUI ACP wire traffic. Useful for debugging agent communication protocol issues. |
 | `KIRO_CLI_TOOL_SEARCH_MATCHING_THRESHOLD` | Minimum relevance score for V2 Tool Search keyword results (default: `1.5`) |
 
 ## Next steps

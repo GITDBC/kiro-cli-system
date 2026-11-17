@@ -1,106 +1,29 @@
 """
 Checks over the quality of the instruction artifacts themselves.
 
-Each check encodes one documented Claude prompting anti-pattern whose
-source page is vendored under
-``.kiro/skills/claude-prompting-reference/references/``:
+The remaining check encodes one documented agent-prompt practice: an
+agent prompt with no stated boundary invites out-of-scope work.
+The orchestrator prompt already publishes a ``never_when`` list per
+routable agent in its Routing Rules; an agent's own prompt is what that
+agent actually loads, so the boundary has to be there too.
 
-- Severity filtering in a review prompt lowers recall: the model
-  investigates just as deeply, then withholds findings below the stated
-  bar (``prompting-claude-sonnet-5.md``, ``prompting-claude-opus-5.md``,
-  ``prompting-claude-opus-4-8.md``). The 5.5 guides
-  (``prompting-claude-opus-5-5.md``, ``prompting-claude-sonnet-5-5.md``)
-  do not restate the claim, so the 5.0 pages remain the citation.
-- An agent prompt with no stated boundary invites out-of-scope work.
-  routing.md already publishes a ``never_when`` list per routable agent;
-  the prompt is what the agent actually loads, so the boundary has to be
-  there too.
-
-These are deterministic checks run by a tool, and that is the point. The
-same guidance says to delete prompt-level instructions that tell a model
-to re-verify its own output, and names an external check as the
-substitute. No check in this module adds text to any prompt; each one
-only reads.
+The check is deterministic and run by a tool, and that is the point:
+it adds no text to any prompt and only reads.
 """
 
 # Standard libraries
 import re
-from collections.abc import Iterator
 from pathlib import Path
 from typing import Final
 
 # Own modules
-from driftcheck.checks.skills import stale_allowlist_findings
 from driftcheck.paths import read_text
 from driftcheck.types import DriftContext, Finding, Severity
 
-SECTION_SEVERITY_FILTERING: Final[str] = "Review recall suppression"
 SECTION_PROMPT_BOUNDARIES: Final[str] = "Agent prompt scope statements"
 
-# Skills whose body asks an agent to enumerate findings and report them.
-# The recall anti-pattern only bites on that shape, so the surface is an
-# allowlist rather than every skill: "Be conservative with
-# interpretation" in a statistics reference is sound advice about
-# reading a p-value, not an instruction to withhold findings, and a
-# check that flagged it would be switched off within a week. The
-# allowlist is validated for staleness like DIRECT_INVOKE_SKILLS, so an
-# entry naming a deleted skill cannot sit here silently.
-REVIEW_ORIENTED_SKILLS: Final[frozenset[str]] = frozenset(
-    {
-        "reviewing-code",
-        "security-audit",
-    }
-)
-
-# Instructions that set a reporting floor by severity. Scoped to the
-# reporting verbs (report, flag, emit) on purpose: "Fix Critical and
-# High findings" is a *fixing* budget, which is legitimate and is what
-# reviewing-code Step 2 says, while "only report high-severity issues"
-# suppresses the findings table itself. Verbs such as "surface" and
-# "list" were dropped after they matched ordinary prose ("they only
-# surface if actively searched for", "a V3-only surface").
-SEVERITY_FILTERS: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
-    ("only-report", re.compile(r"\bonly\s+(?:report|flag|emit)\b", re.IGNORECASE)),
-    (
-        "report-only-severe",
-        re.compile(
-            r"\b(?:report|flag|emit)\s+only\s+(?:the\s+)?"
-            r"(?:critical|high|high-severity|severe|major|important|significant)",
-            re.IGNORECASE,
-        ),
-    ),
-    ("be-conservative", re.compile(r"\bbe\s+conservative\b", re.IGNORECASE)),
-    (
-        "no-nitpicking",
-        re.compile(r"\b(?:do\s+not|don'?t|avoid|no)\s+nitpick", re.IGNORECASE),
-    ),
-    (
-        "suppress-minor",
-        re.compile(
-            r"\b(?:skip|ignore|omit|suppress)\s+(?:the\s+)?"
-            r"(?:minor|low-severity|low\s+severity|trivial|cosmetic|nitpick)",
-            re.IGNORECASE,
-        ),
-    ),
-)
-
-# What turns a severity instruction from a recall leak into a governed
-# threshold: an explicit emission bar, a calibration document the
-# severities are anchored in, or Anthropic's own remedy of reporting
-# everything and filtering downstream. Presence anywhere in the same
-# artifact group (a skill plus its references, or one prompt file)
-# exempts that group — the bar does not have to sit on the same line as
-# the instruction it governs.
-CONCRETE_BAR_MARKERS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"\bfinding bar\b", re.IGNORECASE),
-    re.compile(r"finding-calibration\.md"),
-    re.compile(r"\breport everything\b", re.IGNORECASE),
-    re.compile(
-        r"\bfilter\s+(?:it\s+|them\s+)?in\s+a\s+separate\s+pass\b", re.IGNORECASE
-    ),
-)
-
-# A routing-YAML agent entry in routing.md ("      - id: code-reviewer").
+# A routing-YAML agent entry in the orchestrator prompt
+# ("      - id: code-reviewer").
 # Every such entry carries a never_when list, which is the boundary this
 # check expects the agent's own prompt to mirror. The orchestrator has
 # no entry because it is not a delegation target, so its prompt is not
@@ -120,130 +43,13 @@ BOUNDARY_HEADING: Final[re.Pattern[str]] = re.compile(
 FILE_URI_PREFIX: Final[str] = "file://"
 
 
-def check_severity_filtering(ctx: DriftContext) -> list[Finding]:
-    """
-    Flag severity-filtering instructions in review-oriented artifacts.
-
-    An instruction such as "only report high-severity issues" is
-    followed literally by Claude Sonnet 5 and Opus 5: the model does the
-    same depth of investigation and then withholds the findings it
-    judges below the bar, so measured recall drops while the underlying
-    bug-finding ability is unchanged. The instruction is only a problem
-    when nothing defines the bar, so a group carrying an explicit
-    finding bar or a calibration reference is exempt.
-
-    Args:
-        ctx: Shared check context.
-
-    Returns:
-        A warning per unmitigated instruction, plus a trailing OK.
-    """
-    findings: list[Finding] = []
-    for group in _review_surfaces(ctx):
-        if _has_concrete_bar(group):
-            continue
-        findings.extend(
-            Finding(
-                Severity.WARNING,
-                SECTION_SEVERITY_FILTERING,
-                f"{path.relative_to(ctx.root)}:{number} filters findings by "
-                f"severity ({label}: {snippet!r}) with no concrete finding bar "
-                "or calibration reference — Claude Sonnet 5 / Opus 5 follow "
-                "such a bar literally and stop reporting below it, lowering "
-                "review recall",
-            )
-            for path, number, label, snippet in _filtering_matches(group)
-        )
-    findings.extend(
-        stale_allowlist_findings(
-            ctx,
-            SECTION_SEVERITY_FILTERING,
-            "REVIEW_ORIENTED_SKILLS",
-            REVIEW_ORIENTED_SKILLS,
-        )
-    )
-    findings.append(
-        Finding(
-            Severity.OK, SECTION_SEVERITY_FILTERING, "Review recall suppression checked"
-        )
-    )
-    return findings
-
-
-def _review_surfaces(ctx: DriftContext) -> Iterator[tuple[Path, ...]]:
-    """
-    Iterate the artifact groups the recall anti-pattern applies to.
-
-    A group is evaluated as a unit because the mitigation and the
-    instruction it governs need not live in the same file: an allowlisted
-    skill contributes its SKILL.md plus every reference file, and each
-    agent prompt is a group of its own. Prompts need no allowlist —
-    every agent prompt is a plausible place for a reporting instruction,
-    and the patterns were calibrated against all of them.
-
-    Args:
-        ctx: Shared check context.
-
-    Yields:
-        The existing files of each group, in a stable order.
-    """
-    for skill in sorted(REVIEW_ORIENTED_SKILLS):
-        skill_dir = ctx.skills_dir / skill
-        if not skill_dir.is_dir():
-            continue
-        candidates = [
-            skill_dir / "SKILL.md",
-            *sorted((skill_dir / "references").rglob("*.md")),
-        ]
-        group = tuple(path for path in candidates if path.is_file())
-        if group:
-            yield group
-    if ctx.prompts_dir.is_dir():
-        for prompt in sorted(ctx.prompts_dir.glob("*.md")):
-            yield (prompt,)
-
-
-def _has_concrete_bar(group: tuple[Path, ...]) -> bool:
-    """
-    Report whether a group defines the bar its severities refer to.
-
-    Args:
-        group: Files forming one artifact group.
-
-    Returns:
-        True when any marker appears anywhere in the group.
-    """
-    text = "\n".join(read_text(path) for path in group)
-    return any(marker.search(text) is not None for marker in CONCRETE_BAR_MARKERS)
-
-
-def _filtering_matches(
-    group: tuple[Path, ...],
-) -> Iterator[tuple[Path, int, str, str]]:
-    """
-    Locate every severity-filtering instruction inside a group.
-
-    Args:
-        group: Files forming one artifact group.
-
-    Yields:
-        The file, 1-based line number, pattern label and matched text.
-    """
-    for path in group:
-        for number, line in enumerate(read_text(path).splitlines(), start=1):
-            for label, pattern in SEVERITY_FILTERS:
-                match = pattern.search(line)
-                if match is not None:
-                    yield path, number, label, match.group(0)
-
-
 def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
     """
     Verify every routable agent's prompt states its own boundaries.
 
-    routing.md publishes a ``never_when`` list per routable agent, but
-    routing lives with the orchestrator while the prompt is what the
-    specialist itself loads. Without the boundary in the prompt, an
+    The orchestrator prompt publishes a ``never_when`` list per routable
+    agent, but routing lives with the orchestrator while the specialist
+    loads its own prompt. Without the boundary in the prompt, an
     agent invoked directly — or handed a task that drifted during a
     workflow — has nothing telling it to hand the work back.
 
@@ -259,7 +65,7 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
         OK finding.
     """
     findings: list[Finding] = []
-    for slug in sorted(_routable_agents(read_text(ctx.routing_md))):
+    for slug in sorted(_routable_agents(read_text(ctx.orchestrator_prompt))):
         prompt = _prompt_path(ctx, slug)
         if prompt is None:
             continue
@@ -270,7 +76,7 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
                 Severity.WARNING,
                 SECTION_PROMPT_BOUNDARIES,
                 f"{prompt.relative_to(ctx.root)} has no boundary section — "
-                f"routing.md declares never_when entries for '{slug}' that the "
+                f"orchestrator.md declares never_when entries for '{slug}' that the "
                 "prompt never states, so the agent itself cannot tell when to "
                 "hand work back",
             )
@@ -285,17 +91,17 @@ def check_prompt_boundaries(ctx: DriftContext) -> list[Finding]:
     return findings
 
 
-def _routable_agents(routing_md: str) -> set[str]:
+def _routable_agents(prompt_text: str) -> set[str]:
     """
     Collect the agent slugs the routing YAML declares.
 
     Args:
-        routing_md: Full routing.md text.
+        prompt_text: Full orchestrator prompt text.
 
     Returns:
         Every slug appearing as a routing-YAML ``- id:`` entry.
     """
-    return {match.group("slug") for match in ROUTABLE_AGENT.finditer(routing_md)}
+    return {match.group("slug") for match in ROUTABLE_AGENT.finditer(prompt_text)}
 
 
 def _prompt_path(ctx: DriftContext, slug: str) -> Path | None:

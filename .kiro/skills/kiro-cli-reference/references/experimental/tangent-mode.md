@@ -8,7 +8,7 @@
 
 Tangent mode creates conversation checkpoints, allowing you to explore side topics without disrupting your main conversation flow. Enter tangent mode, ask questions or explore ideas, then return to your original conversation exactly where you left off.
 
-**ℹ️ Info:** In CLI V3 (`kiro-cli --v3`), tangent graduates into named, nestable side-conversations with a visual picker. See [Tangent (CLI V3)](https://kiro.dev/docs/cli/v3/tangent.md).
+**ℹ️ Info:** In a V3 session, tangent graduates into named, nestable side-conversations with a visual picker. See [Tangent](https://kiro.dev/docs/cli/chat/tangent.md).
 
 ## Enabling tangent mode
 

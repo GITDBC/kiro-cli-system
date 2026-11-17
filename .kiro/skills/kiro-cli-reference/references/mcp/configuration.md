@@ -61,10 +61,12 @@ MCP configuration files use JSON format with the following structure:
 | `headers` | Object | No | Headers to pass to the MCP server during connection |
 | `env` | Object | No | Environment variables for the server process |
 | `oauth` | Object | No | OAuth configuration for servers that require authentication (see [OAuth configuration](#oauth-configuration)) |
-| `oauthScopes` | Array | No | OAuth scopes to request (fallback; overridden by `oauth.oauthScopes` if both are set) |
+| `oauthScopes` | Array | No | OAuth scopes to request. See [Scopes](#scopes) for which value Kiro uses when `oauth.oauthScopes` is also set |
 | `disabled` | Boolean | No | Whether the server is disabled (default: false) |
 | `autoApprove` | Array | No | Tool names to auto-approve without prompting (use `"*"` to auto-approve all tools) |
 | `disabledTools` | Array | No | Tool names to omit when calling the Agent |
+
+In Kiro CLI, both server types also accept `timeout`, the connection timeout in milliseconds; see the [agent configuration reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#mcpservers-field). Kiro CLI V2 sessions also accept the spelling `timeoutMs`. In Kiro CLI 3.4.0 or later, V3 sessions accept `timeoutMs` too; when both are set, `timeout` wins and `timeoutMs` has no effect. To confirm the value applies, set `"timeoutMs": 1` on a slow local server in a V3 session; `/mcp` shows that it failed to start within the timeout.
 
 ## Configuration locations
 
@@ -136,6 +138,8 @@ MCP configuration files use JSON format with the following structure:
     kiro-cli mcp add --name git-server --agent rust-dev
     ```
 
+    This grants the server to the named agent, including an agent whose `tools` list does not already include it. When `chat.enableAutoAgentUpgrade` is on, it also upgrades the agent file for V3.
+
     ### Viewing loaded servers
 
     To verify your configuration, check which MCP servers are currently loaded in an interactive chat session:
@@ -148,7 +152,7 @@ MCP configuration files use JSON format with the following structure:
 
     Kiro Web loads local MCP servers from `.kiro/settings/mcp.json` in your repository. You can edit that JSON file in your repository or configure servers from the Kiro Web settings panel. See [Powers and MCP](https://kiro.dev/docs/web/sandbox/mcp.md) for complete Web-specific configuration details.
 
-    1. Add local server definitions to `.kiro/settings/mcp.json` in your repository, or open the sandbox MCP server settings in Kiro Web ([Settings](https://app.kiro.dev/settings/agent) > **Agent** tab > **MCP server settings**)
+    1. Add local server definitions to `.kiro/settings/mcp.json` in your repository, or open the sandbox MCP server settings in Kiro Web ([Agent Config > Powers & MCP](https://app.kiro.dev/settings/powers) > **MCP server settings**)
     2. In the settings panel, click **Add server**
     3. Enter the server name, type, and command
 
@@ -312,6 +316,9 @@ IDE
 
 Remote MCP servers that require OAuth authentication are supported. Kiro handles the browser-based OAuth flow automatically when connecting to an OAuth-protected server.
 
+**ℹ️ Info:** OAuth for MCP servers you configure yourself works in the IDE and CLI. Kiro Web and Kiro Mobile sessions don't use the `oauth` settings below; connect remote servers there with headers, or install a [Power](https://kiro.dev/docs/web/sandbox/mcp.md#power-authentication-oauth) that supports OAuth.
+
+
 ```json
 {
   "mcpServers": {
@@ -368,11 +375,11 @@ To use this configuration, register an OAuth app in the Figma Developer Console.
 | `oauth.clientSecret` | String | No | Client secret for servers that require one. Only meaningful alongside `clientId`. |
 | `oauth.redirectUri` | String | No | Custom loopback redirect URI for the OAuth callback. See [redirect URI formats](#redirect-uri-formats) below. |
 | `oauth.clientMetadataUrl` | String | No | HTTPS URL of a hosted Client ID Metadata Document. When set, Kiro authenticates as that URL instead of registering a client. See [Client ID Metadata Documents](#client-id-metadata-documents-cimd) below. |
-| `oauth.oauthScopes` | Array | No | OAuth scopes to request from the authorization server. Takes priority over top-level `oauthScopes`. |
+| `oauth.oauthScopes` | Array | No | OAuth scopes to request from the authorization server. See [Scopes](#scopes) for which value Kiro uses when top-level `oauthScopes` is also set. |
 
 #### How it works
 
-- **No `clientId` or `clientMetadataUrl` set** - Kiro attempts Dynamic Client Registration with the server. If DCR fails, it falls back to a default client configuration.
+- **No `clientId` or `clientMetadataUrl` set** - Kiro attempts Dynamic Client Registration with the server. If DCR fails, it falls back to a default client configuration. In Kiro CLI 3.2.0 or later and Kiro IDE 1.4.178 or later, when the authorization server supports Client ID Metadata Documents and offers no registration endpoint, Kiro signs in with its own hosted document instead. See [Client ID Metadata Documents](#client-id-metadata-documents-cimd) below.
 - **`clientId` set (without `clientSecret`)** - Kiro skips DCR and authenticates as a public OAuth client using your registered client ID.
 - **`clientId` and `clientSecret` both set (CLI only)** - Kiro skips DCR and authenticates as a confidential client, sending the secret to the token endpoint. This is required for servers like Figma that issue tokens only to confidential clients.
 - **`clientMetadataUrl` set (without `clientId`)** - Kiro skips DCR and presents the metadata document URL as its client identity, when the authorization server supports it. See [Client ID Metadata Documents](#client-id-metadata-documents-cimd) below.
@@ -416,6 +423,8 @@ If you host a [Client ID Metadata Document](https://datatracker.ietf.org/doc/htm
 
 Do not set both `clientMetadataUrl` and `clientId`. When a `clientId` is present, Kiro uses it and never consults `clientMetadataUrl`.
 
+In Kiro CLI 3.2.0 or later and Kiro IDE 1.4.178 or later, you need no `oauth` block for a server whose authorization server supports Client ID Metadata Documents and offers no registration endpoint, such as Tableau's hosted MCP. Kiro signs in with its own hosted document, `https://kiro.dev/oauth/client-metadata.json`, whose redirect URIs are `http://localhost/oauth/callback` and `http://127.0.0.1/oauth/callback` with no port. This works only when the authorization server accepts any port on a `localhost` callback. A server that matches ports exactly rejects the random port Kiro's callback uses. A server that offers Dynamic Client Registration keeps using it, and a configured `clientId` or `clientMetadataUrl` still takes priority.
+
 #### Scopes
 
 You can specify OAuth scopes in two places:
@@ -435,7 +444,7 @@ You can specify OAuth scopes in two places:
 }
 ```
 
-When both are set, `oauth.oauthScopes` takes priority. When neither is specified, Kiro requests a default set of scopes (`openid`, `email`, `profile`, `offline_access`).
+Which value Kiro uses when both are set depends on the harness. In Kiro CLI V2 sessions, `oauth.oauthScopes` takes priority. In Kiro CLI V3 sessions, in Kiro CLI 3.4.0 or later, top-level `oauthScopes` takes priority, and Kiro reads `oauth.oauthScopes`, then `oauth.scopes`, only when top-level `oauthScopes` is not set; before 3.4.0, V3 ignored the nested value. To request the same scopes on both harnesses, set only one of the two. To confirm which value applied, connect the server and check the `scope` parameter in the authorization URL Kiro opens. When neither is specified, Kiro requests a default set of scopes (`openid`, `email`, `profile`, `offline_access`).
 
 ### Mid-session token refresh
 

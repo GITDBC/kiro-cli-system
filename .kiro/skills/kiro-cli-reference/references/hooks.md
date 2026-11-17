@@ -10,10 +10,10 @@ Hooks run shell commands or agent prompts automatically when specific events hap
 
 | Capability | IDE | CLI | Web | Mobile |
 |------------|:---:|:---:|:---:|:------:|
-| Event-driven hooks | ✓ | ✓ | — | — |
-| Shell command actions | ✓ | ✓ | — | — |
-| Agent prompt actions | ✓ | ✓ | — | — |
-| Create Hooks by asking the agent in chat | ✓ | ✓ | — | — |
+| Event-driven hooks | ✓ | ✓ | ✓ | — |
+| Shell command actions | ✓ | ✓ | ✓ | — |
+| Agent prompt actions | ✓ | ✓ | ✓ | — |
+| Create Hooks by asking the agent in chat | ✓ | ✓ | ✓ | — |
 
 ## What you can do with hooks
 
@@ -167,9 +167,9 @@ If `confirmCommand` exits non-zero, times out, or prints invalid JSON, the stati
 
     See [Hook Actions](https://kiro.dev/docs/hooks/actions.md) for exit code behavior and the [Configuration Reference](https://kiro.dev/docs/custom-agents/configuration-reference.md#hooks-field) for the complete schema.
 
-    Kiro Web can store personal Hook configuration through **Settings > Sync** and show uploaded configuration under **Settings > Hooks**. Apply that cloud configuration to new local IDE or CLI sessions to use the Hooks without copying files into your local `.kiro` directory.
+    In Kiro Web, you can create a Hook under **Agent Config > Hooks** by selecting **Add hook**. You can also ask the agent in a session to create a Hook; it saves the Hook as a JSON file in `.kiro/hooks/`. Web sessions run Hooks on the Prompt Submit, Agent Stop, Session Start, Pre Tool Use, and Post Tool Use triggers. See [Hook types](https://kiro.dev/docs/hooks/types.md#availability-by-surface).
 
-    Kiro Web sessions do not run the event-driven triggers or command and agent actions documented on this page, and Web chat does not create Hooks.
+    Hooks in **Agent Config > Hooks** also apply to cloud sessions you start from the IDE or CLI. To use them in local IDE and CLI sessions too, turn on [Configuration Sync](https://kiro.dev/docs/web/cloud-configuration.md). [Kiro Mobile](https://kiro.dev/docs/mobile.md) doesn't create or manage Hooks.
 
 ## Previous versions
 

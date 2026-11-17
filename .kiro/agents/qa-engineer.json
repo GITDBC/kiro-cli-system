@@ -142,7 +142,7 @@
       }
     ]
   },
-  "resources": [],
+  "resources": ["skill://.kiro/skills/preflight/SKILL.md"],
   "welcomeMessage": "Ready to analyze. What needs evaluating?",
   "model": "claude-sonnet-5.5"
 }

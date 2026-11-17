@@ -201,19 +201,9 @@ export HTTPS_PROXY=http://username:password@proxy.company.com:8080
 
 ## Debugging and troubleshooting
 
-If you're having a problem with Kiro CLI, run `kiro-cli doctor` to identify and fix common issues.
+If you're having a problem with Kiro CLI, run `kiro-cli diagnostic`. It prints your Kiro CLI version, system information, and environment.
 
-### Expected output
-
-```bash
-$ kiro-cli doctor
-
-✔ Everything looks good!
-
-Kiro CLI still not working? Run kiro-cli issue to let us know!
-```
-
-If your output doesn't look like the expected output, follow the prompts to resolve your issue.
+To report the problem, run `kiro-cli issue`. It opens a GitHub issue form in your browser with the diagnostic report filled in. Over SSH, in CloudShell, or in WSL, `kiro-cli issue` prints the issue URL instead of opening it. It also prints the URL if the browser does not open.
 
 ### Log file locations
 
@@ -241,13 +231,12 @@ kiro-cli chat
 ### Common issues
 
 - **Home directory fills during startup:** In storage-constrained environments such as CloudShell, set `KIRO_SKIP_BINARY_PINNING=1` only when the installed Kiro binary remains at a fixed, stable path. This avoids creating a session-specific binary copy. Do not use it if an installer can replace or delete the binary during the session.
+- **Bundled runtime fills the home directory:** In Kiro CLI 2.37 or later, set `KIRO_RUNTIME_DIR` to an absolute path to extract Kiro's bundled runtime there instead of your home directory. A relative or empty value is ignored. To confirm, start `kiro-cli chat` and check that the directory now holds the runtime.
 - **Authentication failures** — Run `kiro-cli login` to re-authenticate.
-- **Autocomplete not working** — Run `kiro-cli doctor` to verify shell integration.
-- **SSH integration issues** — Verify your SSH server accepts the required environment variables.
 
 ### Troubleshooting steps
 
-1. Run `kiro-cli doctor` to identify and fix common issues.
+1. Run `kiro-cli diagnostic` to check your Kiro CLI version, system information, and environment.
 2. Check your internet connection.
 3. Verify that you're using a supported environment. See [CLI commands](https://kiro.dev/docs/reference/cli-commands.md) for supported shells.
 4. Try reinstalling Kiro CLI from the [installation page](https://kiro.dev/docs/getting-started/installation.md).

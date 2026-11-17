@@ -157,7 +157,7 @@
       }
     ]
   },
-  "resources": [],
+  "resources": ["skill://.kiro/skills/preflight/SKILL.md"],
   "welcomeMessage": "Ready for platform work. What needs building or stabilizing?",
   "model": "claude-sonnet-5.5"
 }

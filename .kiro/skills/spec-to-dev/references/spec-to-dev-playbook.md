@@ -137,8 +137,9 @@ Before approving the design, verify:
 
 ### Commit Strategy
 
-Follow the `commit-message` skill: one logical change per commit, each leaving the
-codebase in a working state.
+Use Conventional Commits (`type(scope): summary`, imperative mood, summary under 72
+characters): one logical change per commit, each leaving the codebase in a working
+state.
 
 ### Quality Gates During Implementation
 

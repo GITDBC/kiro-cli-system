@@ -259,7 +259,7 @@ Kiro CLI asks for approval when a command sets a variable from its list of known
 
 You are responsible for the commands that you let Kiro CLI run without approval. If the agent works in a repository that you do not trust, keep `autoAllowReadonly` off and review each command before you approve it.
 
-This note applies to the `shell` settings on this page. It does not apply to V3 (`kiro-cli --v3`), which uses permission rules instead of `toolsSettings`. For details, see [Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md).
+This note applies to the `shell` settings on this page. It does not apply to V3, which uses permission rules instead of `toolsSettings`. For details, see [Permissions](https://kiro.dev/docs/permissions.md) and, for converting 2.x rules, [Permissions migration](https://kiro.dev/docs/cli/v3/permissions.md).
 
 ### Side channels for wrapper scripts
 

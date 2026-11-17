@@ -6,17 +6,17 @@
 
 > Configure response output, theme, keybindings, terminal input, display preferences, feature toggles, and prompt history from within a chat session
 
-Run `/settings` to change how Kiro responds, looks, and behaves — output style, colors, keyboard shortcuts, multi-line input, display toggles, feature toggles, and prompt history scope — without leaving your chat session. Run `/settings` on its own to open the menu, or jump straight to a subcommand with `/settings <subcommand>`.
+Run `/settings` to change how Kiro responds, looks, and behaves — output style, colors, keyboard shortcuts, multi-line input, display toggles, tool-call detail, feature toggles, and prompt history scope — without leaving your chat session. Run `/settings` on its own to open the menu, or jump straight to a subcommand with `/settings <subcommand>`.
 
-Available subcommands: `theme`, `keybindings`, `terminal`, `display`, `features`, and `history`.
+Available subcommands: `theme`, `keybindings`, `terminal`, `display`, `output-details` (Kiro CLI 3.2.1 or later), `features`, and `history`.
 
 ## Menu controls
 
-Every settings menu shares the same controls. `Up` and `Down` move between rows. `Left` reverses a toggle or cycle. `Right` and `Enter` toggle or cycle a value, select a radio option, or open a navigation row, and `Enter` also runs action rows. `Esc` closes the top-level menu or returns from a submenu. These controls apply to `/settings`, Display, Status line, Theme, and `/verbosity`. In `/verbosity`, `Ctrl+X` cycles the preview through hidden, mini, and expanded.
+Every settings menu shares the same controls. `Up` and `Down` move between rows. `Left` reverses a toggle or cycle. `Right` and `Enter` toggle or cycle a value, select a radio option, or open a navigation row, and `Enter` also runs action rows. `Esc` closes the top-level menu or returns from a submenu. These controls apply to `/settings`, Display, Output details, Status line, Theme, and `/verbosity`. In Output details and `/verbosity`, `Ctrl+X` cycles the preview through hidden, mini, and expanded.
 
 ## Output styles in V3
 
-In a V3 session, run `/settings display` and use the **Output style** row to choose how Kiro formats responses. The available styles come from the active agent when the Display menu opens, so an upgraded agent can supply new choices without a CLI update.
+In a V3 session, run `/settings display` and use the **Output style** row to choose how Kiro formats responses. Built-in choices include **Proactive**, **Explanatory**, and **Learning**. The active agent can supply other choices when the Display menu opens.
 
 Your selection is saved as the global `chat.outputStyle` preference and applies to subsequent prompts. Choosing the agent's default removes the global override. A workspace-level `chat.outputStyle` value continues to take precedence; in that case, the row shows the active workspace style while you edit the global default.
 
@@ -95,15 +95,39 @@ Available toggles:
 - **Animations** (`chat.allowAnimations`) — when off, spinners and shimmers show static frames instead of animating
 - **ASCII art** (`chat.allowAsciiArt`) — when off, replaces braille dots, box-drawing, and Unicode symbols with plain ASCII
 - **Icons** (`chat.allowIcons`) — when off, hides status indicator icons (●, ○, ⚠) in favor of text-only labels
-- **Show thinking** (`chat.showThinking`) — when off, hides the agent's reasoning blocks from chat output
-- **Status line** — choose whether the status line shows the date, time, current usage percentage, and remaining credits. These optional segments are hidden by default. Changes take effect immediately and persist across sessions
-- **Terminal title** — when on, sets the terminal window title from a custom name you provide with [`/title`](https://kiro.dev/docs/reference/slash-commands.md#title). Enable from `/settings display`
+- **Show thinking** (`chat.showThinking`) — before Kiro CLI 3.2.1, when off, hides the agent's reasoning blocks from chat output. In Kiro CLI 3.2.1 or later, this row has moved to [Output details](#settings-output-details)
+- **Status line** — choose whether the status line shows the date, time, current usage percentage, remaining credits, and, in Kiro CLI 3.1.0 or later, **Session credits**, the credits the current session has used so far. These optional segments are hidden by default. Changes take effect immediately and persist across sessions
+- **Terminal title** (`chat.terminalTitle`) — when on, sets the terminal window title from a name you give with [`/title`](https://kiro.dev/docs/reference/slash-commands.md#title); otherwise from the session's title, or the workspace folder name when the session has none. In Kiro CLI 2.33 or later, a V3 session shows its session title; before 2.33, a V3 session fell back to the workspace folder name. Off by default and global only. To confirm it is on, run `/title`: when the feature is off, `/title` reports that it is disabled and how to enable it
 - **Preserve scrollback**: when on, keeps terminal history available during overflow and resize redraws
 - **Screen reader** (`chat.screenReader`): full terminal UI only. Choose `auto` (default), `on`, or `off`. See [Screen reader support](#screen-reader-support)
 
-Animations, ASCII art, icons, and status-line changes take effect immediately. The **Show thinking** toggle is startup-only — it persists right away, but the change applies to your next chat session. See [Thinking display](#thinking-display) below.
+Animations, ASCII art, icons, and status-line changes take effect immediately. Before Kiro CLI 3.2.1, the **Show thinking** toggle is startup-only — it persists right away, but the change applies to your next chat session. See [Thinking display](#thinking-display) below.
 
 **ℹ️ Info:** Setting the environment variable `KIRO_ASCII_MODE=1` forces ASCII mode regardless of the ASCII art toggle.
+
+### `/settings output-details`
+
+In Kiro CLI 3.2.1 or later, choose how much detail tool calls show in the transcript. Select **Output details** in `/settings`, or run the subcommand directly. `/settings verbosity` still opens the same menu, and bare `/verbosity` opens its density picker when a preset is active.
+
+```bash
+/settings output-details
+```
+
+The menu has these rows:
+
+- **Density preset** — choose `collapsed` (one line per tool call: title, time, and status), `lean` (inline arguments, no reasoning), `default`, or `full` (everything the agent sees, with all output filters on and no truncation), or **custom** to set the rows below one by one
+- **Tool calls** — tool arguments off, in the title, inline, or as a block, with the agent's reasoning and elapsed time on or off
+- **Subagent** — subagent steps, step instructions, step role labels, and full output. In a V2 session, a **Show response summary** toggle appears too; a V3 session always shows the response
+- **Thinking** — `expanded`, `collapsed`, or `off` for the agent's reasoning blocks. The choice is also saved to `chat.showThinking`
+- **Task list** — show or hide the task list
+- **Show output** — which tool categories keep their output in the transcript
+- **Truncation** — line and character caps for arguments and output
+
+Add a section name to open it directly, for example `/settings output-details truncation`. `Esc` returns to `/settings`.
+
+These settings shape finished tool calls. A tool call that is waiting for your approval always shows its full arguments, and a file-write approval always shows its complete diff, whatever preset or caps you choose.
+
+Changes made in Output details apply to the current session. A value set from the command line with `kiro-cli settings chat.showThinking <mode>` applies at your next session start, unless an Output details record saved by an earlier release still holds its own thinking value; changing the thinking display in Output details once replaces it.
 
 #### Screen reader support
 
@@ -119,6 +143,16 @@ When support is active, IME input may appear in a different position. The settin
 KIRO_SCREEN_READER=on kiro-cli chat
 ```
 
+### Compaction
+
+In Kiro CLI 3.3.0 or later, a V3 session shows a **Compaction** entry in the `/settings` menu. It has no subcommand; run `/settings` and open **Compaction**. The screen has three rows:
+
+- **Automatic compaction** — turn automatic compaction on or off for sessions you start or load from now on. The choice is stored as `chat.disableAutoCompaction`; when a workspace `.kiro/settings/cli.json` sets that key, the row says so and the workspace value stays in effect there
+- **Current session** — the threshold the running session uses, as the agent harness confirmed it
+- **Global default** — open the threshold editor. Type a context usage percentage with at most two decimal places, use the arrow keys to adjust it, or press `d` to follow the agent harness default. The editor shows the accepted range and the default. The value is stored as `compaction.autoCompactionThreshold` and applies to the next session you start or load; a workspace `cli.json` value overrides it for that workspace
+
+The entry does not appear when the agent harness does not support a configurable threshold. See [Compaction](https://kiro.dev/docs/compaction.md#configuration) for the settings reference.
+
 ### `/settings features`
 
 Enable account-available agent features for future Kiro CLI processes.
@@ -129,9 +163,20 @@ Enable account-available agent features for future Kiro CLI processes.
 
 Enable **Workflows** to expose declarative workflow commands and controls. The choice is stored as `chat.enableWorkflows`. Exit and restart Kiro CLI after changing it; the current process does not add or remove workflow commands dynamically.
 
-When Workflows are enabled in V3, **Workflows: sub-agent tool** appears directly below the Workflows toggle. It is on by default, so the main chat can delegate directly to sub-agents or through Workflows. Turn it off to make Workflows the main chat's only delegation route; workflow steps can still use sub-agents when their agent configuration permits them. The choice is stored as `chat.enableMainAgentSubagentTool` and applies to new sessions.
+When Workflows are enabled in Kiro CLI 2.34 or later, **Workflow use** appears below the Workflows toggle. Choose how often Kiro starts a workflow from the main chat:
+
+- **Only when asked** (default) — Kiro starts a workflow only when you request one.
+- **Only for large tasks** — Kiro can start one for multi-step work or work needing more context.
+- **As much as possible** — Kiro tries to route most code reading, implementation, testing, and review work through Workflows.
+
+The choice is stored as `chat.workflowLaunch`. It applies to the current session when available and to new sessions afterward.
 
 If **Workflows** does not appear, it is not available for your account. See [Workflows](https://kiro.dev/docs/workflows.md) for recipes, commands, and run behavior.
+
+In Kiro CLI 3.1.0 or later, **Session recap** appears in the same menu and is stored as `chat.enableSessionRecap`. Start a new session after changing it.
+
+- **Disabled** (default): Kiro makes no recap call and shows no recap.
+- **Enabled**: Kiro makes one extra billed model call after each completed turn; the full terminal UI displays the recap above the prompt after three fully idle seconds. Lite mode does not display it, but the call still runs while enabled.
 
 ### `/settings history`
 
@@ -151,7 +196,14 @@ The change is written to `chat.historyMode` and takes effect on your next sessio
 
 When the agent reasons through a complex request, it can stream those reasoning ("thinking") blocks inline above its response. This is controlled by the `chat.showThinking` setting, which is **enabled by default** in Kiro CLI 2.5.0 and later.
 
-Toggle it from the display menu:
+In Kiro CLI 3.2.1 or later, set it from [Output details](#settings-output-details):
+
+```bash
+/settings output-details
+# Select "Thinking" and choose expanded, collapsed, or off
+```
+
+Before Kiro CLI 3.2.1, toggle it from the display menu:
 
 ```bash
 /settings display
@@ -162,14 +214,16 @@ Or set it directly from the command line:
 
 ```bash
 # Hide reasoning blocks
-kiro-cli settings chat.showThinking false
+kiro-cli settings chat.showThinking off
 
 # Show reasoning blocks again
-kiro-cli settings chat.showThinking true
+kiro-cli settings chat.showThinking expanded
 ```
 
+The values are `expanded`, `collapsed`, and `off`. `true` and `false` still work and mean `collapsed` and `off`.
+
 A few things to know:
-- The setting is **startup-only**. Changes apply to your next chat session, not the current one.
+- A command-line change applies to your next chat session, not the current one. In Kiro CLI 3.2.1 or later, a change in Output details applies to the current session.
 - The live "Thinking..." spinner always appears while the agent is processing, regardless of this setting.
 - Long reasoning traces collapse to a tail view. Press `Ctrl+O` to expand or collapse the full thinking block.
 - Reasoning blocks typically appear for complex, multi-step requests. Simple prompts may not produce any.

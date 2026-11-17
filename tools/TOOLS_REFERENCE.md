@@ -1,8 +1,20 @@
 # Tools Reference
 
-Maintainer notes for the tools under `tools/`: boundaries, pins, invariants and the
-cross-tool build conventions. Read this when modifying a tool rather than invoking it;
-for invocation decisions read `tools/TOOLS_OVERVIEW.md`.
+Maintainer notes for the maintenance tools under `tools/`: boundaries, pins, invariants
+and the cross-tool build conventions. Read this when modifying a tool rather than
+invoking it; for invocation decisions read `tools/TOOLS_OVERVIEW.md`.
+
+Tools used by a skill live inside it, under `references/`, and keep their own README as
+the authority:
+
+| Tool        | Location                                         |
+| ----------- | ------------------------------------------------ |
+| depschecker | `.kiro/skills/deps-audit/references/depschecker` |
+| jirafetcher | `.kiro/skills/jira/references/jirafetcher`       |
+| doc2md      | `.kiro/skills/doc2md/references/doc2md`          |
+
+They follow the same architecture and build conventions below, and the root `Makefile`
+resolves them through `tool_dir`.
 
 Where each fact lives, so that it is stated once:
 
@@ -34,18 +46,21 @@ providing the `setup`, `clean`, `lint`, `code-check`, `test` and `all` targets.
 ## Build conventions
 
 - The root `Makefile` lists the Python packages in `TOOLS` and derives `lint-<tool>`,
-  `test-<tool>`, `lint-all` and `test-all` from it. The directory name must equal the
-  module name, because `lint-<tool>` runs `mypy <module>` inside `tools/<tool>`.
+  `test-<tool>`, `lint-all` and `test-all` from it. `tool_dir` resolves each name to
+  `tools/<tool>` or `.kiro/skills/*/references/<tool>`, so a tool is gated wherever it
+  lives. The directory name must equal the module name, because `lint-<tool>` runs
+  `mypy <module>` inside the tool directory.
 - `lint-<tool>` runs the checking forms (`ruff check`, `ruff format --check`,
   `isort --check-only`, `mypy`, `complexipy`). The per-tool `lint` target fixes instead,
   so delegating the gate to it would let code pass by being rewritten.
 - `test-<tool>` enforces an 80% coverage floor, set once in `tool.mk`.
 - `make all` runs `fmt-check`, `drift-check`, `lint-all`, `test-all` and `hook-test`.
 - Tools share no Python imported at runtime, so each stays independently installable and
-  runnable via `uv run --project tools/<tool>`, and tools can be assigned to parallel
-  agents without file overlap. Build tooling is exempt: `tool.mk` is shared by every
-  tool Makefile, at the accepted cost that a tool directory is not self-contained if
-  copied out of the repository.
+  runnable via `uv run --project <tool directory>`, and tools can be assigned to
+  parallel agents without file overlap. Build tooling is exempt: `tool.mk` is shared by
+  every tool Makefile (included by relative path, `../tool.mk` in `tools/` and
+  `../../../../../tools/tool.mk` in a skill), at the accepted cost that a tool directory
+  is not self-contained if copied out of the repository.
 
 ## Cross-tool conventions
 
@@ -59,29 +74,6 @@ providing the `setup`, `clean`, `lint`, `code-check`, `test` and `all` targets.
 
 ## Tool notes
 
-### depschecker
-
-- Two version sources: freshness from the `pyproject.toml` constraints, vulnerabilities
-  from the `uv.lock` resolved versions, the only place transitive dependencies appear.
-  Design rationale (two PyPI endpoints, no severity data) is in its README.
-- `requests>=2.32,<3` is the only runtime dependency.
-
-### jirafetcher
-
-- Configuration comes from a JSON file first and the `[jirafetcher]` TOML section as a
-  fallback; a `token` is required.
-- Target modes `--self` and `--include-parent` are mutually exclusive; the default
-  operates on subtasks.
-
-### doc2md
-
-- Pins `faster-whisper==1.2.1` and `markitdown[docx,outlook,pdf,pptx,xls,xlsx]==0.1.5`.
-  The explicit extras replace `[all]`, so only the converters for those formats are
-  installed; audio goes through faster-whisper, not MarkItDown.
-- Documents convert in a `ProcessPoolExecutor`; audio runs sequentially.
-- Input hardening: path traversal checks, symlink escape detection, blob size limits and
-  `os.umask(0o077)`.
-
 ### driftcheck
 
 - Repository maintenance, not a routing target: it validates this repository's own agent
@@ -89,11 +81,13 @@ providing the `setup`, `clean`, `lint`, `code-check`, `test` and `all` targets.
 - The check list is `CHECKS` in `registry.py`; the README table mirrors it and the
   registry wins on any disagreement.
 - `ALLOWED_MODELS` and `MODEL_COST_LABELS` in `checks/agents.py` hold the approved model
-  ids and the cost label `routing.md` must publish for each. `MODEL_COST_LABELS` matches
-  by prefix in insertion order, so the exact id `claude-opus-5.5` (`high (2.0x)`) must
-  precede the `claude-opus-` family entry (`high (2.2x)`).
-- The `prompt_quality` recall claim stays sourced to the 5.0 and 4.8 prompting guides,
-  because the 5.5 guides do not restate it.
+  ids and the cost label the orchestrator prompt's Quick Lookup must publish for each.
+  `MODEL_COST_LABELS` matches by prefix in insertion order, so the exact id
+  `claude-opus-5.5` (`high (2.0x)`) must precede the `claude-opus-` family entry
+  (`high (2.2x)`), and `claude-haiku-5.5` (`low (0.06x)`) precedes `claude-haiku-`
+  (`low (0.4x)`).
+- The `prompt_quality` recall check (`check_severity_filtering`) was removed: its claim
+  was sourced only to guides no longer mirrored, and the 5.5 guides do not restate it.
 - The one lifecycle hook, `driftcheck-hook-refs-freshness`, is a workspace hook in
   `.kiro/hooks/hooks.json` with trigger `SessionStart`, invoked through
   `uv run --project tools/driftcheck`. Hooks that fire on every file write were removed
