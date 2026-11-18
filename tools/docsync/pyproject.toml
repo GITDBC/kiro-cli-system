@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build==0.11.30"]
+requires = ["uv_build==0.13.8"]
 build-backend = "uv_build"
 
 [project]
@@ -23,12 +23,12 @@ cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true } }]
 
 [dependency-groups]
 pipeline = [
-    "complexipy==7.0.1",
-    "isort==8.0.1",
-    "mypy==2.3.1",
-    "pytest==9.1.1",
+    "complexipy==9.0.0",
+    "isort==9.0.2",
+    "mypy==2.4.1",
+    "pytest==9.2.0",
     "pytest-cov==7.1.0",
-    "ruff==0.16.4",
+    "ruff==0.17.5",
 ]
 
 [project.scripts]
